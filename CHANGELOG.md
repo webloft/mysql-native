@@ -1,3 +1,10 @@
+v1.0.1 - TBD
+=====================
+
+- **Fixed:**
+    [#99](https://github.com/mysql-d/mysql-native/issues/99):
+    Update dub.sdl to allow vibe-d 0.8.* releases.
+
 v1.0.0 - 2017-02-26
 =====================
 - **Summary:**
