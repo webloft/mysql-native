@@ -1,9 +1,16 @@
-v1.0.1 - TBD
+v1.1.0 - TBD
 =====================
 
 - **Fixed:**
-    [#99](https://github.com/mysql-d/mysql-native/issues/99):
-    Update dub.sdl to allow vibe-d 0.8.* releases.
+	[#99](https://github.com/mysql-d/mysql-native/issues/99):
+	Update dub.sdl to allow vibe-d 0.8.* releases.
+- **Fixed:**
+	[#111](https://github.com/mysql-d/mysql-native/issues/111):
+	NEWDECIMAL type returns the wrong value. Since this type is intended as arbitrary
+	precision, the server itself sends it as a string. In order to avoid unexpected
+	loss of precision, mysql-native does not attempt to convert the string to a
+	floating-point type. If conversion to floating point is required, users can simply
+	pass the string to Phobos's `to!real` themselves.
 
 v1.0.0 - 2017-02-26
 =====================

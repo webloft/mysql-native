@@ -132,7 +132,7 @@ unittest
 	cmd.sql = "SELECT SUM(123.456)";
 	auto rows = cmd.execSQLResult();
 	assert(rows.length == 1);
-	assert(rows[0][0] == 123.456);
+	assert(rows[0][0] == "123.456");
 }
 
 // Issue #56: Result set quantity does not equal MySQL rows quantity

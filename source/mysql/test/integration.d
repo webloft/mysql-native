@@ -94,7 +94,8 @@ debug(MYSQL_INTEGRATION_TESTS)
 			`dtcol` datetime,
 			`doublecol` double,
 			`floatcol` float,
-			`nullcol` int(11)
+			`nullcol` int(11),
+			`decimalcol` decimal(11,4)
 			) ENGINE=InnoDB DEFAULT CHARSET=latin1";
 		cmd.execSQL(rowsAffected);
 		cmd.sql = 
@@ -131,7 +132,7 @@ unittest
 	c1.sql = "insert into basetest values(" ~
 		"1, -128, 255, -32768, 65535, 42, 4294967295, -9223372036854775808, 18446744073709551615, 'ABC', " ~
 		"'The quick brown fox', 0x000102030405060708090a0b0c0d0e0f, '2007-01-01', " ~
-		"'12:12:12', '2007-01-01 12:12:12', 1.234567890987654, 22.4, NULL)";
+		"'12:12:12', '2007-01-01 12:12:12', 1.234567890987654, 22.4, NULL, 11234.4325)";
 	c1.execSQL(ra);
 
 	c1.sql = "select bytecol from basetest limit 1";
@@ -201,6 +202,10 @@ unittest
 	rs = c1.execSQLResult();
 	assert(rs.length == 1);
 	assert(rs[0][0].toString() == "22.4");
+	c1.sql = "select decimalcol from basetest limit 1";
+	rs = c1.execSQLResult();
+	assert(rs.length == 1);
+	assert(rs[0][0] == "11234.4325");
 
 	c1.sql = "select * from basetest limit 1";
 	rs = c1.execSQLResult();
@@ -226,6 +231,7 @@ unittest
 	assert(rs[0][15].toString() == "1.23457");
 	assert(rs[0][16].toString() == "22.4");
 	assert(rs[0].isNull(17) == true);
+	assert(rs[0][18] == "11234.4325", rs[0][18].toString());
 
 	c1.sql = "select bytecol, ushortcol, intcol, charscol, floatcol from basetest limit 1";
 	rs = c1.execSQLResult();
@@ -258,6 +264,7 @@ unittest
 	assert(rs[0][15].toString() == "1.23457");
 	assert(rs[0][16].toString() == "22.4");
 	assert(rs[0].isNull(17) == true);
+	assert(rs[0][18] == "11234.4325", rs[0][18].toString());
 
 	c1.sql = "insert into basetest (intcol, stringcol) values(?, ?)";
 	c1.prepare();
@@ -565,6 +572,10 @@ unittest
 			ca[17].defaultNull && ca[17].nullable && ca[17].type == "int" && ca[17].charsMax == -1 && ca[17].octetsMax == -1 &&
 			ca[17].numericPrecision == 10 && ca[17].numericScale == 0 && ca[17].charSet == "<NULL>" && ca[17].collation == "<NULL>"  &&
 			ca[17].colType == "int(11)");
+	assert( ca[18].schema == schemaName && ca[18].table == "basetest" && ca[18].name == "decimalcol" && ca[18].index == 18 &&
+			ca[18].defaultNull && ca[18].nullable && ca[18].type == "decimal" && ca[18].charsMax == -1 && ca[18].octetsMax == -1 &&
+			ca[18].numericPrecision == 11 && ca[18].numericScale == 4 && ca[18].charSet == "<NULL>" && ca[18].collation == "<NULL>"  &&
+			ca[18].colType == "decimal(11,4)");
 	MySQLProcedure[] pa = md.functions();
 	//assert(pa[0].db == schemaName && pa[0].name == "hello" && pa[0].type == "FUNCTION");
 	//pa = md.procedures();
