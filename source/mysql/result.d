@@ -463,7 +463,7 @@ public:
 	/// Check whether the range can still we used, or has been invalidated
 	@property bool isValid() const pure nothrow
 	{
-		return _commandID == _con.lastCommandID;
+		return _con !is null && _commandID == _con.lastCommandID;
 	}
 
 	/// Make the ResultRange behave as an input range - empty
