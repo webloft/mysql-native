@@ -81,8 +81,8 @@ Submit an SQL command to the server to be compiled into a prepared statement.
 The result of a successful outcome will be a statement handle - an ID -
 for the prepared statement, a count of the parameters required for
 excution of the statement, and a count of the columns that will be present
-in any result set that the command generates. Thes values will be stored
-in in the Command struct.
+in any result set that the command generates. These values will be stored
+in the Command struct.
 
 The server will then proceed to send prepared statement headers,
 including parameter descriptions, and result set field descriptions,
@@ -138,7 +138,7 @@ unittest
 /++
 Convenience function to create a prepared statement which calls a stored procedure.
 
-OUT parameters are not currently supported. It should generally be
+OUT parameters are currently not supported. It should generally be
 possible with MySQL to present them as a result set.
 
 Throws: MySQLException if there are pending result set items, or if the
@@ -289,8 +289,8 @@ private:
 	The result of a successful outcome will be a statement handle - an ID -
 	for the prepared statement, a count of the parameters required for
 	excution of the statement, and a count of the columns that will be present
-	in any result set that the command generates. Thes values will be stored
-	in in the Command struct.
+	in any result set that the command generates. These values will be stored
+	in the Command struct.
 
 	The server will then proceed to send prepared statement headers,
 	including parameter descriptions, and result set field descriptions,
@@ -729,7 +729,7 @@ public:
 	/++
 	Execute a prepared command, such as INSERT/UPDATE/CREATE/etc.
 	
-	This method is intended for commands such as which do not produce a result set
+	This method is intended for commands which do not produce a result set
 	(otherwise, use one of the query functions instead.) If the SQL command does
 	produces a result set (such as SELECT), `mysql.exceptions.MySQLResultRecievedException`
 	will be thrown.
