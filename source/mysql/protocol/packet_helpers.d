@@ -1,6 +1,7 @@
 ﻿/// Internal - Helper functions for the communication protocol.
 module mysql.protocol.packet_helpers;
 
+import std.algorithm;
 import std.conv;
 import std.datetime;
 import std.exception;
@@ -65,9 +66,9 @@ TimeDiff toTimeDiff(string s)
 	}
 	td.hours    = cast(ubyte) t%24;
 	td.days     = cast(ubyte) t/24;
-	munch(s, ":");
+	enforceEx!MYXProtocol(s.skipOver(":"), `Expected: ":"`);
 	td.minutes  = parse!ubyte(s);
-	munch(s, ":");
+	enforceEx!MYXProtocol(s.skipOver(":"), `Expected: ":"`);
 	td.seconds  = parse!ubyte(s);
 	return td;
 }
@@ -109,9 +110,9 @@ TimeOfDay toTimeOfDay(string s)
 	TimeOfDay tod;
 	tod.hour = parse!int(s);
 	enforceEx!MYXProtocol(tod.hour <= 24 && tod.hour >= 0, "Time column value is in time difference form");
-	munch(s, ":");
+	enforceEx!MYXProtocol(s.skipOver(":"), `Expected: ":"`);
 	tod.minute = parse!ubyte(s);
-	munch(s, ":");
+	enforceEx!MYXProtocol(s.skipOver(":"), `Expected: ":"`);
 	tod.second = parse!ubyte(s);
 	return tod;
 }
@@ -178,9 +179,9 @@ Returns: A populated or default initialized std.datetime.Date struct.
 Date toDate(string s)
 {
 	int year = parse!(ushort)(s);
-	munch(s, "-");
+	enforceEx!MYXProtocol(s.skipOver("-"), `Expected: "-"`);
 	int month = parse!(ubyte)(s);
-	munch(s, "-");
+	enforceEx!MYXProtocol(s.skipOver("-"), `Expected: "-"`);
 	int day = parse!(ubyte)(s);
 	return Date(year, month, day);
 }
@@ -261,15 +262,15 @@ Returns: A populated or default initialized std.datetime.DateTime struct.
 DateTime toDateTime(string s)
 {
 	int year = parse!(ushort)(s);
-	munch(s, "-");
+	enforceEx!MYXProtocol(s.skipOver("-"), `Expected: "-"`);
 	int month = parse!(ubyte)(s);
-	munch(s, "-");
+	enforceEx!MYXProtocol(s.skipOver("-"), `Expected: "-"`);
 	int day = parse!(ubyte)(s);
-	munch(s, " ");
+	enforceEx!MYXProtocol(s.skipOver(" "), `Expected: " "`);
 	int hour = parse!(ubyte)(s);
-	munch(s, ":");
+	enforceEx!MYXProtocol(s.skipOver(":"), `Expected: ":"`);
 	int minute = parse!(ubyte)(s);
-	munch(s, ":");
+	enforceEx!MYXProtocol(s.skipOver(":"), `Expected: ":"`);
 	int second = parse!(ubyte)(s);
 	return DateTime(year, month, day, hour, minute, second);
 }
@@ -570,7 +571,7 @@ body
 SQLValue consumeBinaryValueIfComplete(T, int N=T.sizeof)(ref ubyte[] packet, bool unsigned)
 {
 	SQLValue result;
-	
+
 	// Length of DateTime packet is NOT DateTime.sizeof, it can be 1, 5 or 8 bytes
 	static if(is(T==DateTime))
 		result.isIncomplete = packet.length < 1;
@@ -725,7 +726,7 @@ SQLValue consumeIfComplete()(ref ubyte[] packet, SQLType sqlType, bool binary, b
 				else
 					result.value = cast(string)data; // TEXT-ish
 			}
-			
+
 			// Type BIT is treated as a length coded binary (like a BLOB or VARCHAR),
 			// not like an integral type. So convert the binary data to a bool.
 			// See: http://dev.mysql.com/doc/internals/en/binary-protocol-value.html
@@ -733,10 +734,10 @@ SQLValue consumeIfComplete()(ref ubyte[] packet, SQLType sqlType, bool binary, b
 			{
 				enforceEx!MYXProtocol(result.value.length == 1,
 					"Expected BIT to arrive as an LCB with length 1, but got length "~to!string(result.value.length));
-				
+
 				result.value = result.value[0] == 1;
 			}
-			
+
 			return result;
 	}
 }
@@ -1012,7 +1013,7 @@ unittest
 	{
 		ubyte[] buf = [ 0xde, 0xcc, 0xbb, 0xaa, 0x99, 0x88, 0x77, 0x66, 0x55, 0x01, 0x00 ];
 		ubyte[] bufCopy;
-		
+
 		bufCopy = buf;
 		LCB lcb = mixin(parseLCBFunc~"!LCB(bufCopy)");
 		assert(lcb.value == 0xde && !lcb.isNull && lcb.totalBytes == 1);
@@ -1046,7 +1047,7 @@ unittest
 		assert(lcb.value == 0x5566778899aabbcc && !lcb.isNull && lcb.totalBytes == 9);
 		assert(bufCopy.length == buf.length - (shouldConsume? lcb.totalBytes : 0));
 	}
-	
+
 	//TODO: Merge 'consumeIfComplete(T:LCB)' and 'decode(T:LCB)', they do
 	//      basically the same thing, only one consumes input and the other
 	//      doesn't. Just want a better idea of where/how/why they're both
