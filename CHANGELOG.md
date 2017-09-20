@@ -1,3 +1,10 @@
+v1.1.2 - 2017-09-20
+=====================
+
+- **Fixed:**
+	[#130](https://github.com/mysql-d/mysql-native/issues/130):
+	Compilation error when compiling in singleFile mode. (@Marenz)
+
 v1.1.1 - 2017-09-20
 =====================
 
