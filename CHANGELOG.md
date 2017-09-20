@@ -1,3 +1,16 @@
+v1.1.1 - 2017-09-20
+=====================
+
+- **Fixed:**
+	[#116](https://github.com/mysql-d/mysql-native/issues/116):
+	Prevent segfault on copying ResultRange. (@schveiguy)
+- **Fixed:**
+	[#120](https://github.com/mysql-d/mysql-native/issues/120):
+	Fix typos / grammars in documentation (@Marenz)
+- **Fixed:**
+	[#124](https://github.com/mysql-d/mysql-native/issues/124):
+	Fix deprecations: Change deprecated std.string.munch to std.algorithm.skipOver. (@Kozzi11)
+
 v1.1.0 - 2017-06-08
 =====================
 
