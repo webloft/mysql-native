@@ -1,6 +1,10 @@
 language: d
 sudo: false
 
+addons:
+  apt:
+    packages: [ libevent-dev ]
+
 before_script:
     - mysql -e 'SHOW VARIABLES LIKE "%version%";'
     - mysql -e 'CREATE DATABASE mysqln_testdb;'
