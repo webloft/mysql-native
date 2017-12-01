@@ -43,8 +43,8 @@ addons:
 
 # MySQL is not installed by default on OSX build agents
 before_install:
-  - "if [ ${TRAVIS_OS_NAME} = 'osx' ]; then brew update; fi"
-  - "if [ ${TRAVIS_OS_NAME} = 'osx' ]; then brew install mysql && brew services start mysql; fi"
+    - "if [ ${TRAVIS_OS_NAME} = 'osx' ]; then brew update; fi"
+    - "if [ ${TRAVIS_OS_NAME} = 'osx' ]; then brew install mysql && brew services start mysql; fi"
 
 before_script:
     - mysql -u root -e 'SHOW VARIABLES LIKE "%version%";'
@@ -54,8 +54,8 @@ before_script:
 install: ./travis-install-deps.sh
 script: ./run-tests
 
-# most builds are already defined, the matrix is used to test alternative db versions
 matrix:
+    # Test alternative db versions, but only on one compiler version
     include:
         - d: dmd-2.070.2
           addons:
@@ -72,5 +72,20 @@ matrix:
               packages: [ libevent-dev ]
           env: DB=mysql-default
 
-    #allow_failures:
-    #    - d: gdc
+    exclude:
+        # No GDC binaries available on OSX
+        - d: /^gdc.*/
+          os: osx
+        
+        # Doesn't appear to be available on OSX
+        - d: ldc-0.17.5
+          os: osx
+
+    allow_failures:
+        # Getting weird error with this configuration:
+        #   dyld: Library not loaded: /opt/local/lib/libconfig.9.dylib
+        #     Referenced from: /Users/travis/dlang/ldc-1.0.0/bin/ldmd2
+        #     Reason: image not found
+        # In any case, not mysql-native's fault, so allow it to fail.
+        - d: ldc-1.0.0
+          os: osx
