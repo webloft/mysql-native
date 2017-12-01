@@ -1116,7 +1116,7 @@ unittest
 		// Test queryValue
 		result = cn.queryValue(selectSQL);
 		assert(!result.isNull);
-		assert(result == 11);
+		assert(result.get == 11); // Explicit "get" here works around DMD #17482
 		// Were all results correctly purged? Can I still issue another command?
 		cn.querySet(selectSQL);
 
@@ -1126,7 +1126,7 @@ unittest
 		// Test prepared queryValue
 		result = prepared.queryValue();
 		assert(!result.isNull);
-		assert(result == 11);
+		assert(result.get == 11); // Explicit "get" here works around DMD #17482
 		// Were all results correctly purged? Can I still issue another command?
 		cn.querySet(selectSQL);
 
