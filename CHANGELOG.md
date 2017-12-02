@@ -6,10 +6,12 @@ v1.1.3 - 2017-12-02
 	Prepared: Prevent mem allocs during cleanup. (@Marenz)
 - **Fixed:**
 	[#135](https://github.com/mysql-d/mysql-native/issues/135):
-	Now works on DMD 2.074 and up. (@SingingBush)
+	Now works on DMD 2.076 and up. (@SingingBush)
 - **New:**
 	[#135](https://github.com/mysql-d/mysql-native/issues/135):
 	Add travis-ci testing for OSX. (@SingingBush)
+- **Fixed:**
+	DMD 2.074.x gives compile error when building tests. (@Abscissa)
 
 v1.1.2 - 2017-09-20
 =====================
