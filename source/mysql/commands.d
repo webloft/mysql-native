@@ -80,6 +80,7 @@ using the query function for such queries.
 Params: ra = An out parameter to receive the number of rows affected.
 Returns: true if there was a (possibly empty) result set.
 +/
+//TODO: All low-level commms should be moved into the mysql.protocol package.
 package bool execQueryImpl(Connection conn, ExecQueryImplInfo info, out ulong ra)
 {
 	conn.enforceNothingPending();
@@ -205,6 +206,7 @@ deprecated("Use querySet instead.")
 alias queryResult = querySet;
 
 /// Common implementation for mysql.commands.querySet and Prepared.querySet
+//TODO: All low-level commms should be moved into the mysql.protocol package.
 package ResultSet querySetImpl(ColumnSpecialization[] csa, bool binary,
 	Connection conn, ExecQueryImplInfo info)
 {

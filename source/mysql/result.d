@@ -39,6 +39,7 @@ private:
 		return (fieldCount+7+2)/8;
 	}
 
+	//TODO: All low-level commms should be moved into the mysql.protocol package.
 	static bool[] consumeNullBitmap(ref ubyte[] packet, uint fieldCount) pure
 	{
 		uint bitmapLength = calcBitmapLength(fieldCount);
@@ -111,6 +112,7 @@ public:
 	So this is may be nothing to be concerned about. If such info is needed later, perhaps
 	`_values` could store its elements as `Nullable!T`?
 	+/
+	//TODO: All low-level commms should be moved into the mysql.protocol package.
 	this(Connection con, ref ubyte[] packet, ResultSetHeaders rh, bool binary)
 	in
 	{

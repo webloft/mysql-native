@@ -314,6 +314,7 @@ private:
 		conn.sendCmd(CommandType.STMT_PREPARE, sql);
 		conn._fieldCount = 0;
 
+		//TODO: All packet handling should be moved into the mysql.protocol package.
 		ubyte[] packet = conn.getPacket();
 		if (packet.front == ResultPacketMarker.ok)
 		{
@@ -383,6 +384,7 @@ package:
 		return prefix;
 	}
 
+	//TODO: All low-level commms should be moved into the mysql.protocol package.
 	static ubyte[] analyseParams(Variant[] inParams, ParameterSpecialization[] psa,
 		out ubyte[] vals, out bool longData)
 	{
@@ -653,6 +655,7 @@ package:
 			uint cs = psn.chunkSize;
 			uint delegate(ubyte[]) dg = psn.chunkDelegate;
 
+			//TODO: All low-level commms should be moved into the mysql.protocol package.
 			ubyte[] chunk;
 			chunk.length = cs+11;
 			chunk.setPacketHeader(0 /*each chunk is separate cmd*/);
@@ -682,6 +685,7 @@ package:
 	static void sendCommand(Connection conn, uint hStmt, PreparedStmtHeaders psh,
 		Variant[] inParams, ParameterSpecialization[] psa)
 	{
+		//TODO: All low-level commms should be moved into the mysql.protocol package.
 		ubyte[] packet;
 		conn.resetPacket();
 
@@ -1106,6 +1110,7 @@ public:
 		if (_conn.closed())
 			return;
 
+		//TODO: All low-level commms should be moved into the mysql.protocol package.
 		ubyte[9] packet_buf;
 		ubyte[] packet = packet_buf;
 		packet.setPacketHeader(0/*packet number*/);

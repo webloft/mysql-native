@@ -54,6 +54,7 @@ the connection when done).
 }
 ------------------
 +/
+//TODO: All low-level commms should be moved into the mysql.protocol package.
 class Connection
 {
 /+
@@ -506,8 +507,8 @@ package:
 		authenticate(greeting);
 	}
 	
-	// Forcefully close the socket without sending the quit command.
-	// Needed in case an error leaves communatations in an undefined or non-recoverable state.
+	/// Forcefully close the socket without sending the quit command.
+	/// Needed in case an error leaves communatations in an undefined or non-recoverable state.
 	void kill()
 	{
 		if(_socket.connected)
