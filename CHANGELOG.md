@@ -1,3 +1,44 @@
+v1.1.4 - 2017-12-04
+=====================
+
+Introduced auto-purge to fix a few problems.
+
+- **Fixed:**
+	[#117](https://github.com/mysql-d/mysql-native/issues/117):
+	ResultRange cannot be copied. (@Abscissa)
+- **Fixed:**
+	[#119](https://github.com/mysql-d/mysql-native/issues/119):
+	Is a defensive `Connection.purgeResult` call necessary before executing another statement?
+	(As of this release, the answer changed from "sometimes" to "no") (@Abscissa)
+- **Fixed:**
+	[#139](https://github.com/mysql-d/mysql-native/issues/139):
+	Server packet out of order when Prepared is destroyed too early. (@Abscissa)
+- **Change:**
+	MySQLDataPendingException (aka, MYXDataPending) is no longer necessary,
+	and no longer thrown. When issuing a command that communicates with the
+	server while a ResultRange still has data pending, instead of throwing,
+	mysql-native now automatically purges the range and safely marks it as
+	invalid and no longer usable. This was changed in order to fix #117, #119,
+	and #139. This change should neither break user code nor require
+	any changes. (@Abscissa)
+- **Change:**
+	Manually releasing a prepared statement is no longer guaranteed to notify
+	the server immediately. In order to facilitate the above fixes, and avoid
+	any nasty surprise with struct dtors triggering results purges implicitly,
+	any release of prepared statements from the server is now queued until
+	mysql-native can be certain no data is already pending. This change should
+	neither break user code nor require any changes. (@Abscissa)
+- **Change:**
+	Prepared statements are no longer released automatically, due to the fix
+	for #117. However, prepared statements and their lifetimes are tied to
+	individual connections, and thus will die along with their connection,
+	so manual release is not strictly necessary either. Accordingly, this
+	change should neither break user code nor require any changes. (@Abscissa)
+- **Fixed:**
+	[#143](https://github.com/mysql-d/mysql-native/issues/143):
+	Keep travis-ci build times under control by limiting the number of
+	compiler versions tested on OSX. (@SingingBush)
+
 v1.1.3 - 2017-12-02
 =====================
 

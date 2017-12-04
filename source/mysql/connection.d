@@ -10,6 +10,7 @@ import std.string;
 
 import mysql.commands;
 import mysql.exceptions;
+import mysql.prepared;
 import mysql.protocol.constants;
 import mysql.protocol.packets;
 import mysql.protocol.sockets;
@@ -138,52 +139,6 @@ package:
 		assert(_socketType != MySQLSocketType.vibed);
 	}
 
-	void enforceNothingPending()
-	{
-		enforceEx!MYXDataPending(!hasPending);
-	}
-
-	debug(MYSQL_INTEGRATION_TESTS)
-	unittest
-	{
-		import mysql.prepared;
-		import mysql.test.common : scopedCn;
-		mixin(scopedCn);
-
-		cn.exec("DROP TABLE IF EXISTS `enforceNothingPending`");
-		cn.exec("CREATE TABLE `enforceNothingPending` (
-			`val` INTEGER
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-
-		immutable insertSQL = "INSERT INTO `enforceNothingPending` VALUES (1), (2)";
-		immutable selectSQL = "SELECT * FROM `enforceNothingPending`";
-		Prepared preparedInsert;
-		Prepared preparedSelect;
-		assertNotThrown!MYXDataPending(cn.exec(insertSQL));
-		assertNotThrown!MYXDataPending(cn.querySet(selectSQL));
-		assertNotThrown!MYXDataPending(preparedInsert = cn.prepare(insertSQL));
-		assertNotThrown!MYXDataPending(preparedSelect = cn.prepare(selectSQL));
-		assertNotThrown!MYXDataPending(preparedInsert.exec());
-		assertNotThrown!MYXDataPending(preparedSelect.querySet());
-		
-		auto resultSeq = cn.query(selectSQL);
-		
-		assertThrown!MYXDataPending(cn.exec(insertSQL));
-		assertThrown!MYXDataPending(cn.querySet(selectSQL));
-		assertThrown!MYXDataPending(cn.query(selectSQL));
-		assertThrown!MYXDataPending(cn.prepare(selectSQL));
-		assertThrown!MYXDataPending(preparedInsert.exec());
-		assertThrown!MYXDataPending(preparedSelect.querySet());
-
-		resultSeq.each(); // Consume range
-
-		assertNotThrown!MYXDataPending(cn.exec(insertSQL));
-		assertNotThrown!MYXDataPending(cn.querySet(selectSQL));
-		assertNotThrown!MYXDataPending(cn.prepare(selectSQL));
-		assertNotThrown!MYXDataPending(preparedInsert.exec());
-		assertNotThrown!MYXDataPending(preparedSelect.querySet());
-	}
-
 	ubyte[] getPacket()
 	{
 		scope(failure) kill();
@@ -248,8 +203,7 @@ package:
 	}
 	body
 	{
-		enforceEx!MYX(!(_headersPending || _rowsPending),
-			"There are result set elements pending - purgeResult() required.");
+		autoPurge();
 
 		scope(failure) kill();
 
@@ -516,6 +470,112 @@ package:
 		_open = OpenState.notConnected;
 	}
 	
+	/// Called whenever mysql-native needs to send a command to the server
+	/// and be sure there aren't any pending results (which would prevent
+	/// a new command from being sent).
+	void autoPurge()
+	{
+		// This is called every time a command is sent,
+		// so detect & prevent infinite recursion.
+		static bool isAutoPurging = false;
+
+		if(isAutoPurging)
+			return;
+			
+		isAutoPurging = true;
+		scope(exit) isAutoPurging = false;
+		scope(failure) kill();
+
+		purgeResult();
+		statementsToRelease.releaseAll();
+	}
+
+	/++
+	Keeps track of prepared statements queued to be released from the server.
+
+	Prepared statements aren't released immediately, because that
+	involves sending a command to the server even though there might be
+	results pending. (Can't send a command while results are pending.)
+	+/
+	static struct StatementsToRelease(alias doRelease)
+	{
+		private Connection conn;
+		
+		/// Ids of prepared statements to be released.
+		/// This uses assumeSafeAppend. Do not save copies of it.
+		uint[] ids;
+		
+		void add(uint statementId)
+		{
+			ids ~= statementId;
+		}
+
+		/// Removes a prepared statement from the list of statements
+		/// to be released from the server.
+		/// Does nothing if the statement isn't on the list.
+		void remove(uint statementId)
+		{
+			foreach(ref id; ids)
+			if(id == statementId)
+				id = 0;
+		}
+
+		/// Releases the prepared statements queued for release.
+		void releaseAll()
+		{
+			foreach(id; ids)
+			if(id != 0)
+				doRelease(conn, id);
+
+			ids.length = 0;
+			assumeSafeAppend(ids);
+		}
+	}
+	StatementsToRelease!(PreparedImpl.immediateRelease) statementsToRelease;
+	
+	debug(MYSQL_INTEGRATION_TESTS) uint[] fakeRelease_released;
+	unittest
+	{
+		debug(MYSQL_INTEGRATION_TESTS)
+		{
+			static void fakeRelease(Connection conn, uint id)
+			{
+				conn.fakeRelease_released ~= id;
+			}
+			
+			mixin(scopedCn);
+			
+			StatementsToRelease!fakeRelease list;
+			list.conn = cn;
+			assert(list.ids == []);
+			assert(cn.fakeRelease_released == []);
+
+			list.add(1);
+			assert(list.ids == [1]);
+			assert(cn.fakeRelease_released == []);
+
+			list.add(7);
+			assert(list.ids == [1, 7]);
+			assert(cn.fakeRelease_released == []);
+
+			list.add(9);
+			assert(list.ids == [1, 7, 9]);
+			assert(cn.fakeRelease_released == []);
+
+			list.remove(5);
+			assert(list.ids == [1, 7, 9]);
+			assert(cn.fakeRelease_released == []);
+			
+			list.remove(7);
+			assert(list.ids == [1, 0, 9]);
+			assert(cn.fakeRelease_released == []);
+			
+			list.releaseAll();
+			assert(list.ids == []);
+			assert(cn.fakeRelease_released == [1, 9]);
+		}
+	}
+
 public:
 
 	/++
@@ -609,6 +669,8 @@ public:
 		enforceEx!MYX(capFlags & SvrCapFlags.SECURE_CONNECTION, "This client only supports protocol v4.1 connection");
 		version(Have_vibe_d_core) {} else
 			enforceEx!MYX(socketType != MySQLSocketType.vibed, "Cannot use Vibe.d sockets without -version=Have_vibe_d_core");
+
+		statementsToRelease.conn = this;
 
 		_socketType = socketType;
 		_host = host;

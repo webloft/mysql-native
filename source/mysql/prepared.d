@@ -233,17 +233,6 @@ private:
 		enforceEx!MYXNotPrepared(hStmt);
 	}
 
-	void enforceReadyForCommand()
-	{
-		enforceReadyForCommand(_conn, _hStmt);
-	}
-
-	static void enforceReadyForCommand(Connection conn, uint hStmt)
-	{
-		enforceNotReleased(hStmt);
-		conn.enforceNothingPending();
-	}
-
 	debug(MYSQL_INTEGRATION_TESTS)
 	unittest
 	{
@@ -298,16 +287,11 @@ private:
 
 	If there is an existing statement handle in the Command struct, that
 	prepared statement is released.
-
-	Throws: MySQLException if there are pending result set items, or if the
-	server has a problem.
 	+/
 	public this(Connection conn, string sql)
 	{
 		this._conn = conn;
 		this._sql = sql;
-
-		_conn.enforceNothingPending();
 
 		scope(failure) conn.kill();
 
@@ -685,6 +669,8 @@ package:
 	static void sendCommand(Connection conn, uint hStmt, PreparedStmtHeaders psh,
 		Variant[] inParams, ParameterSpecialization[] psa)
 	{
+		conn.autoPurge();
+		
 		//TODO: All low-level commms should be moved into the mysql.protocol package.
 		ubyte[] packet;
 		conn.resetPacket();
@@ -728,11 +714,6 @@ package:
 	}
 
 public:
-	~this()
-	{
-		release();
-	}
-
 	/++
 	Execute a prepared command, such as INSERT/UPDATE/CREATE/etc.
 	
@@ -745,7 +726,7 @@ public:
 	+/
 	ulong exec()
 	{
-		enforceReadyForCommand();
+		enforceNotReleased();
 		return execImpl(
 			_conn,
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa)
@@ -773,7 +754,7 @@ public:
 	+/
 	ResultSet querySet(ColumnSpecialization[] csa = null)
 	{
-		enforceReadyForCommand();
+		enforceNotReleased();
 		return querySetImpl(
 			csa, true, _conn,
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa)
@@ -805,7 +786,7 @@ public:
 	+/
 	ResultRange query(ColumnSpecialization[] csa = null)
 	{
-		enforceReadyForCommand();
+		enforceNotReleased();
 		return queryImpl(
 			csa, _conn,
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa)
@@ -833,7 +814,7 @@ public:
 	+/
 	Nullable!Row queryRow(ColumnSpecialization[] csa = null)
 	{
-		enforceReadyForCommand();
+		enforceNotReleased();
 		return queryRowImpl(csa, _conn,
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa));
 	}
@@ -856,7 +837,7 @@ public:
 	+/
 	void queryRowTuple(T...)(ref T args)
 	{
-		enforceReadyForCommand();
+		enforceNotReleased();
 		return queryRowTupleImpl(
 			_conn,
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa),
@@ -1099,29 +1080,50 @@ public:
 
 	This method can be called during a GC collection. Allocations should be
 	avoided if possible as it could crash the GC.
+	
+	Notes:
+	
+	In actuality, the server might not immediately be told to release the
+	statement (although this instance of Prepared will still behave as though
+	it's been released, regardless).
+	
+	This is because there could be a ResultRange with results still pending
+	for retreival, and the protocol doesn't allow sending commands (such as
+	"release a prepared statement") to the server while data is pending.
+	Therefore, this function may instead queue the statement to be released
+	when it is safe to do so: Either the next time a result set is purged or
+	the next time a command (such as query or exec) is performed (because
+	such commands automatically purge any pending results).
 	+/
 	void release()
 	{
-		if(!_hStmt)
+		if(_conn is null || !_hStmt || _conn.closed())
 			return;
 
-		scope(failure) _conn.kill();
+		_conn.statementsToRelease.add(_hStmt);
+		_hStmt = 0;
+	}
+	package static void immediateRelease(Connection conn, uint statementId)
+	{
+		if(!statementId)
+			return;
 
-		if (_conn.closed())
+		scope(failure) conn.kill();
+
+		if(conn.closed())
 			return;
 
 		//TODO: All low-level commms should be moved into the mysql.protocol package.
 		ubyte[9] packet_buf;
 		ubyte[] packet = packet_buf;
 		packet.setPacketHeader(0/*packet number*/);
-		_conn.bumpPacket();
+		conn.bumpPacket();
 		packet[4] = CommandType.STMT_CLOSE;
-		_hStmt.packInto(packet[5..9]);
-		_conn.purgeResult();
-		_conn.send(packet);
+		statementId.packInto(packet[5..9]);
+		conn.purgeResult();
+		conn.send(packet);
 		// It seems that the server does not find it necessary to send a response
 		// for this command.
-		_hStmt = 0;
 	}
 
 	/// Gets the number of arguments this prepared statement expects to be passed in.

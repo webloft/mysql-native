@@ -457,11 +457,6 @@ package:
 	}
 
 public:
-	~this()
-	{
-		close();
-	}
-
 	/// Check whether the range can still we used, or has been invalidated
 	@property bool isValid() const pure nothrow
 	{

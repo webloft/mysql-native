@@ -22,6 +22,7 @@ import std.variant;
 import mysql.commands;
 import mysql.connection;
 import mysql.exceptions;
+import mysql.prepared;
 import mysql.protocol.sockets;
 import mysql.result;
 import mysql.test.common;
@@ -186,5 +187,61 @@ unittest
 		// Ensure it works without a default database
 		auto cn = new Connection(a[0], a[1], a[2], "", to!ushort(a[4]));
 		scope(exit) cn.close();
+	}
+}
+
+// Issue #117: Server packet out of order when Prepared is destroyed too early
+debug(MYSQL_INTEGRATION_TESTS)
+unittest
+{
+	mixin(scopedCn);
+	auto cmd = Command(cn);
+
+	struct S
+	{
+		this(ResultRange x) { r = x; } // destroying x kills the range
+		ResultRange r;
+		alias r this;
+	}
+
+	cn.exec("DROP TABLE IF EXISTS `issue117`");
+	cn.exec("CREATE TABLE `issue117` (a INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+	cn.exec("INSERT INTO `issue117` (a) VALUES (1)");
+
+	auto r = cn.query("SELECT * FROM `issue117`");
+	assert(!r.empty);
+
+	auto s = S(cn.query("SELECT * FROM `issue117`"));
+	assert(!s.empty);
+}
+
+// Issue #139: Server packet out of order when Prepared is destroyed too early
+debug(MYSQL_INTEGRATION_TESTS)
+unittest
+{
+	mixin(scopedCn);
+	auto cmd = Command(cn);
+
+	// Sanity check
+	{
+		ResultRange result;
+
+		auto prep = cn.prepare("SELECT ?");
+		prep.setArgs("Hello world");
+		result = prep.query();
+
+		result.close();
+	}
+	
+	// Should not throw server packet out of order
+	{
+		ResultRange result;
+		{
+			auto prep = cn.prepare("SELECT ?");
+			prep.setArgs("Hello world");
+			result = prep.query();
+		}
+
+		result.close();
 	}
 }

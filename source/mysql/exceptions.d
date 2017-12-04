@@ -42,10 +42,21 @@ class MySQLReceivedException: MySQLException
 alias MYXReceived = MySQLReceivedException;
 
 /++
-Thrown when attempting to communicate with the server (ex: executing SQL or
-creating a new prepared statement) while the server is still sending results
-data. Any ResultRange must be consumed or purged before anything else
-can be done on the connection.
+This exception is no longer used by mysql-native and will be deprecated (and
+later removed) in upcoming releases.
+
+Previously, this was thrown when attempting to communicate with the server
+(ex: executing SQL or creating a new prepared statement) while the server
+was still sending results data. Any `mysql.result.ResultRange` was required to
+be consumed or purged before anything else was allowed to be done on the
+connection (as per inherent limitations of the MySQL client-server protocol).
+
+But as of mysql-native v1.1.4 (as discussed in
+$(LINK2 https://github.com/mysql-d/mysql-native/issues/117, issue #117)),
+this behavior was changed. Any communication with the server now purges any
+active `mysql.result.ResultRange` automatically (See also,
+`mysql.result.ResultRange.isValid`). As a result, this exception is never
+thrown anymore.
 +/
 class MySQLDataPendingException: MySQLException
 {

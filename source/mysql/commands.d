@@ -83,7 +83,6 @@ Returns: true if there was a (possibly empty) result set.
 //TODO: All low-level commms should be moved into the mysql.protocol package.
 package bool execQueryImpl(Connection conn, ExecQueryImplInfo info, out ulong ra)
 {
-	conn.enforceNothingPending();
 	scope(failure) conn.kill();
 
 	// Send data

@@ -1136,12 +1136,16 @@ unittest
 
 	{
 		// Issue new command before old command was purged
+		// Ensure old result set is auto-purged and invalidated.
 		ResultRange rseq1 = cn.query(selectSQL);
 		rseq1.popFront();
 		assert(!rseq1.empty);
+		assert(rseq1.isValid);
 		assert(rseq1.front[0] == 22);
 
-		assertThrown!MYXDataPending(cn.query(selectBackwardsSQL));
+		cn.query(selectBackwardsSQL);
+		assert(rseq1.empty);
+		assert(!rseq1.isValid);
 	}
 
 	{
