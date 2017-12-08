@@ -14,5 +14,13 @@ html
 			block navigation
 
 		#main-contents
+			p
+				|!= `<a href="https://github.com/mysql-d/mysql-native">mysql-native</a> v1.2.0`
+			p
+				|!= `API Reference Home:`
+				|!= `[<a href="` ~ info.linkTo(null) ~ `">This Version</a>]`
+				|!= `[<a href="https://semitwist.com/mysql-native">Latest Version</a>]`
+				|!= `[<a href="https://semitwist.com/mysql-native-docs">Other Versions</a>]`
+			hr
 			h1= title
 			block body

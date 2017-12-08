@@ -28,16 +28,5 @@ block body
 	block ddox.members
 
 	footer
-		- if (info.mod)
-			table.license-info
-				tr
-					th Authors
-					td: block ddox.authors
-				tr
-					th Copyright
-					td: block ddox.copyright
-				tr
-					th License
-					td: block ddox.license
-
+		hr
 		p.faint Generated using the DDOX documentation generator
