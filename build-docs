@@ -1,7 +1,7 @@
 #!/bin/sh
 rdmd --build-only -c -Isource -Dddocs_tmp -X -Xfdocs/docs.json -version=MySQLDocs --force source/mysql/package.d
 rm -rf docs_tmp
-rm source/mysql/package
+rm source/mysql/package.o
 
 cd ./ddox
 dub build
