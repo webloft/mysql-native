@@ -1174,3 +1174,38 @@ unittest
 		assertThrown!MYXInvalidatedRange(rseq1.asAA());
 	}
 }
+
+// Test example.d
+// Note: This always tests example.d using Vibe sockets, regardless of
+// what kind of sockets the unittests are using. Once DUB Issue #1089
+// is fixed, this will always test example.d using Phobos sockets.
+debug(MYSQL_INTEGRATION_TESTS)
+unittest
+{
+	import std.file;
+	import std.process;
+	import std.stdio;
+
+	// Setup DB for test
+	{
+		mixin(scopedCn);
+
+		cn.exec("DROP TABLE IF EXISTS `tablename`");
+		cn.exec("CREATE TABLE `tablename` (
+			`id` INTEGER,
+			`name` VARCHAR(50)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+	}
+	
+	// Setup current working directory
+	auto saveDir = getcwd();
+	scope(exit)
+		chdir(saveDir);
+	chdir("examples/homePage");
+
+	// Compile & run example.d
+	// The -q is important, it prevents dub from displaying the full
+	// connection string including password.
+	auto exitCode = spawnProcess(["dub", "-q", "--", testConnectionStr]).wait;
+	assert(exitCode == 0);
+}

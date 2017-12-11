@@ -1,3 +1,12 @@
+v1.2.0 - TBD
+=====================
+
+- **New:** API documentation now displays the lib version and permalinks to
+	the homepages of the project, the current API docs, the latest API docs
+	and the list of api docs for previous versions. (@Abscissa)
+- **Fixed:** Include `example.d` in tests. (@Abscissa)
+- **Fixed:** Glaring mistakes in the example from `README` and `example.d`. (@Abscissa)
+
 v1.1.4 - 2017-12-04
 =====================
 

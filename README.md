@@ -44,7 +44,7 @@ void main(string[] args)
 
 	// Insert
 	auto rowsAffected = exec(conn,
-		"INSERT INTO `tablename` (`id`, `name`) VALUES (1, `Ann`), (2, `Bob`)");
+		"INSERT INTO `tablename` (`id`, `name`) VALUES (1, 'Ann'), (2, 'Bob')");
 
 	// Query
 	ResultRange range = query(conn, "SELECT * FROM `tablename`");
@@ -66,7 +66,7 @@ void main(string[] args)
 	
 	prepared.setArgs("Bob", "Ann");
 	ResultSet rs = prepared.querySet();
-	assert(rs.length == 1);
+	assert(rs.length == 2);
 	assert(rs[0][0] == 1);
 	assert(rs[0][1] == "Ann");
 	assert(rs[1][0] == 2);
@@ -77,7 +77,7 @@ void main(string[] args)
 	insert.setArgs(null, "Cam"); // Also takes Nullable!T
 	insert.exec();
 	range = query(conn, "SELECT * FROM `tablename` WHERE `name`='Cam'");
-	assert( range.front[0][0].type == typeid(typeof(null)) );
+	assert( range.front[0].type == typeid(typeof(null)) );
 }
 ```
 
