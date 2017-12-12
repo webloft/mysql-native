@@ -78,11 +78,10 @@ struct Prepared
 /++
 Submit an SQL command to the server to be compiled into a prepared statement.
 
-The result of a successful outcome will be a statement handle - an ID -
+Internally, the result of a successful outcome will be a statement handle - an ID -
 for the prepared statement, a count of the parameters required for
 excution of the statement, and a count of the columns that will be present
-in any result set that the command generates. These values will be stored
-in the Command struct.
+in any result set that the command generates.
 
 The server will then proceed to send prepared statement headers,
 including parameter descriptions, and result set field descriptions,
@@ -272,18 +271,14 @@ private:
 	/++
 	Submit an SQL command to the server to be compiled into a prepared statement.
 
-	The result of a successful outcome will be a statement handle - an ID -
+	Internally, the result of a successful outcome will be a statement handle - an ID -
 	for the prepared statement, a count of the parameters required for
 	excution of the statement, and a count of the columns that will be present
-	in any result set that the command generates. These values will be stored
-	in the Command struct.
+	in any result set that the command generates.
 
 	The server will then proceed to send prepared statement headers,
 	including parameter descriptions, and result set field descriptions,
 	followed by an EOF packet.
-
-	If there is an existing statement handle in the Command struct, that
-	prepared statement is released.
 	+/
 	public this(Connection conn, string sql)
 	{

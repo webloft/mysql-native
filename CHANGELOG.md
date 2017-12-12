@@ -1,6 +1,8 @@
 v1.2.0 - TBD
 =====================
 
+Housekeeping: Deprecations, cleanup and doc improvements.
+
 - **New:** API documentation now displays the lib version and permalinks to
 	the homepages of the project, the current API docs, the latest API docs
 	and the list of api docs for previous versions. (@Abscissa)

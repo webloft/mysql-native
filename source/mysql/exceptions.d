@@ -70,7 +70,7 @@ class MYXDataPending: MYX
 			"with the server.", file, line);
 	}
 }
-deprecated("This has been renamed MYXDataPending")
+deprecated("No longer thrown by mysql-native, as of v1.1.4. You can safely remove all MYXDataPending handling from your code.")
 alias MySQLDataPendingException = MYXDataPending;
 
 /++
@@ -107,7 +107,7 @@ Common base class of MYXResultRecieved and MYXNoResultRecieved.
 
 Thrown when making the wrong choice between exec or query.
 
-The query functions (query, querySet, queryRow, etc.) are for SQL statements
+The query functions (query, queryRow, etc.) are for SQL statements
 such as SELECT that return results (even if the result set has zero elements.)
 
 The exec functions are for SQL statements, such as INSERT, that never return
@@ -128,7 +128,7 @@ alias MySQLWrongFunctionException = MYXWrongFunction;
 
 /++
 Thrown when a result set was returned unexpectedly. Use the query functions
-(query, querySet, queryRow, etc.), not exec for commands that return
+(query, queryRow, etc.), not exec for commands that return
 result sets (such as SELECT), even if the result set has zero elements.
 +/
 class MYXResultRecieved: MYXWrongFunction
@@ -147,7 +147,7 @@ alias MySQLResultRecievedException = MYXResultRecieved;
 
 /++
 Thrown when the executed query, unexpectedly, did not produce a result set.
-Use the exec functions, not query (query, querySet, queryRow, etc.),
+Use the exec functions, not query (query, queryRow, etc.),
 for commands that don't produce result sets (such as INSERT).
 +/
 class MYXNoResultRecieved: MYXWrongFunction

@@ -110,7 +110,7 @@ package bool execQueryImpl(Connection conn, ExecQueryImplInfo info, out ulong ra
 	else
 	{
 		// There was presumably a result set
-		assert(packet.front >= 1 && packet.front <= 250); // ResultSet packet header should have this value
+		assert(packet.front >= 1 && packet.front <= 250); // Result set packet header should have this value
 		conn._headersPending = conn._rowsPending = true;
 		conn._binaryPending = info.isPrepared;
 		auto lcb = packet.consumeIfComplete!LCB();
