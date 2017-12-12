@@ -4,10 +4,7 @@ v1.2.0 - TBD
 - **New:** API documentation now displays the lib version and permalinks to
 	the homepages of the project, the current API docs, the latest API docs
 	and the list of api docs for previous versions. (@Abscissa)
-- **Fixed:** Include `example.d` in tests. (@Abscissa)
 - **Fixed:** Glaring mistakes in the example from `README` and `example.d`. (@Abscissa)
-- **Fixed:** Deprecated messages when compiling tests. (@Abscissa)
-- **Fixed:** Add a travis job to test after a `dub upgrade`. (@SingingBush)
 - **Removed:** Deprecated symbols: (@Abscissa)
   - queryResult: Use querySet instead.
   - querySequence: Use query instead.
@@ -17,6 +14,9 @@ v1.2.0 - TBD
   - mysql.db: Use mysql.pool instead.
   - MysqlDB: Use  mysql.pool.MySQLPool instead.
   - struct DBValue: Use std.variant.Variant instead.
+- **Tests:** Include `example.d` in tests. (@Abscissa)
+- **Tests:** Deprecated messages when compiling tests. (@Abscissa)
+- **Tests:** Add a travis job to test after a `dub upgrade`. (@SingingBush)
 
 v1.1.4 - 2017-12-04
 =====================
