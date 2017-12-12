@@ -5,15 +5,17 @@ v1.2.0 - TBD
 	the homepages of the project, the current API docs, the latest API docs
 	and the list of api docs for previous versions. (@Abscissa)
 - **Fixed:** Glaring mistakes in the example from `README` and `example.d`. (@Abscissa)
-- **Removed:** Deprecated symbols: (@Abscissa)
-  - queryResult: Use querySet instead.
-  - querySequence: Use query instead.
-  - queryTuple: Use queryRowTuple instead.
-  - struct Command: This is obsolete pre-v1.0.0 interface. Use the functions
-  in mysql.commands and mysql.prepared instead.
-  - mysql.db: Use mysql.pool instead.
-  - MysqlDB: Use  mysql.pool.MySQLPool instead.
-  - struct DBValue: Use std.variant.Variant instead.
+- **Removed:** Removed deprecated symbols: (@Abscissa)
+	- queryResult: Use querySet instead.
+	- querySequence: Use query instead.
+	- queryTuple: Use queryRowTuple instead.
+	- struct Command: This is obsolete pre-v1.0.0 interface. Use the functions
+	in mysql.commands and mysql.prepared instead.
+	- mysql.db: Use mysql.pool instead.
+	- MysqlDB: Use  mysql.pool.MySQLPool instead.
+	- struct DBValue: Use std.variant.Variant instead.
+- **Deprecated:** Newly deprecated symbols: (@Abscissa)
+	- MySQL[whatever]Exception: Use `MYX[whatever]` instead.
 - **Tests:** Include `example.d` in tests. (@Abscissa)
 - **Tests:** Deprecated messages when compiling tests. (@Abscissa)
 - **Tests:** Add a travis job to test after a `dub upgrade`. (@SingingBush)

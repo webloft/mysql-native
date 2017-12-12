@@ -677,7 +677,7 @@ unittest
 	{
 		cn.initDB("this cannot exist");
 		assert(false);
-	} catch(/+MySQLErrorPacketException+/MySQLReceivedException ex) {
+	} catch(/+MYXErrorPacket+/MYXReceived ex) {  //TODO: Create MYXErrorPacket
 		assert(ex./+errorPacket.+/errorCode == 1044 || // Access Denied
 				ex./+errorPacket.+/errorCode == 1049, // BAD_DB_ERROR
 				"Unexpected error code when connecting to non-existing schema");
@@ -697,7 +697,7 @@ unittest
 		cn.fieldList("this one doesn't exist", "%");
 		assert(false);
 	}
-	catch(MySQLErrorPacketException ex)
+	catch(MYXErrorPacket ex)
 	{
 		assert(ex.errorPacket.errorCode == 1146, // Table doesn't exist
 				"Unexpected error code when table doesn't exist");
