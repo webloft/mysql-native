@@ -307,28 +307,14 @@ unittest
 	string g = "Gorgeous";
 	string reply;
 
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-	Command c1 = Command(cn);
-	c1.sql = "";
-	bool nonNull = c1.execFunction("hello", reply, g);
-	assert(nonNull && reply == "Hello Gorgeous!");
-	g = "Hotlips";
-	nonNull = c1.execFunction("hello", reply, g);
-	assert(nonNull && reply == "Hello Hotlips!");
-
-//////////////////////////////////////////////////////////////////////////////////
-/+
-	auto func = cn.prepareFunction("hello", 2);
-	func.setArgs(reply, g);
+	auto func = cn.prepareFunction("hello", 1);
+	func.setArgs(g);
 	auto funcResult = func.queryValue();
 	assert(!funcResult.isNull && funcResult == "Hello Gorgeous!");
 	g = "Hotlips";
-	func.setArgs(reply, g);
+	func.setArgs(g);
 	funcResult = func.queryValue();
 	assert(!funcResult.isNull && funcResult == "Hello Hotlips!");
-+/
-//================================================================================
 
 	// Test execProcedure()
 	exec(cn, `DROP PROCEDURE IF EXISTS insert2`);
