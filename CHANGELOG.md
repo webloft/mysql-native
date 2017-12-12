@@ -10,14 +10,17 @@ v1.2.0 - TBD
 	- querySequence: Use query instead.
 	- queryTuple: Use queryRowTuple instead.
 	- struct Command: This is obsolete pre-v1.0.0 interface. Use the functions
-	in mysql.commands and mysql.prepared instead.
+		in mysql.commands and mysql.prepared instead.
 	- mysql.db: Use mysql.pool instead.
 	- MysqlDB: Use  mysql.pool.MySQLPool instead.
 	- struct DBValue: Use std.variant.Variant instead.
 	- ResultSequence: Use ResultRange instead.
 - **Deprecated:** Newly deprecated symbols: (@Abscissa)
 	- MySQL[whatever]Exception: Use `MYX[whatever]` instead.
-	- querySet/ResultSet: Import std.array and use `query(...).array` to receive `Row[]` instead of a ResultSet.
+	- querySet/ResultSet: Import std.array and use `query(...).array` to
+		receive `Row[]` instead of a ResultSet.
+	- MYXDataPending: No longer thrown by mysql-native, as of v1.1.4. You can
+		safely remove all MYXDataPending handling from your code.
 - **Tests:** Include `example.d` in tests. (@Abscissa)
 - **Tests:** Deprecated messages when compiling tests. (@Abscissa)
 - **Tests:** Add a travis job to test after a `dub upgrade`. (@SingingBush)

@@ -44,8 +44,8 @@ deprecated("This has been renamed MYXReceived")
 alias MySQLReceivedException = MYXReceived;
 
 /++
-This exception is no longer used by mysql-native and will be deprecated (and
-later removed) in upcoming releases.
+This exception is no longer used by mysql-native and will be removed
+in an upcoming release.
 
 Previously, this was thrown when attempting to communicate with the server
 (ex: executing SQL or creating a new prepared statement) while the server
@@ -60,6 +60,7 @@ active `mysql.result.ResultRange` automatically (See also,
 `mysql.result.ResultRange.isValid`). As a result, this exception is never
 thrown anymore.
 +/
+deprecated("No longer thrown by mysql-native, as of v1.1.4. You can safely remove all MYXDataPending handling from your code.")
 class MYXDataPending: MYX
 {
 	this(string file = __FILE__, size_t line = __LINE__) pure
