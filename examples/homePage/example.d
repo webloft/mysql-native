@@ -1,3 +1,4 @@
+import std.array : array;
 import std.variant;
 import mysql;
 
@@ -31,7 +32,7 @@ void main(string[] args)
 	bobs.close(); // Skip them
 	
 	prepared.setArgs("Bob", "Ann");
-	ResultSet rs = prepared.querySet();
+	Row[] rs = prepared.query.array;
 	assert(rs.length == 2);
 	assert(rs[0][0] == 1);
  	assert(rs[0][1] == "Ann");

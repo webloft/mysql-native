@@ -15,13 +15,12 @@ The primary interfaces:
 - [Connection](http://semitwist.com/mysql-native/mysql/connection/Connection.html): Connection to the server, and querying and setting of server parameters.
 - [exec()](http://semitwist.com/mysql-native/mysql/commands/exec.html): Plain old SQL statement that does NOT return rows (like INSERT/UPDATE/CREATE/etc), returns number of rows affected
 - [query()](http://semitwist.com/mysql-native/mysql/commands/query.html): Execute an SQL statement that DOES return rows (ie, SELECT) and handle the rows one at a time, as an input range.
-- [querySet()](http://semitwist.com/mysql-native/mysql/commands/querySet.html): Execute an SQL statement and get a complete result set.
 - [queryRow()](http://semitwist.com/mysql-native/mysql/commands/queryRow.html): Execute an SQL statement and get the first row.
 - [queryRowTuple()](http://semitwist.com/mysql-native/mysql/commands/queryRowTuple.html): Execute an SQL statement and get the first row into a matching tuple of D variables.
 - [queryValue()](http://semitwist.com/mysql-native/mysql/commands/queryValue.html): Execute an SQL statement and get the first value in the first row.
 - [prepare()](http://semitwist.com/mysql-native/mysql/prepared/prepare.html): Create a prepared statement
 - [Prepared](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.html): A prepared statement, with principal methods:
-	- [exec()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.exec.html)/[query()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.query.html)/[querySet()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.querySet.html)/etc.: Just like above, but using a prepared statement.
+	- [exec()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.exec.html)/[query()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.query.html)/etc.: Just like above, but using a prepared statement.
 	- [setArg()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.setArg.html): Set one argument to pass into the prepared statement.
 	- [setArgs()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.setArgs.html): Set all arguments to pass in.
 	- [getArg()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.getArg.html): Get an argument that's been set.
@@ -32,6 +31,7 @@ The primary interfaces:
 
 Basic example:
 ```d
+import std.array : array;
 import std.variant;
 import mysql;
 
@@ -65,10 +65,10 @@ void main(string[] args)
 	bobs.close(); // Skip them
 	
 	prepared.setArgs("Bob", "Ann");
-	ResultSet rs = prepared.querySet();
+	Row[] rs = prepared.query.array;
 	assert(rs.length == 2);
 	assert(rs[0][0] == 1);
-	assert(rs[0][1] == "Ann");
+ 	assert(rs[0][1] == "Ann");
 	assert(rs[1][0] == 2);
 	assert(rs[1][1] == "Bob");
 

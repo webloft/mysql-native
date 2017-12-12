@@ -7,6 +7,7 @@ Housekeeping: Deprecations, cleanup and doc improvements.
 	the homepages of the project, the current API docs, the latest API docs
 	and the list of api docs for previous versions. (@Abscissa)
 - **Fixed:** Glaring mistakes in the example from `README` and `example.d`. (@Abscissa)
+- **Fixed:** Various documentation updates. (@Abscissa)
 - **Removed:** Removed deprecated symbols: (@Abscissa)
 	- queryResult: Use querySet instead.
 	- querySequence: Use query instead.
@@ -19,7 +20,8 @@ Housekeeping: Deprecations, cleanup and doc improvements.
 	- ResultSequence: Use ResultRange instead.
 - **Deprecated:** Newly deprecated symbols: (@Abscissa)
 	- MySQL[whatever]Exception: Use `MYX[whatever]` instead.
-	- querySet/ResultSet: Import std.array and use `query(...).array` to
+	- [#126](https://github.com/mysql-d/mysql-native/issues/117):
+		querySet/ResultSet: Import std.array and use `query(...).array` to
 		receive `Row[]` instead of a ResultSet.
 	- MYXDataPending: No longer thrown by mysql-native, as of v1.1.4. You can
 		safely remove all MYXDataPending handling from your code.
