@@ -33,7 +33,6 @@ debug(MYSQL_INTEGRATION_TESTS)
 unittest
 {
 	mixin(scopedCn);
-	auto cmd = Command(cn);
 	cn.exec("DROP TABLE IF EXISTS `issue40`");
 	cn.exec(
 		"CREATE TABLE `issue40` (
@@ -57,7 +56,6 @@ debug(MYSQL_INTEGRATION_TESTS)
 unittest
 {
 	mixin(scopedCn);
-	auto cmd = Command(cn);
 	ulong rowsAffected;
 	cn.exec("DROP TABLE IF EXISTS `issue24`");
 	cn.exec(
@@ -84,7 +82,6 @@ debug(MYSQL_INTEGRATION_TESTS)
 unittest
 {
 	mixin(scopedCn);
-	auto cmd = Command(cn);
 	cn.exec("DROP TABLE IF EXISTS `issue33`");
 	cn.exec(
 		"CREATE TABLE `issue33` (
@@ -121,7 +118,6 @@ debug(MYSQL_INTEGRATION_TESTS)
 unittest
 {
 	mixin(scopedCn);
-	auto cmd = Command(cn);
 	cn.exec("DROP TABLE IF EXISTS `issue56`");
 	cn.exec("CREATE TABLE `issue56` (a datetime DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 	

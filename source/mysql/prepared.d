@@ -699,14 +699,6 @@ package:
 		conn.send(packet);
 	}
 
-	//TODO: This awkward func is only needed by the deprecated Command struct.
-	//      Remove this once Command struct is finally deleted.
-	bool execQueryImpl2(out ulong ra)
-	{
-		return execQueryImpl(_conn,
-			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa), ra);
-	}
-
 	/// Has this statement been released?
 	@property bool isReleased() pure const nothrow
 	{
@@ -761,10 +753,6 @@ public:
 		);
 	}
 
-	///ditto
-	deprecated("Use querySet instead.")
-	alias queryResult = querySet;
-
 	/++
 	Execute a prepared SQL SELECT command where you want to deal with the
 	result set one row at a time.
@@ -792,10 +780,6 @@ public:
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa)
 		);
 	}
-
-	///ditto
-	deprecated("Use query instead.")
-	alias querySequence = query;
 
 	/++
 	Execute a prepared SQL SELECT command where you only want the first Row (if any).
@@ -844,10 +828,6 @@ public:
 			args
 		);
 	}
-
-	///ditto
-	deprecated("Use queryRowTuple instead.")
-	alias queryTuple = queryRowTuple;
 
 	/++
 	Execute a prepared SQL SELECT command and returns a single value,

@@ -6,6 +6,17 @@ v1.2.0 - TBD
 	and the list of api docs for previous versions. (@Abscissa)
 - **Fixed:** Include `example.d` in tests. (@Abscissa)
 - **Fixed:** Glaring mistakes in the example from `README` and `example.d`. (@Abscissa)
+- **Fixed:** Deprecated messages when compiling tests. (@Abscissa)
+- **Removed:** Deprecated symbols: 
+  - queryResult: Use querySet instead.
+  - querySequence: Use query instead.
+  - queryTuple: Use queryRowTuple instead.
+  - struct Command: This is obsolete pre-v1.0.0 interface. Use the functions
+  in mysql.commands and mysql.prepared instead.
+  - mysql.db: Use mysql.pool instead.
+  - MysqlDB: Use  mysql.pool.MySQLPool instead.
+  - struct DBValue: Use std.variant.Variant instead.
+  - 
 
 v1.1.4 - 2017-12-04
 =====================

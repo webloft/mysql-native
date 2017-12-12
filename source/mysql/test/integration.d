@@ -70,7 +70,6 @@ debug(MYSQL_INTEGRATION_TESTS)
 {
 	void initBaseTestTables(Connection cn)
 	{
-		auto cmd = Command(cn);
 		cn.exec("DROP TABLE IF EXISTS `basetest`");
 		cn.exec(
 			"CREATE TABLE `basetest` (
