@@ -537,7 +537,3 @@ public:
 	+/
 	@property ulong rowCount() const pure nothrow { return _numRowsFetched; }
 }
-
-///ditto
-deprecated("Use ResultRange instead.")
-alias ResultSequence = ResultRange;

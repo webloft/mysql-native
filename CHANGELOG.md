@@ -14,6 +14,7 @@ v1.2.0 - TBD
 	- mysql.db: Use mysql.pool instead.
 	- MysqlDB: Use  mysql.pool.MySQLPool instead.
 	- struct DBValue: Use std.variant.Variant instead.
+	- ResultSequence: Use ResultRange instead.
 - **Deprecated:** Newly deprecated symbols: (@Abscissa)
 	- MySQL[whatever]Exception: Use `MYX[whatever]` instead.
 	- querySet/ResultSet: Import std.array and use `query(...).array` to receive `Row[]` instead of a ResultSet.
