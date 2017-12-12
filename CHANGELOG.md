@@ -7,7 +7,7 @@ v1.2.0 - TBD
 - **Fixed:** Include `example.d` in tests. (@Abscissa)
 - **Fixed:** Glaring mistakes in the example from `README` and `example.d`. (@Abscissa)
 - **Fixed:** Deprecated messages when compiling tests. (@Abscissa)
-- **Removed:** Deprecated symbols: 
+- **Removed:** Deprecated symbols: (@Abscissa)
   - queryResult: Use querySet instead.
   - querySequence: Use query instead.
   - queryTuple: Use queryRowTuple instead.
@@ -16,7 +16,6 @@ v1.2.0 - TBD
   - mysql.db: Use mysql.pool instead.
   - MysqlDB: Use  mysql.pool.MySQLPool instead.
   - struct DBValue: Use std.variant.Variant instead.
-  - 
 
 v1.1.4 - 2017-12-04
 =====================
