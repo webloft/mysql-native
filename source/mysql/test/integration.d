@@ -309,11 +309,11 @@ unittest
 	auto func = cn.prepareFunction("hello", 1);
 	func.setArgs(g);
 	auto funcResult = func.queryValue();
-	assert(!funcResult.isNull && funcResult == "Hello Gorgeous!");
+	assert(!funcResult.isNull && funcResult.get == "Hello Gorgeous!");
 	g = "Hotlips";
 	func.setArgs(g);
 	funcResult = func.queryValue();
-	assert(!funcResult.isNull && funcResult == "Hello Hotlips!");
+	assert(!funcResult.isNull && funcResult.get == "Hello Hotlips!");
 
 	// Test execProcedure()
 	exec(cn, `DROP PROCEDURE IF EXISTS insert2`);
