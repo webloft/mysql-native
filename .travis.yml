@@ -48,8 +48,8 @@ install: ./travis-install-deps.sh
 script: ./run-tests
 
 matrix:
-    # Test alternative db versions, but only on one compiler version
     include:
+        # Test alternative db versions, but only on one compiler version
         - d: dmd-2.070.2
           addons:
             mariadb: '5.5'
@@ -79,6 +79,22 @@ matrix:
 
         - d: ldc-0.17.0
           os: osx
+          
+        # Test with all dependencies updated
+        # (dub.selections.json is deliberately kept old)
+        - d: dmd
+          services:
+            - mysql
+          script:
+            - dub upgrade
+            - cd examples/homePage
+            - dub upgrade
+            - cd ../..
+            - ./run-tests
+          addons:
+            apt:
+              packages: [ libevent-dev ]
+          env: DB=mysql-default
 
     allow_failures:
         # Doesn't appear to exist on travis: https://github.com/travis-ci/travis-ci/issues/8849

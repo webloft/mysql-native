@@ -7,6 +7,7 @@ v1.2.0 - TBD
 - **Fixed:** Include `example.d` in tests. (@Abscissa)
 - **Fixed:** Glaring mistakes in the example from `README` and `example.d`. (@Abscissa)
 - **Fixed:** Deprecated messages when compiling tests. (@Abscissa)
+- **Fixed:** Add a travis job to test after a `dub upgrade`. (@SingingBush)
 - **Removed:** Deprecated symbols: (@Abscissa)
   - queryResult: Use querySet instead.
   - querySequence: Use query instead.
