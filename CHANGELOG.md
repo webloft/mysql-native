@@ -16,6 +16,7 @@ v1.2.0 - TBD
 	- struct DBValue: Use std.variant.Variant instead.
 - **Deprecated:** Newly deprecated symbols: (@Abscissa)
 	- MySQL[whatever]Exception: Use `MYX[whatever]` instead.
+	- querySet/ResultSet: Import std.array and use `query(...).array` to receive `Row[]` instead of a ResultSet.
 - **Tests:** Include `example.d` in tests. (@Abscissa)
 - **Tests:** Deprecated messages when compiling tests. (@Abscissa)
 - **Tests:** Add a travis job to test after a `dub upgrade`. (@SingingBush)

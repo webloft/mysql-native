@@ -172,8 +172,7 @@ package ulong execImpl(Connection conn, ExecQueryImplInfo info)
 Execute a one-off SQL SELECT command where you expect the entire
 result set all at once.
 
-This is being considered for deprecation in a future release of mysql-native,
-because the same thing can be achieved via `query`().
+This is deprecated because the same thing can be achieved via `query`().
 $(LINK2 https://dlang.org/phobos/std_array.html#array, `array()`).
 
 If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
@@ -194,7 +193,14 @@ sql = The SQL command to be run.
 csa = An optional array of ColumnSpecialization structs.
 
 Returns: A (possibly empty) ResultSet.
+
+Example:
+---
+// Do this instead of using querySet:
+Row[] allAtOnce = myConnection.query("SELECT * from myTable").array;
+---
 +/
+deprecated("Import std.array and use 'query(...).array' to receive 'Row[]' instead of a ResultSet")
 ResultSet querySet(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {
 	return querySetImpl(csa, false, conn, ExecQueryImplInfo(false, sql));
@@ -258,6 +264,12 @@ sql = The SQL command to be run.
 csa = An optional array of ColumnSpecialization structs.
 
 Returns: A (possibly empty) ResultRange.
+
+Example:
+---
+ResultRange oneAtATime = myConnection.query("SELECT * from myTable");
+Row[]       allAtOnce  = myConnection.query("SELECT * from myTable").array;
+---
 +/
 ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {

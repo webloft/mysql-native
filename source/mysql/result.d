@@ -251,8 +251,7 @@ public:
 A $(LINK2 http://dlang.org/phobos/std_range_primitives.html#isRandomAccessRange, random access range)
 of Row.
 
-This is being considered for deprecation in a future release of mysql-native,
-because the same thing can be achieved by passing a `ResultRange` to
+This is deprecated because the same thing can be achieved by passing a `ResultRange` to
 $(LINK2 https://dlang.org/phobos/std_array.html#array, `std.array.array()`).
 
 This is returned by the `mysql.commands.querySet` and
@@ -268,6 +267,7 @@ memory before you can access any of them. So use this only if you really need
 random-access and you're not likely to be dealing with large numbers of rows.
 Otherwise, consider using `query` to receive a `ResultRange` instead.
 +/
+deprecated("Import std.array and use 'query(...).array' to receive 'Row[]' instead of a ResultSet")
 struct ResultSet
 {
 private:
@@ -418,7 +418,12 @@ However, because of that, this `ResultRange` cannot offer random access or
 a `length` member. If you need random access, then just like any other range,
 you can simply convert this range to an array via
 $(LINK2 https://dlang.org/phobos/std_array.html#array, `std.array.array()`).
-Or, you can use `querySet` to obtain a `ResultSet` instead.
+
+Example:
+---
+ResultRange oneAtATime = myConnection.query("SELECT * from myTable");
+Row[]       allAtOnce  = myConnection.query("SELECT * from myTable").array;
+---
 +/
 struct ResultRange
 {

@@ -729,8 +729,7 @@ public:
 	Execute a prepared SQL SELECT command where you expect the entire
 	result set all at once.
 
-	This is being considered for deprecation in a future release of mysql-native,
-	because the same thing can be achieved via `query`().
+	This is deprecated because the same thing can be achieved via `query`().
 	$(LINK2 https://dlang.org/phobos/std_array.html#array, `array()`).
 
 	If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
@@ -743,7 +742,14 @@ public:
 
 	Params: csa = An optional array of ColumnSpecialization structs.
 	Returns: A (possibly empty) ResultSet.
+
+	Example:
+	---
+	// Do this instead of using querySet:
+	Row[] allAtOnce = myPrepared.query("SELECT * from myTable").array;
+	---
 	+/
+	deprecated("Import std.array and use 'query(...).array' to receive 'Row[]' instead of a ResultSet")
 	ResultSet querySet(ColumnSpecialization[] csa = null)
 	{
 		enforceNotReleased();
@@ -771,6 +777,12 @@ public:
 
 	Params: csa = An optional array of ColumnSpecialization structs.
 	Returns: A (possibly empty) ResultRange.
+
+	Example:
+	---
+	ResultRange oneAtATime = myPrepared.query("SELECT * from myTable");
+	Row[]       allAtOnce  = myPrepared.query("SELECT * from myTable").array;
+	---
 	+/
 	ResultRange query(ColumnSpecialization[] csa = null)
 	{
