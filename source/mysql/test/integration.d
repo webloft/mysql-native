@@ -71,11 +71,8 @@ debug(MYSQL_INTEGRATION_TESTS)
 	void initBaseTestTables(Connection cn)
 	{
 		auto cmd = Command(cn);
-		ulong rowsAffected;
-		cmd.sql = 
-			"DROP TABLE IF EXISTS `basetest`";
-		cmd.execSQL(rowsAffected);
-		cmd.sql = 
+		cn.exec("DROP TABLE IF EXISTS `basetest`");
+		cn.exec(
 			"CREATE TABLE `basetest` (
 			`boolcol` bit(1),
 			`bytecol` tinyint(4),
@@ -96,22 +93,22 @@ debug(MYSQL_INTEGRATION_TESTS)
 			`floatcol` float,
 			`nullcol` int(11),
 			`decimalcol` decimal(11,4)
-			) ENGINE=InnoDB DEFAULT CHARSET=latin1";
-		cmd.execSQL(rowsAffected);
-		cmd.sql = 
-			"DROP TABLE IF EXISTS `tblob`";
-		cmd.execSQL(rowsAffected);
-		cmd.sql = 
+			) ENGINE=InnoDB DEFAULT CHARSET=latin1"
+		);
+		cn.exec("DROP TABLE IF EXISTS `tblob`");
+		cn.exec(
 			"CREATE TABLE `tblob` (
 			`foo` int
-			) ENGINE=InnoDB DEFAULT CHARSET=latin1";
-		cmd.execSQL(rowsAffected);
+			) ENGINE=InnoDB DEFAULT CHARSET=latin1"
+		);
 	}
 }
 
 debug(MYSQL_INTEGRATION_TESTS)
 unittest
 {
+	import mysql.prepared;
+	
 	struct X
 	{
 		int a, b, c;
@@ -123,92 +120,69 @@ unittest
 	mixin(scopedCn);
 	initBaseTestTables(cn);
 
-	ulong ra;
-	auto c1 = Command(cn);
+	cn.exec("delete from basetest");
 
-	c1.sql = "delete from basetest";
-	c1.execSQL(ra);
-
-	c1.sql = "insert into basetest values(" ~
+	cn.exec("insert into basetest values(" ~
 		"1, -128, 255, -32768, 65535, 42, 4294967295, -9223372036854775808, 18446744073709551615, 'ABC', " ~
 		"'The quick brown fox', 0x000102030405060708090a0b0c0d0e0f, '2007-01-01', " ~
-		"'12:12:12', '2007-01-01 12:12:12', 1.234567890987654, 22.4, NULL, 11234.4325)";
-	c1.execSQL(ra);
+		"'12:12:12', '2007-01-01 12:12:12', 1.234567890987654, 22.4, NULL, 11234.4325)");
 
-	c1.sql = "select bytecol from basetest limit 1";
-	ResultSet rs = c1.execSQLResult();
+	auto rs = cn.query("select bytecol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == -128);
-	c1.sql = "select ubytecol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select ubytecol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs.front[0] == 255);
-	c1.sql = "select shortcol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select shortcol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == short.min);
-	c1.sql = "select ushortcol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select ushortcol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == ushort.max);
-	c1.sql = "select intcol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select intcol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == 42);
-	c1.sql = "select uintcol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select uintcol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == uint.max);
-	c1.sql = "select longcol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select longcol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == long.min);
-	c1.sql = "select ulongcol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select ulongcol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == ulong.max);
-	c1.sql = "select charscol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select charscol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0].toString() == "ABC");
-	c1.sql = "select stringcol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select stringcol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0].toString() == "The quick brown fox");
-	c1.sql = "select bytescol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select bytescol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0].toString() == "[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]");
-	c1.sql = "select datecol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select datecol from basetest limit 1").array;
 	assert(rs.length == 1);
 	Date d = rs[0][0].get!(Date);
 	assert(d.year == 2007 && d.month == 1 && d.day == 1);
-	c1.sql = "select timecol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select timecol from basetest limit 1").array;
 	assert(rs.length == 1);
 	TimeOfDay t = rs[0][0].get!(TimeOfDay);
 	assert(t.hour == 12 && t.minute == 12 && t.second == 12);
-	c1.sql = "select dtcol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select dtcol from basetest limit 1").array;
 	assert(rs.length == 1);
 	DateTime dt = rs[0][0].get!(DateTime);
 	assert(dt.year == 2007 && dt.month == 1 && dt.day == 1 && dt.hour == 12 && dt.minute == 12 && dt.second == 12);
-	c1.sql = "select doublecol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select doublecol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0].toString() == "1.23457");
-	c1.sql = "select floatcol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select floatcol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0].toString() == "22.4");
-	c1.sql = "select decimalcol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select decimalcol from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == "11234.4325");
 
-	c1.sql = "select * from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select * from basetest limit 1").array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == true);
 	assert(rs[0][1] == -128);
@@ -233,15 +207,13 @@ unittest
 	assert(rs[0].isNull(17) == true);
 	assert(rs[0][18] == "11234.4325", rs[0][18].toString());
 
-	c1.sql = "select bytecol, ushortcol, intcol, charscol, floatcol from basetest limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select bytecol, ushortcol, intcol, charscol, floatcol from basetest limit 1").array;
 	X x;
 	rs[0].toStruct(x);
 	assert(x.a == -128 && x.b == 65535 && x.c == 42 && x.s == "ABC" && to!string(x.d) == "22.4");
 
-	c1.sql = "select * from basetest limit 1";
-	c1.prepare();
-	rs = c1.execPreparedResult();
+	auto stmt = cn.prepare("select * from basetest limit 1");
+	rs = stmt.query.array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == true);
 	assert(rs[0][1] == -128);
@@ -266,64 +238,59 @@ unittest
 	assert(rs[0].isNull(17) == true);
 	assert(rs[0][18] == "11234.4325", rs[0][18].toString());
 
-	c1.sql = "insert into basetest (intcol, stringcol) values(?, ?)";
-	c1.prepare();
+	stmt = cn.prepare("insert into basetest (intcol, stringcol) values(?, ?)");
 	Variant[] va;
 	va.length = 2;
 	va[0] = 42;
 	va[1] = "The quick brown fox x";
-	c1.bindParameters(va);
+	stmt.setArgs(va);
 	foreach (int i; 0..20)
 	{
-		c1.execPrepared(ra);
-		c1.param(0) += 1;
-		c1.param(1) ~= "x";
+		stmt.exec();
+		stmt.setArg(0, stmt.getArg(0) + 1);
+		stmt.setArg(1, stmt.getArg(1) ~ "x");
 	}
 
-	c1.sql = "insert into basetest (intcol, stringcol) values(?, ?)";
-	c1.prepare();
+	stmt = cn.prepare("insert into basetest (intcol, stringcol) values(?, ?)");
 	//Variant[] va;
 	va.length = 2;
 	va[0] = 42;
 	va[1] = "The quick brown fox x";
-	c1.bindParameters(va);
+	stmt.setArgs(va);
 	foreach (int i; 0..20)
 	{
-		c1.execPrepared(ra);
+		stmt.exec();
 
-		va[0] = c1.getArg(0).get!int + 1;
-		va[1] = c1.getArg(1).get!string ~ "x";
-		c1.bindParameters(va);
+		va[0] = stmt.getArg(0).get!int + 1;
+		va[1] = stmt.getArg(1).get!string ~ "x";
+		stmt.setArgs(va);
 	}
 
 	int a;
 	string b;
-	c1.sql = "select intcol, stringcol from basetest where bytecol=-128 limit 1";
-	c1.execSQLTuple(a, b);
+	cn.queryRowTuple("select intcol, stringcol from basetest where bytecol=-128 limit 1", a, b);
 	assert(a == 42 && b == "The quick brown fox");
 
-	c1.sql = "select intcol, stringcol from basetest where bytecol=? limit 1";
-	c1.prepare();
+	stmt = cn.prepare("select intcol, stringcol from basetest where bytecol=? limit 1");
 	Variant[] va2;
 	va2.length = 1;
 	va2[0] = cast(byte) -128;
-	c1.bindParameters(va2);
+	stmt.setArgs(va2);
 	a = 0;
 	b = "";
-	c1.execPreparedTuple(a, b);
+	stmt.queryRowTuple(a, b);
 	assert(a == 42 && b == "The quick brown fox");
 
-	c1.sql = "update basetest set intcol=? where bytecol=-128";
-	c1.prepare();
+	stmt = cn.prepare("update basetest set intcol=? where bytecol=-128");
 	int referred = 555;
-	c1.bindParameter(referred, 0);
-	c1.execPrepared(ra);
+	stmt.setArgs(referred);
+	stmt.exec();
 	referred = 666;
-	c1.execPrepared(ra);
-	c1.sql = "select intcol from basetest where bytecol = -128";
-	int referredBack;
-	c1.execSQLTuple(referredBack);
-	assert(referredBack == 666);
+	stmt.setArgs(referred);
+	stmt.exec();
+	auto referredBack = cn.queryValue("select intcol from basetest where bytecol = -128");
+	assert(!referredBack.isNull);
+	assert(referredBack.get == 666);
 
 	// Test execFunction()
 	exec(cn, `DROP FUNCTION IF EXISTS hello`);
@@ -333,19 +300,35 @@ unittest
 		RETURN CONCAT('Hello ',s,'!')
 	`);
 
-	rs = querySet(cn, "select hello ('World')");
+	rs = query(cn, "select hello ('World')").array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == "Hello World!");
 
 	string g = "Gorgeous";
 	string reply;
 
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	Command c1 = Command(cn);
 	c1.sql = "";
 	bool nonNull = c1.execFunction("hello", reply, g);
 	assert(nonNull && reply == "Hello Gorgeous!");
 	g = "Hotlips";
 	nonNull = c1.execFunction("hello", reply, g);
 	assert(nonNull && reply == "Hello Hotlips!");
+
+//////////////////////////////////////////////////////////////////////////////////
+/+
+	auto func = cn.prepareFunction("hello", 2);
+	func.setArgs(reply, g);
+	auto funcResult = func.queryValue();
+	assert(!funcResult.isNull && funcResult == "Hello Gorgeous!");
+	g = "Hotlips";
+	func.setArgs(reply, g);
+	funcResult = func.queryValue();
+	assert(!funcResult.isNull && funcResult == "Hello Hotlips!");
++/
+//================================================================================
 
 	// Test execProcedure()
 	exec(cn, `DROP PROCEDURE IF EXISTS insert2`);
@@ -357,27 +340,24 @@ unittest
 	`);
 	g = "inserted string 1";
 	int m = 2001;
-	c1.sql = "";
-	c1.execProcedure("insert2", m, g);
+	auto proc = cn.prepareProcedure("insert2", 2);
+	proc.setArgs(m, g);
+	proc.exec();
 
-	c1.sql = "select stringcol from basetest where intcol=2001";
-	c1.execSQLTuple(reply);
+	cn.queryRowTuple("select stringcol from basetest where intcol=2001", reply);
 	assert(reply == g);
 
 	g = "inserted string 2";
 	m = 2002;
-	c1.sql = "";
-	c1.execProcedure("insert2", m, g);
+	proc.setArgs(m, g);
+	proc.exec();
 
-	c1.sql = "select stringcol from basetest where intcol=2002";
-	c1.execSQLTuple(reply);
+	cn.queryRowTuple("select stringcol from basetest where intcol=2002", reply);
 	assert(reply == g);
 
 /+
-	c1.sql = "delete from tblob";
-	c1.execSQL(ra);
-	c1.sql = "insert into tblob values(321, NULL, 22.4, NULL, '2011-11-05 11:52:00')";
-	c1.execSQL(ra);
+	cn.exec("delete from tblob");
+	cn.exec("insert into tblob values(321, NULL, 22.4, NULL, '2011-11-05 11:52:00')");
 +/
 	size_t delegate(ubyte[]) foo()
 	{
@@ -409,13 +389,12 @@ unittest
 		return &dg;
 	}
 /+
-	c1.sql = "update tblob set lob=?, lob2=? where ikey=321";
-	c1.prepare();
+	stmt = cn.prepare("update tblob set lob=?, lob2=? where ikey=321");
 	ubyte[] uba;
 	ubyte[] uba2;
-	c1.bindParameter(uba, 0, PSN(0, false, SQLType.LONGBLOB, 10000, foo()));
-	c1.bindParameter(uba2, 1, PSN(1, false, SQLType.LONGBLOB, 10000, foo()));
-	c1.execPrepared(ra);
+	stmt.bindParameter(uba, 0, PSN(0, false, SQLType.LONGBLOB, 10000, foo()));
+	stmt.bindParameter(uba2, 1, PSN(1, false, SQLType.LONGBLOB, 10000, foo()));
+	stmt.exec();
 
 	uint got1, got2;
 	bool verified1, verified2;
@@ -453,8 +432,7 @@ unittest
 		return &dg;
 	}
 
-	c1.sql = "select * from tblob limit 1";
-	rs = c1.execSQLResult();
+	rs = cn.query("select * from tblob limit 1");
 	ubyte[] blob = rs[0][1].get!(ubyte[]);
 	ubyte[] blob2 = rs[0][3].get!(ubyte[]);
 	DateTime dt4 = rs[0][4].get!(DateTime);
@@ -462,9 +440,8 @@ unittest
 	writeln(to!string(dt4));
 
 
-	c1.sql = "select * from tblob limit 1";
 	CSN[] csa = [ CSN(1, 0xfc, 100000, bar1(got1, verified1)), CSN(3, 0xfc, 100000, bar2(got2, verified2)) ];
-	rs = c1.execSQLResult(csa);
+	rs = cn.query("select * from tblob limit 1", csa);
 	writefln("1) %d, %s", got1, verified1);
 	writefln("2) %d, %s", got2, verified2);
 	DateTime dt4 = rs[0][4].get!(DateTime);
@@ -583,19 +560,15 @@ unittest
 }
 
 /+
-The following tests are borrowed from simendsjo's fork at:
+The following tests are adapted from simendsjo's fork at:
 https://github.com/simendsjo/mysqln
-
-For easier maintenance, I've attempted to keep these as close to simendsjo's
-version as possible. Code that doesn't currently work with this version of
-mysql-native is not deleted or replaced, but commented out, sometimes with a
-modified version immediately below.
 +/
 
 // Bind values in prepared statements
 debug(MYSQL_INTEGRATION_TESTS)
 unittest
 {
+	import mysql.prepared;
 	mixin(scopedCn);
 	cn.exec("DROP TABLE IF EXISTS manytypes");
 	cn.exec( "CREATE TABLE manytypes ("
@@ -606,11 +579,10 @@ unittest
 			~")");
 
 	//DataSet ds;
-	ResultSet rs;
+	Row[] rs;
 	//Table tbl;
 	Row row;
-	Command cmd;
-	Variant value;
+	Prepared stmt;
 
 	// Index out of bounds throws
 	/+
@@ -625,26 +597,26 @@ unittest
 	// Select without result
 	cn.truncate("manytypes");
 	cn.exec("INSERT INTO manytypes (i, f) VALUES (1, NULL)");
-	cmd = cn.prepareCmd("SELECT * FROM manytypes WHERE i = ?");
+	stmt = cn.prepare("SELECT * FROM manytypes WHERE i = ?");
 	{
 		auto val = 2;
-		cmd.bind(0, val);
+		stmt.setArg(0, val);
 	}
-	//ds = cmd.query_();
+	//ds = stmt.query_();
 	//assert(ds.length == 1);
 	//assert(ds[0].length == 0);
-	rs = cmd.query_();
+	rs = stmt.query().array;
 	assert(rs.length == 0);
 
 	// Bind single primitive value
 	cn.truncate("manytypes");
 	cn.exec("INSERT INTO manytypes (i, f) VALUES (1, NULL)");
-	cmd = cn.prepareCmd("SELECT * FROM manytypes WHERE i = ?");
+	stmt = cn.prepare("SELECT * FROM manytypes WHERE i = ?");
 	{
 		auto val = 1;
-		cmd.bind(0, val);
+		stmt.setArg(0, val);
 	}
-	cmd.querySingle();
+	stmt.queryValue();
 
 	// Bind multiple primitive values
 	cn.truncate("manytypes");
@@ -652,7 +624,9 @@ unittest
 	{
 		auto val1 = 1;
 		auto val2 = 2;
-		row = cn.querySingle("SELECT * FROM manytypes WHERE i = ? AND f = ?", val1, val2);
+		stmt = cn.prepare("SELECT * FROM manytypes WHERE i = ? AND f = ?");
+		stmt.setArgs(val1, val2);
+		row = stmt.queryRow();
 	}
 	assert(row[0] == 1);
 	assert(row[1] == 2);
@@ -667,8 +641,11 @@ unittest
 	// Insert null
 	cn.truncate("manytypes");
 	{
-		auto val = null;
-		cn.execCmd("INSERT INTO manytypes (i, f) VALUES (1, ?)", val);
+		auto prepared = cn.prepare("INSERT INTO manytypes (i, f) VALUES (1, ?)");
+		//TODO: Using `prepared.setArgs(null);` results in: Param count supplied does not match prepared statement
+		//      Can anything be done about that?
+		prepared.setArg(0, null);
+		prepared.exec();
 	}
 	cn.assertScalar!int("SELECT i FROM manytypes WHERE f IS NULL", 1);
 
@@ -676,10 +653,14 @@ unittest
 	cn.truncate("manytypes");
 	cn.exec("INSERT INTO manytypes (i, f) VALUES (1, NULL)");
 	{
-		auto val = null;
-		value = cn.queryScalar("SELECT i FROM manytypes WHERE f <=> ?", val);
+		stmt = cn.prepare("SELECT i FROM manytypes WHERE f <=> ?");
+		//TODO: Using `stmt.setArgs(null);` results in: Param count supplied does not match prepared statement
+		//      Can anything be done about that?
+		stmt.setArg(0, null);
+		auto value = stmt.queryValue();
+		assert(!value.isNull);
+		assert(value.get.get!int == 1);
 	}
-	assert(value.get!int == 1);
 
 	// rebind parameter
 	/+
@@ -817,7 +798,7 @@ debug(MYSQL_INTEGRATION_TESTS)
 unittest
 {
 	mixin(scopedCn);
-	auto ds = cn.query_("SELECT 1");
+	auto ds = cn.query("SELECT 1").array;
 	assert(ds.length == 1);
 	//auto rs = ds[0];
 	//assert(rs.rows.length == 1);
@@ -855,6 +836,7 @@ unittest
 debug(MYSQL_INTEGRATION_TESTS)
 unittest
 {
+	import mysql.prepared;
 	mixin(scopedCn);
 
 	void assertBasicTests(T, U)(string sqlType, U[] values ...)
@@ -867,38 +849,42 @@ unittest
 		cn.exec("TRUNCATE "~tablename);
 		immutable selectOneSql = "SELECT value FROM "~tablename~" LIMIT 1";
 		//assert(cn.query_(selectOneSql)[0].length == 0);
-		assert(cn.query_(selectOneSql).length == 0);
+		assert(cn.query(selectOneSql).array.length == 0);
 
 		immutable insertNullSql = "INSERT INTO "~tablename~" VALUES (NULL)";
 		auto okp = cn.exec(insertNullSql);
 		//assert(okp.affectedRows == 1);
 		assert(okp == 1);
-		okp = cn.prepareCmd(insertNullSql).execCmd();
+		okp = cn.prepare(insertNullSql).exec();
 		//assert(okp.affectedRows == 1);
 		assert(okp == 1);
 
 		//assert(!cn.queryScalar(selectOneSql).hasValue);
-		assert(cn.querySingle(selectOneSql).isNull(0));
+		auto x = cn.queryValue(selectOneSql);
+		assert(!x.isNull);
+		assert(x.get.type == typeid(typeof(null)));
 
 		// NULL as bound param
-		auto inscmd = cn.prepareCmd("INSERT INTO "~tablename~" VALUES (?)");
+		auto inscmd = cn.prepare("INSERT INTO "~tablename~" VALUES (?)");
 		cn.exec("TRUNCATE "~tablename);
 
-		inscmd.bindParameters([Variant(null)]);
-		okp = inscmd.execCmd();
+		inscmd.setArgs([Variant(null)]);
+		okp = inscmd.exec();
 		//assert(okp.affectedRows == 1, "value not inserted");
 		assert(okp == 1, "value not inserted");
 
 		//assert(!cn.queryScalar(selectOneSql).hasValue);
-		assert(cn.querySingle(selectOneSql).isNull(0));
+		x = cn.queryValue(selectOneSql);
+		assert(!x.isNull);
+		assert(x.type == typeid(typeof(null)));
 
 		// Values
 		foreach(value; values)
 		{
 			cn.exec("TRUNCATE "~tablename);
 
-			inscmd.bind(0, value);
-			okp = inscmd.execCmd();
+			inscmd.setArg(0, value);
+			okp = inscmd.exec();
 			//assert(okp.affectedRows == 1, "value not inserted");
 			assert(okp == 1, "value not inserted");
 
@@ -950,15 +936,16 @@ unittest
 debug(MYSQL_INTEGRATION_TESTS)
 unittest
 {
+	import mysql.prepared;
 	mixin(scopedCn);
-	auto cmd = cn.prepareCmd(
+	auto stmt = cn.prepare(
 			"SELECT * FROM information_schema.character_sets"~
 			" WHERE CHARACTER_SET_NAME=?");
 	auto val = "utf8";
-	cmd.bind(0, val);
-	auto row = cmd.querySingle();
+	stmt.setArg(0, val);
+	auto row = stmt.queryRow();
 	//assert(row.length == 4);
-	assert(row._values.length == 4);
+	assert(row.length == 4);
 	assert(row[0] == "utf8");
 	assert(row[1] == "utf8_general_ci");
 	assert(row[2] == "UTF-8 Unicode");

@@ -88,12 +88,15 @@ debug(MYSQL_INTEGRATION_TESTS)
 
 	void assertScalar(T, U)(Connection cn, string query, U expected)
 	{
+		auto result = cn.queryValue(query);
+		assert(!result.isNull);
+		
 		// Timestamp is a bit special as it's converted to a DateTime when
 		// returning from MySQL to avoid having to use a mysql specific type.
 		static if(is(T == DateTime) && is(U == Timestamp))
-			assert(cn.queryScalar(query).get!DateTime == expected.toDateTime());
+			assert(result.get.get!DateTime == expected.toDateTime());
 		else
-			assert(cn.queryScalar(query).get!T == expected);
+			assert(result.get.get!T == expected);
 	}
 
 	void truncate(Connection cn, string table)
@@ -114,14 +117,14 @@ debug(MYSQL_INTEGRATION_TESTS)
 		return rowsAffected;
 	}
 +/
-	ulong execCmd(Params...)(Connection cn, string sql, ref Params params)
+	deprecated("TEMPAPI - ") ulong execCmd(Params...)(Connection cn, string sql, ref Params params)
 	{
 		auto cmd = cn.prepareCmd(sql);
 		cmd.bindAll(params);
 		return cmd.execCmd();
 	}
 	
-	ResultSet query_()(Connection cn, string sql)
+	deprecated("TEMPAPI - ") ResultSet query_()(Connection cn, string sql)
 	{
 		auto cmd = Command(cn);
 		cmd.sql = sql;
@@ -129,34 +132,34 @@ debug(MYSQL_INTEGRATION_TESTS)
 		return cmd.execSQLResult();
 	}
 	
-	ResultSet query_(Params...)(Connection cn, string sql, ref Params params)
+	deprecated("TEMPAPI - ") ResultSet query_(Params...)(Connection cn, string sql, ref Params params)
 	{
 		auto cmd = cn.prepareCmd(sql);
 		cmd.bindAll(params);
 		return cmd.query_();
 	}
 
-	Row querySingle()(Connection cn, string sql)
+	deprecated("TEMPAPI - ") Row querySingle()(Connection cn, string sql)
 	{
 		return cn.query_(sql)[0];
 	}
 
-	Row querySingle(Params...)(Connection cn, string sql, ref Params params)
+	deprecated("TEMPAPI - ") Row querySingle(Params...)(Connection cn, string sql, ref Params params)
 	{
 		return cn.query_(sql, params)[0];
 	}
 
-	Variant queryScalar()(Connection cn, string sql)
+	deprecated("TEMPAPI - ") Variant queryScalar()(Connection cn, string sql)
 	{
 		return cn.query_(sql)[0][0];
 	}
 	
-	Variant queryScalar(Params...)(Connection cn, string sql, ref Params params)
+	deprecated("TEMPAPI - ") Variant queryScalar(Params...)(Connection cn, string sql, ref Params params)
 	{
 		return cn.query_(sql, params)[0][0];
 	}
 
-	Command prepareCmd(Connection cn, string sql)
+	deprecated("TEMPAPI - Use Prepare.this(Connection conn, string sql) instead") Command prepareCmd(Connection cn, string sql)
 	{
 		auto cmd = Command(cn);
 		cmd.sql = sql;
@@ -164,24 +167,24 @@ debug(MYSQL_INTEGRATION_TESTS)
 		return cmd;
 	}
 	
-	ulong execCmd()(Command cmd)
+	deprecated("TEMPAPI - ") ulong execCmd()(Command cmd)
 	{
 		ulong rowsAffected;
 		cmd.execPrepared(rowsAffected);
 		return rowsAffected;
 	}
 	
-	ResultSet query_()(Command cmd)
+	deprecated("TEMPAPI - ") ResultSet query_()(Command cmd)
 	{
 		return cmd.execPreparedResult();
 	}
 	
-	Row querySingle()(Command cmd)
+	deprecated("TEMPAPI - ") Row querySingle()(Command cmd)
 	{
 		return cmd.query_()[0];
 	}
 	
-	void bind(T)(ref Command cmd, ushort index, ref T value)
+	deprecated("TEMPAPI - ") void bind(T)(ref Command cmd, ushort index, ref T value)
 	{
 		static if(is(T==typeof(null)))
 			cmd.setNullParam(index);
@@ -189,7 +192,7 @@ debug(MYSQL_INTEGRATION_TESTS)
 			cmd.bindParameter(value, index);
 	}
 	
-	void bindAll(Params...)(ref Command cmd, ref Params params)
+	deprecated("TEMPAPI - ") void bindAll(Params...)(ref Command cmd, ref Params params)
 	{
 		foreach(i, ref param; params)
 			cmd.bind(i, param);
