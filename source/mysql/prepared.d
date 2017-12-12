@@ -933,21 +933,15 @@ public:
 	Parameter specializations can be added if required. This method could be
 	used to add records from a data entry form along the lines of
 	------------
-	auto c = Command(con, "insert into table42 values(?, ?, ?)");
-	c.prepare();
-	Variant[] va;
-	va.length = 3;
+	auto stmt = conn.prepare("INSERT INTO `table42` VALUES(?, ?, ?)");
 	DataRecord dr;    // Some data input facility
 	ulong ra;
 	do
 	{
 	    dr.get();
-	    va[0] = dr("Name");
-	    va[1] = dr("City");
-	    va[2] = dr("Whatever");
-	    c.bindParameters(va);
-	    c.execPrepared(ra);
-	} while(tod < "17:30");
+	    stmt.setArgs(dr("Name"), dr("City"), dr("Whatever"));
+	    ulong rowsAffected = stmt.exec();
+	} while(!dr.done);
 	------------
 	Params: va = External list of Variants to be used as parameters
 	               psnList = any required specializations
