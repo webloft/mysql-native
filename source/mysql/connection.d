@@ -581,7 +581,7 @@ public:
 	/++
 	Construct opened connection.
 
-	Throws `mysql.exceptions.MySQLException` upon failure to connect.
+	Throws `mysql.exceptions.MYX` upon failure to connect.
 	
 	If you are using Vibe.d, consider using `mysql.pool.MySQLPool` instead of
 	creating a new Connection directly. That will provide certain benefits,
@@ -878,7 +878,7 @@ public:
 	Select a current database.
 	
 	Params: dbName = Name of the requested database
-	Throws: MySQLException
+	Throws: MYX
 	+/
 	void selectDB(string dbName)
 	{
@@ -891,7 +891,7 @@ public:
 	Check the server status
 	
 	Returns: An OKErrorPacket from which server status can be determined
-	Throws: MySQLException
+	Throws: MYX
 	+/
 	OKErrorPacket pingServer()
 	{
@@ -903,7 +903,7 @@ public:
 	Refresh some feature(s) of the server.
 	
 	Returns: An OKErrorPacket from which server status can be determined
-	Throws: MySQLException
+	Throws: MYX
 	+/
 	OKErrorPacket refreshServer(RefreshFlags flags)
 	{

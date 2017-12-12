@@ -88,8 +88,7 @@ The server will then proceed to send prepared statement headers,
 including parameter descriptions, and result set field descriptions,
 followed by an EOF packet.
 
-Throws: MySQLException if there are pending result set items, or if the
-server has a problem.
+Throws: MYX if the server has a problem.
 +/
 Prepared prepare(Connection conn, string sql)
 {
@@ -99,8 +98,7 @@ Prepared prepare(Connection conn, string sql)
 /++
 Convenience function to create a prepared statement which calls a stored function.
 
-Throws: MySQLException if there are pending result set items, or if the
-server has a problem.
+Throws: MYX if the server has a problem.
 
 Params:
 	name = The name of the stored function.
@@ -141,8 +139,7 @@ Convenience function to create a prepared statement which calls a stored procedu
 OUT parameters are currently not supported. It should generally be
 possible with MySQL to present them as a result set.
 
-Throws: MySQLException if there are pending result set items, or if the
-server has a problem.
+Throws: MYX if the server has a problem.
 
 Params:
 	name = The name of the stored procedure.
@@ -711,7 +708,7 @@ public:
 	
 	This method is intended for commands which do not produce a result set
 	(otherwise, use one of the query functions instead.) If the SQL command does
-	produces a result set (such as SELECT), `mysql.exceptions.MySQLResultRecievedException`
+	produces a result set (such as SELECT), `mysql.exceptions.MYXResultRecieved`
 	will be thrown.
 	
 	Returns: The number of rows affected.
@@ -733,7 +730,7 @@ public:
 	$(LINK2 https://dlang.org/phobos/std_array.html#array, `array()`).
 
 	If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
-	then `mysql.exceptions.MySQLNoResultRecievedException` will be thrown. Use
+	then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 	`exec` instead for such commands.
 
 	If there are long data items among the expected result columns you can use
@@ -768,7 +765,7 @@ public:
 	on the result.
 
 	If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
-	then `mysql.exceptions.MySQLNoResultRecievedException` will be thrown. Use
+	then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 	`exec` instead for such commands.
 
 	If there are long data items among the expected result columns you can use
@@ -797,7 +794,7 @@ public:
 	Execute a prepared SQL SELECT command where you only want the first Row (if any).
 
 	If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
-	then `mysql.exceptions.MySQLNoResultRecievedException` will be thrown. Use
+	then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 	`exec` instead for such commands.
 
 	If there are long data items among the expected result columns you can use
@@ -822,11 +819,11 @@ public:
 	This method will throw if any column type is incompatible with the corresponding D variable.
 
 	Unlike the other query functions, queryRowTuple will throw
-	`mysql.exceptions.MySQLException` if the result set is empty
+	`mysql.exceptions.MYX` if the result set is empty
 	(and thus the reference variables passed in cannot be filled).
 
 	If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
-	then `mysql.exceptions.MySQLNoResultRecievedException` will be thrown. Use
+	then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 	`exec` instead for such commands.
 	
 	Params: args = A tuple of D variables to receive the results.
@@ -853,7 +850,7 @@ public:
 	which CONTAINS null. Check for this with `result.get.type == typeid(typeof(null))`.
 
 	If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
-	then `mysql.exceptions.MySQLNoResultRecievedException` will be thrown. Use
+	then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 	`exec` instead for such commands.
 
 	If there are long data items among the expected result columns you can use

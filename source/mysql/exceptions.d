@@ -103,7 +103,7 @@ deprecated("This has been renamed MYXNotPrepared")
 alias MySQLNotPreparedException = MYXNotPrepared;
 
 /++
-Common base class of MySQLResultRecievedException and MySQLNoResultRecievedException.
+Common base class of MYXResultRecieved and MYXNoResultRecieved.
 
 Thrown when making the wrong choice between exec or query.
 

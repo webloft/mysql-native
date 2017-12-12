@@ -136,7 +136,7 @@ Execute a one-off SQL command, such as INSERT/UPDATE/CREATE/etc.
 
 This method is intended for commands such as which do not produce a result set
 (otherwise, use one of the query functions instead.) If the SQL command does
-produces a result set (such as SELECT), `mysql.exceptions.MySQLResultRecievedException`
+produces a result set (such as SELECT), `mysql.exceptions.MYXResultRecieved`
 will be thrown.
 
 Use this method when you are not going to be using the same command
@@ -176,7 +176,7 @@ This is deprecated because the same thing can be achieved via `query`().
 $(LINK2 https://dlang.org/phobos/std_array.html#array, `array()`).
 
 If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
-then `mysql.exceptions.MySQLNoResultRecievedException` will be thrown. Use
+then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
 Use this method when you are not going to be using the same command
@@ -247,7 +247,7 @@ simply call $(LINK2 https://dlang.org/phobos/std_array.html#array, `std.array.ar
 on the result.
 
 If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
-then `mysql.exceptions.MySQLNoResultRecievedException` will be thrown. Use
+then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
 Use this method when you are not going to be using the same command
@@ -295,7 +295,7 @@ package ResultRange queryImpl(ColumnSpecialization[] csa,
 Execute a one-off SQL SELECT command where you only want the first Row (if any).
 
 If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
-then `mysql.exceptions.MySQLNoResultRecievedException` will be thrown. Use
+then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
 Use this method when you are not going to be using the same command
@@ -341,11 +341,11 @@ place result values into a set of D variables.
 This method will throw if any column type is incompatible with the corresponding D variable.
 
 Unlike the other query functions, queryRowTuple will throw
-`mysql.exceptions.MySQLException` if the result set is empty
+`mysql.exceptions.MYX` if the result set is empty
 (and thus the reference variables passed in cannot be filled).
 
 If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
-then `mysql.exceptions.MySQLNoResultRecievedException` will be thrown. Use
+then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
 Use this method when you are not going to be using the same command
@@ -416,7 +416,7 @@ then `result.isNull` will be FALSE, and `result.get` will produce a Variant
 which CONTAINS null. Check for this with `result.get.type == typeid(typeof(null))`.
 
 If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
-then `mysql.exceptions.MySQLNoResultRecievedException` will be thrown. Use
+then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
 Use this method when you are not going to be using the same command
