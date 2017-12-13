@@ -12,30 +12,25 @@ Type mapping
 | LONGLONG   | (u)long      |
 | FLOAT      | float        |
 | DOUBLE     | double       |
-| ---------- | ------------ |
 | TIMESTAMP  | DateTime     |
 | TIME       | TimeOfDay    |
 | YEAR       | ushort       |
 | DATE       | Date         |
 | DATETIME   | DateTime     |
-| ---------- | ------------ |
 | VARCHAR    | string       |
 | ENUM       | string       |
 | SET        | string       |
 | VARSTRING  | string       |
 | STRING     | string       |
 | NEWDECIMAL | string       |
-| ---------- | ------------ |
 | TINYBLOB   | ubyte[]      |
 | MEDIUMBLOB | ubyte[]      |
 | BLOB       | ubyte[]      |
 | LONGBLOB   | ubyte[]      |
-| ---------- | ------------ |
 | TINYTEXT   | string       |
 | MEDIUMTEXT | string       |
 | TEXT       | string       |
 | LONGTEXT   | string       |
-| ---------- | ------------ |
 | other      | unsupported (throws) |
 
 
@@ -50,17 +45,20 @@ Type mapping
 | LONGLONG   | (u)long      |
 | FLOAT      | float        |
 | DOUBLE     | double       |
+
+| MySQL      | D            |
 | ---------- | ------------ |
 | TIMESTAMP  | DateTime     |
 | TIME       | TimeOfDay    |
 | YEAR       | ushort       |
 | DATE       | Date         |
 | DATETIME   | DateTime     |
+
+| MySQL      | D            |
 | ---------- | ------------ |
 | VARCHAR, ENUM, SET, VARSTRING, STRING, NEWDECIMAL | string       |
 | TINYBLOB, MEDIUMBLOB, BLOB, LONGBLOB              | ubyte[]      |
 | TINYTEXT, MEDIUMTEXT, TEXT, LONGTEXT              | string       |
-| ---------- | ------------ |
 | other      | unsupported (throws) |
 
 
