@@ -32,6 +32,7 @@ API
 
 The primary interfaces:
 - [Connection](http://semitwist.com/mysql-native/mysql/connection/Connection.html): Connection to the server, and querying and setting of server parameters.
+- [MySQLPool](http://semitwist.com/mysql-native/mysql/pool.html): Connection pool, for Vibe.d users.
 - [exec()](http://semitwist.com/mysql-native/mysql/commands/exec.html): Plain old SQL statement that does NOT return rows (like INSERT/UPDATE/CREATE/etc), returns number of rows affected
 - [query()](http://semitwist.com/mysql-native/mysql/commands/query.html): Execute an SQL statement that DOES return rows (ie, SELECT) and handle the rows one at a time, as an input range.
 - [queryRow()](http://semitwist.com/mysql-native/mysql/commands/queryRow.html): Execute an SQL statement and get the first row.
