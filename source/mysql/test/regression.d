@@ -187,8 +187,6 @@ unittest
 {
 	mixin(scopedCn);
 	
-import std.stdio;
-writeln("START!");
 	cn.exec("DROP TABLE IF EXISTS `issue133`");
 	cn.exec("CREATE TABLE `issue133` (a BIGINT UNSIGNED NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 	cn.exec("INSERT INTO `issue133` (a) VALUES (NULL)");
@@ -198,7 +196,6 @@ writeln("START!");
 
 	assert(!value.isNull);
 	assert(value.get.type == typeid(typeof(null)));
-writeln("END!");
 }
 
 // Issue #139: Server packet out of order when Prepared is destroyed too early
