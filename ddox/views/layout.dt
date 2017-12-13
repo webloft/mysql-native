@@ -14,7 +14,7 @@ html
 			block navigation
 
 		#main-contents
-			p
+			h2
 				|!= `<a href="https://github.com/mysql-d/mysql-native">mysql-native</a> v1.2.0`
 			p
 				|!= `API Reference Home:`

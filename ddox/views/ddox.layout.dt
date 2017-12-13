@@ -29,4 +29,5 @@ block body
 
 	footer
 		hr
-		p.faint Generated using the DDOX documentation generator
+		p.faint
+			|!= `Generated using the <a href="https://github.com/rejectedsoftware/ddox">DDOX</a> documentation generator`
