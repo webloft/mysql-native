@@ -15,8 +15,9 @@ Housekeeping: Deprecations, cleanup and doc improvements.
 	- struct DBValue: Use std.variant.Variant instead.
 	- ResultSequence: Use ResultRange instead.
 - **Deprecated:** Newly deprecated symbols: (@Abscissa)
-	- MySQL[whatever]Exception: Use `MYX[whatever]` instead.
-	- [#126](https://github.com/mysql-d/mysql-native/issues/117):
+	- [#145](https://github.com/mysql-d/mysql-native/issues/145):
+		MySQL[whatever]Exception: Use `MYX[whatever]` instead.
+	- [#126](https://github.com/mysql-d/mysql-native/issues/126):
 		querySet/ResultSet: Import std.array and use `query(...).array` to
 		receive `Row[]` instead of a ResultSet.
 	- MYXDataPending: No longer thrown by mysql-native, as of v1.1.4. You can
@@ -25,12 +26,12 @@ Housekeeping: Deprecations, cleanup and doc improvements.
 	the homepages of the project, the current API docs, the latest API docs
 	and the list of api docs for previous versions. (@Abscissa)
 - **Docs:** Various documentation updates. (@Abscissa)
-- **Docs:**
-	[#128](https://github.com/mysql-d/mysql-native/issues/128):
+- **Docs:** [#128](https://github.com/mysql-d/mysql-native/issues/128):
 	Show connection string format in readme example. (@Abscissa)
 - **Tests:** Include `example.d` in tests. (@Abscissa)
-- **Tests:** Deprecated messages when compiling tests. (@Abscissa)
-- **Tests:** Add a travis job to test after a `dub upgrade`. (@SingingBush)
+- **Tests:** Fixed deprecation messages when compiling tests. (@Abscissa)
+- **Tests:** [#140](https://github.com/mysql-d/mysql-native/issues/140):
+	Add a travis job to test after a `dub upgrade`. (@SingingBush)
 
 v1.1.4 - 2017-12-04
 =====================
