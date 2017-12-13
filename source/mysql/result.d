@@ -125,7 +125,7 @@ public:
 		uint fieldCount = cast(uint)rh.fieldCount;
 		_values.length = _nulls.length = fieldCount;
 
-		if (binary)
+		if(binary)
 		{
 			// There's a null byte header on a binary result sequence, followed by some bytes of bitmap
 			// indicating which columns are null
@@ -134,7 +134,7 @@ public:
 			_nulls = consumeNullBitmap(packet, fieldCount);
 		}
 
-		foreach (size_t i; 0..fieldCount)
+		foreach(size_t i; 0..fieldCount)
 		{
 			if(binary && _nulls[i])
 				continue;

@@ -97,6 +97,9 @@ Prepared prepare(Connection conn, string sql)
 /++
 Convenience function to create a prepared statement which calls a stored function.
 
+Be careful that your numArgs is correct. If it isn't, you may get a
+`mysql.exceptions.MYX` with a very unclear error message.
+
 Throws: MYX if the server has a problem.
 
 Params:
@@ -137,6 +140,9 @@ Convenience function to create a prepared statement which calls a stored procedu
 
 OUT parameters are currently not supported. It should generally be
 possible with MySQL to present them as a result set.
+
+Be careful that your numArgs is correct. If it isn't, you may get a
+`mysql.exceptions.MYX` with a very unclear error message.
 
 Throws: MYX if the server has a problem.
 
