@@ -17,6 +17,9 @@ import mysql.protocol.sockets;
 /++
 A struct to represent a single row of a result set.
 
+Type_Mappings: $(TYPE_MAPPINGS)
++/
+/+
 The row struct is used for both 'traditional' and 'prepared' result sets.
 It consists of parallel arrays of Variant and bool, with the bool array
 indicating which of the result set columns are NULL.
@@ -102,6 +105,8 @@ public:
 	recovery for a Row attempts to minimize the quantity of data that is bufferred. Users can assist
 	in this by specifying chunked data transfer in cases where results sets can include long
 	column values.
+	
+	Type_Mappings: $(TYPE_MAPPINGS)
 	+/
 	//TODO: All low-level commms should be moved into the mysql.protocol package.
 	this(Connection con, ref ubyte[] packet, ResultSetHeaders rh, bool binary)
@@ -163,7 +168,9 @@ public:
 	
 	To check for null, use Variant's .type property:
 	`row[index].type == typeid(typeof(null))`
-	
+
+	Type_Mappings: $(TYPE_MAPPINGS)
+
 	Params: i = the zero based index of the column whose value is required.
 	Returns: A Variant holding the column value.
 	+/
@@ -198,6 +205,8 @@ public:
 	The method will throw if the type of the Variant is not implicitly
 	convertible to the corresponding struct member.
 	
+	Type_Mappings: $(TYPE_MAPPINGS)
+
 	Params: S = a struct type.
 	               s = an ref instance of the type
 	+/
@@ -260,6 +269,9 @@ However, this random access comes with a downside: Unlike `ResultRange`, using
 memory before you can access any of them. So use this only if you really need
 random-access and you're not likely to be dealing with large numbers of rows.
 Otherwise, consider using `query` to receive a `ResultRange` instead.
+
+Type_Mappings: $(TYPE_MAPPINGS)
+
 +/
 deprecated("Import std.array and use 'query(...).array' to receive 'Row[]' instead of a ResultSet")
 struct ResultSet
@@ -413,6 +425,8 @@ a `length` member. If you need random access, then just like any other range,
 you can simply convert this range to an array via
 $(LINK2 https://dlang.org/phobos/std_array.html#array, `std.array.array()`).
 
+Type_Mappings: $(TYPE_MAPPINGS)
+
 Example:
 ---
 ResultRange oneAtATime = myConnection.query("SELECT * from myTable");
@@ -489,6 +503,8 @@ public:
 
 	/++
 	Get the current row as an associative array by column name
+
+	Type_Mappings: $(TYPE_MAPPINGS)
 	+/
 	Variant[string] asAA()
 	{

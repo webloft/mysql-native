@@ -9,6 +9,9 @@ use. It has no dependecies on GPL header files or libraries, instead communicati
 directly with the server via the
 [published client/server protocol](http://dev.mysql.com/doc/internals/en/client-server-protocol.html).
 
+API
+---
+
 [API Reference](http://semitwist.com/mysql-native)
 
 The primary interfaces:
@@ -29,7 +32,60 @@ The primary interfaces:
 - [ResultRange](http://semitwist.com/mysql-native/mysql/result/ResultRange.html): An input range of rows.
 - [ResultSet](http://semitwist.com/mysql-native/mysql/result/ResultSet.html): A random access range of rows.
 
-Basic example:
+Type mappings
+-------------
+
+### MySQL -> D
+| MySQL      | D            |
+| ---------- | ------------ |
+| NULL       | typeof(null) |
+| BIT        | bool         |
+| TINY       | (u)byte      |
+| SHORT      | (u)short     |
+| INT24      | (u)int       |
+| INT        | (u)int       |
+| LONGLONG   | (u)long      |
+| FLOAT      | float        |
+| DOUBLE     | double       |
+
+| MySQL      | D            |
+| ---------- | ------------ |
+| TIMESTAMP  | DateTime     |
+| TIME       | TimeOfDay    |
+| YEAR       | ushort       |
+| DATE       | Date         |
+| DATETIME   | DateTime     |
+
+| MySQL                                             | D                    |
+| ------------------------------------------------- | -------------------- |
+| VARCHAR, ENUM, SET, VARSTRING, STRING, NEWDECIMAL | string               |
+| TINYBLOB, MEDIUMBLOB, BLOB, LONGBLOB              | ubyte[]              |
+| TINYTEXT, MEDIUMTEXT, TEXT, LONGTEXT              | string               |
+| other                                             | unsupported (throws) |
+
+### D -> MySQL
+| D            | MySQL                |
+| ------------ |--------------------- |
+| typeof(null) | NULL                 |
+| bool         | BIT                  |
+| (u)byte      | (UNSIGNED) TINY      |
+| (u)short     | (UNSIGNED) SHORT     |
+| (u)int       | (UNSIGNED) INT       |
+| (u)long      | (UNSIGNED) LONGLONG  |
+| float        | (UNSIGNED) FLOAT     |
+| double       | (UNSIGNED) DOUBLE    |
+| Date         | DATE                 |
+| TimeOfDay    | TIME                 |
+| Time         | TIME                 |
+| DateTime     | DATETIME             |
+| mysql.types.Timestamp | TIMESTAMP   |
+| string       | VARCHAR              |
+| char[]       | VARCHAR              |
+| (u)byte[]    | SIGNED TINYBLOB      |
+| other        | unsupported (throws) |
+
+Basic example
+-------------
 ```d
 import std.array : array;
 import std.variant;

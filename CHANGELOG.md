@@ -31,6 +31,8 @@ Housekeeping: Deprecations, cleanup and doc improvements.
 - **Docs:** Various documentation updates. (@Abscissa)
 - **Docs:** [#128](https://github.com/mysql-d/mysql-native/issues/128):
 	Show connection string format in readme example. (@Abscissa)
+- **Docs:** [#136](https://github.com/mysql-d/mysql-native/issues/136):
+	Document D <-> MySQL type mappings. (@Abscissa)
 - **Tests:** Include `example.d` in tests. (@Abscissa)
 - **Tests:** Fixed deprecation messages when compiling tests. (@Abscissa)
 - **Tests:** [#140](https://github.com/mysql-d/mysql-native/issues/140):

@@ -33,6 +33,8 @@ enum SvrCapFlags: uint
 
 /++
 Column type codes
+
+$(LINK2 https://dev.mysql.com/doc/dev/connector-net/6.10/html/T_MySql_Data_MySqlClient_MySqlDbType.htm, Reference)
 +/
 enum SQLType : short
 {

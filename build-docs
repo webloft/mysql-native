@@ -8,4 +8,4 @@ dub build
 cd ..
 
 ./ddox/ddox -- filter docs/docs.json --min-protection Public
-./ddox/ddox -- generate-html docs/docs.json docs/public --navigation-type=ModuleTree
+./ddox/ddox -- generate-html docs/docs.json docs/public --navigation-type=ModuleTree --override-macros=ddoc/macros.ddoc

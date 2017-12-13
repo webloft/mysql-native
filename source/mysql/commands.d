@@ -70,10 +70,6 @@ Internal implementation for the exec and query functions.
 
 Execute a one-off SQL command.
 
-Use this method when you are not going to be using the same command repeatedly.
-It can be used with commands that don't produce a result set, or those that
-do. If there is a result set its existence will be indicated by the return value.
-
 Any result set can be accessed via Connection.getNextRow(), but you should really be
 using the query function for such queries.
 
@@ -143,6 +139,8 @@ Use this method when you are not going to be using the same command
 repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise consider using `mysql.prepared.Prepared`.
 
+Type_Mappings: $(TYPE_MAPPINGS)
+
 Params:
 conn = An open Connection to the database.
 sql = The SQL command to be run.
@@ -186,6 +184,8 @@ escaped. Otherwise consider using `mysql.prepared.Prepared`.
 If there are long data items among the expected result columns you can use
 the csa param to specify that they are to be subject to chunked transfer via a
 delegate.
+
+Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
 conn = An open Connection to the database.
@@ -258,6 +258,8 @@ If there are long data items among the expected result columns you can use
 the csa param to specify that they are to be subject to chunked transfer via a
 delegate.
 
+Type_Mappings: $(TYPE_MAPPINGS)
+
 Params:
 conn = An open Connection to the database.
 sql = The SQL command to be run.
@@ -306,6 +308,8 @@ If there are long data items among the expected result columns you can use
 the csa param to specify that they are to be subject to chunked transfer via a
 delegate.
 
+Type_Mappings: $(TYPE_MAPPINGS)
+
 Params:
 conn = An open Connection to the database.
 sql = The SQL command to be run.
@@ -351,6 +355,8 @@ then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 Use this method when you are not going to be using the same command
 repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise consider using `mysql.prepared.Prepared`.
+
+Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
 conn = An open Connection to the database.
@@ -426,6 +432,8 @@ escaped. Otherwise consider using `mysql.prepared.Prepared`.
 If there are long data items among the expected result columns you can use
 the csa param to specify that they are to be subject to chunked transfer via a
 delegate.
+
+Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
 conn = An open Connection to the database.

@@ -559,7 +559,7 @@ package:
 					vals[vcl..vcl+l] = da[];
 					vcl += l;
 					break;
-				case "connect.Timestamp":
+				case "connect.Timestamp":  //TODO: WTF is this???
 					types[ct++] = SQLType.TIMESTAMP;
 					types[ct++] = SIGNED;
 					Timestamp tms = isRef? *(v.get!(Timestamp*)): v.get!(Timestamp);
@@ -712,6 +712,8 @@ public:
 	produces a result set (such as SELECT), `mysql.exceptions.MYXResultRecieved`
 	will be thrown.
 	
+	Type_Mappings: $(TYPE_MAPPINGS)
+
 	Returns: The number of rows affected.
 	+/
 	ulong exec()
@@ -737,6 +739,8 @@ public:
 	If there are long data items among the expected result columns you can use
 	the csa param to specify that they are to be subject to chunked transfer via a
 	delegate.
+
+	Type_Mappings: $(TYPE_MAPPINGS)
 
 	Params: csa = An optional array of ColumnSpecialization structs.
 	Returns: A (possibly empty) ResultSet.
@@ -773,6 +777,8 @@ public:
 	the csa param to specify that they are to be subject to chunked transfer via a
 	delegate.
 
+	Type_Mappings: $(TYPE_MAPPINGS)
+
 	Params: csa = An optional array of ColumnSpecialization structs.
 	Returns: A (possibly empty) ResultRange.
 
@@ -802,6 +808,8 @@ public:
 	the csa param to specify that they are to be subject to chunked transfer via a
 	delegate.
 
+	Type_Mappings: $(TYPE_MAPPINGS)
+
 	Params: csa = An optional array of ColumnSpecialization structs.
 	Returns: Nullable!Row: This will be null (check via Nullable.isNull) if the
 	query resulted in an empty result set.
@@ -827,6 +835,8 @@ public:
 	then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 	`exec` instead for such commands.
 	
+	Type_Mappings: $(TYPE_MAPPINGS)
+
 	Params: args = A tuple of D variables to receive the results.
 	+/
 	void queryRowTuple(T...)(ref T args)
@@ -858,6 +868,8 @@ public:
 	the csa param to specify that they are to be subject to chunked transfer via a
 	delegate.
 
+	Type_Mappings: $(TYPE_MAPPINGS)
+
 	Params: csa = An optional array of ColumnSpecialization structs.
 	Returns: Nullable!Variant: This will be null (check via Nullable.isNull) if the
 	query resulted in an empty result set.
@@ -880,6 +892,8 @@ public:
 	null is handled correctly.
 
 	The value can be null.
+
+	Type_Mappings: $(TYPE_MAPPINGS)
 
 	Params: index = The zero based index
 	+/
@@ -920,6 +934,8 @@ public:
 	
 	The tuple must match the required number of parameters, and it is the programmer's
 	responsibility to ensure that they are of appropriate types.
+
+	Type_Mappings: $(TYPE_MAPPINGS)
 	+/
 	void setArgs(T...)(T args)
 		if(T.length == 0 || !is(T[0] == Variant[]))
@@ -950,6 +966,9 @@ public:
 	    ulong rowsAffected = stmt.exec();
 	} while(!dr.done);
 	------------
+
+	Type_Mappings: $(TYPE_MAPPINGS)
+
 	Params: va = External list of Variants to be used as parameters
 	               psnList = any required specializations
 	+/
@@ -968,6 +987,8 @@ public:
 	/++
 	Prepared statement parameter getter.
 
+	Type_Mappings: $(TYPE_MAPPINGS)
+
 	Params: index = The zero based index
 	+/
 	Variant getArg(size_t index)
@@ -982,6 +1003,8 @@ public:
 	
 	This is here mainly for legacy reasons. You can set a field to null
 	simply by saying `prepared.setArg(index, null);`
+
+	Type_Mappings: $(TYPE_MAPPINGS)
 
 	Params: index = The zero based index
 	+/
