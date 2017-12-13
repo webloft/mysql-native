@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# GDC doesn't autocreate the dir (and git doesn't beleive in empty dirs)
+mkdir -p bin
+
+dub test -c unittest-vibe
