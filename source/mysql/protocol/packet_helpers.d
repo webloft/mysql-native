@@ -283,22 +283,22 @@ This is used to support the TimeStamp  struct.
 Params: x = A ulong e.g. 20111111122002UL.
 Returns: A populated std.datetime.DateTime struct.
 +/
-DateTime toDateTime(ulong x) pure
+DateTime toDateTime(ulong x)
 {
-	int second = cast(int) x%100;
+	int second = cast(int) (x%100);
 	x /= 100;
-	int minute = cast(int) x%100;
+	int minute = cast(int) (x%100);
 	x /= 100;
-	int hour   = cast(int) x%100;
+	int hour   = cast(int) (x%100);
 	x /= 100;
-	int day    = cast(int) x%100;
+	int day    = cast(int) (x%100);
 	x /= 100;
-	int month  = cast(int) x%100;
+	int month  = cast(int) (x%100);
 	x /= 100;
-	int year   = cast(int) x%10000;
+	int year   = cast(int) (x%10000);
 	// 2038-01-19 03:14:07
 	enforceEx!MYXProtocol(year >= 1970 &&  year < 2039, "Date/time out of range for 2 bit timestamp");
-	enforceEx!MYXProtocol(year == 2038 && (month > 1 || day > 19 || hour > 3 || minute > 14 || second > 7),
+	enforceEx!MYXProtocol(year != 2038 || (month < 1 && day < 19 && hour < 3 && minute < 14 && second < 7),
 			"Date/time out of range for 2 bit timestamp");
 	return DateTime(year, month, day, hour, minute, second);
 }

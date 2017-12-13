@@ -7,6 +7,8 @@ Housekeeping: Deprecations, cleanup and doc improvements.
 - **Fixed:** [#133](https://github.com/mysql-d/mysql-native/issues/133):
 	Sometimes null is incorrectly indicated by Variant containing `void` rather
 	than `null` as intended. (@Marenz)
+- **Fixed:** [#152](https://github.com/mysql-d/mysql-native/issues/152):
+	Exception when sending Timestamp in prepared statement. (@Abscissa)
 - **Removed:** Removed deprecated symbols: (@Abscissa)
 	- queryResult: Use querySet instead.
 	- querySequence: Use query instead.

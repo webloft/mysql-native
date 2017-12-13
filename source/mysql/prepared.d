@@ -559,7 +559,7 @@ package:
 					vals[vcl..vcl+l] = da[];
 					vcl += l;
 					break;
-				case "connect.Timestamp":  //TODO: WTF is this???
+				case "mysql.types.Timestamp":
 					types[ct++] = SQLType.TIMESTAMP;
 					types[ct++] = SIGNED;
 					Timestamp tms = isRef? *(v.get!(Timestamp*)): v.get!(Timestamp);

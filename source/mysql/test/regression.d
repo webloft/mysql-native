@@ -227,3 +227,18 @@ unittest
 		result.close();
 	}
 }
+
+// 
+debug(MYSQL_INTEGRATION_TESTS)
+unittest
+{
+	import mysql.types;
+	mixin(scopedCn);
+
+	cn.exec("DROP TABLE IF EXISTS `issueX`");
+	cn.exec("CREATE TABLE `issueX` (a TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+	
+	auto stmt = cn.prepare("INSERT INTO `issueX` (`a`) VALUES (?)");
+	stmt.setArgs(Timestamp(2011_11_11_12_20_02UL));
+	stmt.exec();
+}
