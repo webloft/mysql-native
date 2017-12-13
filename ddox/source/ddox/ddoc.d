@@ -283,11 +283,12 @@ private struct Section {
 
 private {
 	immutable string[string] s_standardMacros;
-	string[string] s_defaultMacros;
-	string[string] s_overrideMacros;
 	bool s_enableHyphenation;
 	Hyphenator s_hyphenator;
 }
+// mysql-native hack
+string[string] s_defaultMacros;
+string[string] s_overrideMacros;
 
 /// private
 private void parseSection(R)(ref R dst, string sect, string[] lines, DdocContext context, int hlevel, string[string] macros)
@@ -713,7 +714,7 @@ private void renderMacro(R)(ref R dst, ref string line, DdocContext context, str
 				dst.put(sym.data);
 				dst.put(`">`);
 			}
-			dst.renderMacros("$+", context, macros, args, callstack);			
+			dst.renderMacros("$+", context, macros, args, callstack);
 			if (link.uri.length) dst.put("</a>");
 		} else if (pm) {
 			logTrace("MACRO %s: %s", mname, *pm);

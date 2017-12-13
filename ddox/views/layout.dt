@@ -15,7 +15,7 @@ html
 
 		#main-contents
 			h2
-				|!= `<a href="https://github.com/mysql-d/mysql-native">mysql-native</a> v1.2.0`
+				|!= `<a href="https://github.com/mysql-d/mysql-native">mysql-native</a> `~info.overrideMacros["MYSQL_VERSION"]
 			p
 				|!= `API Reference Home:`
 				|!= `[<a href="` ~ info.linkTo(null) ~ `">This Version</a>]`

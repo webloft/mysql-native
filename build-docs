@@ -3,9 +3,12 @@ rdmd --build-only -c -Isource -Dddocs_tmp -X -Xfdocs/docs.json -version=MySQLDoc
 rm -rf docs_tmp
 rm source/mysql/package.o
 
+dub run gen-package-version -- mysql --ddoc=ddoc --src=source
+rm source/mysql/packageVersion.d
+
 cd ./ddox
 dub build
 cd ..
 
 ./ddox/ddox -- filter docs/docs.json --min-protection Public
-./ddox/ddox -- generate-html docs/docs.json docs/public --navigation-type=ModuleTree --override-macros=ddoc/macros.ddoc
+./ddox/ddox -- generate-html docs/docs.json docs/public --navigation-type=ModuleTree --override-macros=ddoc/macros.ddoc --override-macros=ddoc/packageVersion.ddoc

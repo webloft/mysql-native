@@ -231,6 +231,10 @@ class DocPageInfo {
 	DocGroup[] docGroups; // for multiple doc groups with the same name
 	string nestedName;
 
+	// mysql-native hack
+	@property auto defaultMacros()  { import ddox.ddoc; return s_defaultMacros;  }
+	@property auto overrideMacros() { import ddox.ddoc; return s_overrideMacros; }
+
 	@property NavigationType navigationType() const { return settings.navigationType; }
 	string formatType(CachedType tp, bool include_code_tags = true) { return .formatType(tp, linkTo, include_code_tags); }
 	void renderTemplateArgs(R)(R output, Declaration decl) { .renderTemplateArgs(output, decl, linkTo); }
