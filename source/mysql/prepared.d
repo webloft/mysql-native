@@ -902,6 +902,7 @@ public:
 		_psa[index] = psn;
 	}
 
+	///ditto
 	void setArg(T)(size_t index, Nullable!T val, ParameterSpecialization psn = PSN(0, SQLType.INFER_FROM_D_TYPE, 0, null))
 	{
 		enforceNotReleased();
