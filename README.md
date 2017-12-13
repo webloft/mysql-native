@@ -70,7 +70,7 @@ void main(string[] args)
 	Row[] rs = prepared.query.array;
 	assert(rs.length == 2);
 	assert(rs[0][0] == 1);
- 	assert(rs[0][1] == "Ann");
+	assert(rs[0][1] == "Ann");
 	assert(rs[1][0] == 2);
 	assert(rs[1][1] == "Bob");
 
