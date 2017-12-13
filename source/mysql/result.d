@@ -102,15 +102,6 @@ public:
 	recovery for a Row attempts to minimize the quantity of data that is bufferred. Users can assist
 	in this by specifying chunked data transfer in cases where results sets can include long
 	column values.
-	
-	The row struct is used for both 'traditional' and 'prepared' result sets. It consists of parallel arrays
-	of Variant and bool, with the bool array indicating which of the result set columns are NULL.
-	
-	I have been agitating for some kind of null indicator that can be set for a Variant without destroying
-	its inherent type information. If this were the case, then the bool array could disappear.
-	However, this inherent type information was never actually used, or even tracked, by struct Row for null fields.
-	So this is may be nothing to be concerned about. If such info is needed later, perhaps
-	`_values` could store its elements as `Nullable!T`?
 	+/
 	//TODO: All low-level commms should be moved into the mysql.protocol package.
 	this(Connection con, ref ubyte[] packet, ResultSetHeaders rh, bool binary)
@@ -137,7 +128,10 @@ public:
 		foreach(size_t i; 0..fieldCount)
 		{
 			if(binary && _nulls[i])
+			{
+				_values[i] = null;
 				continue;
+			}
 
 			SQLValue sqlValue;
 			do

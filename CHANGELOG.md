@@ -4,6 +4,9 @@ v1.2.0 - TBD
 Housekeeping: Deprecations, cleanup and doc improvements.
 
 - **Fixed:** Glaring mistakes in the example from `README` and `example.d`. (@Abscissa)
+- **Fixed:** [#133](https://github.com/mysql-d/mysql-native/issues/133):
+	Sometimes null is incorrectly indicated by Variant containing `void` rather
+	than `null` as intended. (@Marenz)
 - **Removed:** Removed deprecated symbols: (@Abscissa)
 	- queryResult: Use querySet instead.
 	- querySequence: Use query instead.
