@@ -9,6 +9,16 @@ use. It has no dependecies on GPL header files or libraries, instead communicati
 directly with the server via the
 [published client/server protocol](http://dev.mysql.com/doc/internals/en/client-server-protocol.html).
 
+This package supports both [Phobos sockets](https://dlang.org/phobos/std_socket.html)
+and [Vibe.d](http://vibed.org/) sockets. It will automatically use the correct
+type based on whether Vibe.d is used in your project. (If you use
+[DUB](http://code.dlang.org/getting_started), this is completely seamless.
+Otherwise, you can use `-version=Have_vibe_d_core` to force Vibe.d sockets
+instead of Phobos ones.)
+
+See [.travis.yml](https://github.com/mysql-d/mysql-native/blob/master/.travis.yml)
+for a list of officially supported D compiler versions.
+
 API
 ---
 
@@ -32,57 +42,7 @@ The primary interfaces:
 - [ResultRange](http://semitwist.com/mysql-native/mysql/result/ResultRange.html): An input range of rows.
 - [ResultSet](http://semitwist.com/mysql-native/mysql/result/ResultSet.html): A random access range of rows.
 
-Type mappings
--------------
-
-### MySQL -> D
-| MySQL      | D            |
-| ---------- | ------------ |
-| NULL       | typeof(null) |
-| BIT        | bool         |
-| TINY       | (u)byte      |
-| SHORT      | (u)short     |
-| INT24      | (u)int       |
-| INT        | (u)int       |
-| LONGLONG   | (u)long      |
-| FLOAT      | float        |
-| DOUBLE     | double       |
-
-| MySQL      | D            |
-| ---------- | ------------ |
-| TIMESTAMP  | DateTime     |
-| TIME       | TimeOfDay    |
-| YEAR       | ushort       |
-| DATE       | Date         |
-| DATETIME   | DateTime     |
-
-| MySQL                                             | D                    |
-| ------------------------------------------------- | -------------------- |
-| VARCHAR, ENUM, SET, VARSTRING, STRING, NEWDECIMAL | string               |
-| TINYBLOB, MEDIUMBLOB, BLOB, LONGBLOB              | ubyte[]              |
-| TINYTEXT, MEDIUMTEXT, TEXT, LONGTEXT              | string               |
-| other                                             | unsupported (throws) |
-
-### D -> MySQL
-| D            | MySQL                |
-| ------------ |--------------------- |
-| typeof(null) | NULL                 |
-| bool         | BIT                  |
-| (u)byte      | (UNSIGNED) TINY      |
-| (u)short     | (UNSIGNED) SHORT     |
-| (u)int       | (UNSIGNED) INT       |
-| (u)long      | (UNSIGNED) LONGLONG  |
-| float        | (UNSIGNED) FLOAT     |
-| double       | (UNSIGNED) DOUBLE    |
-| Date         | DATE                 |
-| TimeOfDay    | TIME                 |
-| Time         | TIME                 |
-| DateTime     | DATETIME             |
-| mysql.types.Timestamp | TIMESTAMP   |
-| string       | VARCHAR              |
-| char[]       | VARCHAR              |
-| (u)byte[]    | SIGNED TINYBLOB      |
-| other        | unsupported (throws) |
+Also note the [MySQL <-> D type mappings tables](https://semitwist.com/mysql-native/mysql.html)
 
 Basic example
 -------------
@@ -139,31 +99,20 @@ void main(string[] args)
 }
 ```
 
-This package supports both Phobos sockets and [Vibe.d](http://vibed.org/)
-sockets. Vibe.d support is disabled by default, to avoid unnecessary
-depencency on Vibe.d. To enable Vibe.d support, use:
-	`-version=Have_vibe_d_core`
-
-If you compile using [DUB](http://code.dlang.org/getting_started),
-and your project uses Vibe.d, then the -version flag above will be included
-automatically.
+Additional notes
+----------------
 
 This requires MySQL server v4.1.1 or later, or a MariaDB server. Older
 versions of MySQL server are obsolete, use known-insecure authentication,
 and are not supported by this package.
 
-See [.travis.yml](https://github.com/mysql-d/mysql-native/blob/master/.travis.yml)
-for a list of officially supported D compiler versions.
+Normally, MySQL clients connect to a server on the same machine via a Unix
+socket on *nix systems, and through a named pipe on Windows. Neither of these
+conventions is currently supported. TCP is used for all connections.
 
-A note on connections: Normally MySQL clients connect to a server on
-the same machine via a Unix socket on *nix systems,
-and through a named pipe on Windows. Neither of these conventions is
-currently supported. TCP is used for all connections.
-
-See also the [old homepage](http://britseyeview.com/software/mysqln/)
-for the original release of this project is. Parts of it are out-of-date,
-but it still provides a decent overview of the current API. More up-to-date
-docs with examples are on the way, and are currently a high priority.
+For historical reference, see the [old homepage](http://britseyeview.com/software/mysqln/)
+for the original release of this project. Note, however, that version has
+become out-of-date.
 
 Developers - How to run the test suite
 --------------------------------------
