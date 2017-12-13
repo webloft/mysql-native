@@ -19,6 +19,12 @@ instead of Phobos ones.)
 See [.travis.yml](https://github.com/mysql-d/mysql-native/blob/master/.travis.yml)
 for a list of officially supported D compiler versions.
 
+In this document:
+* [API](#api)
+* [Basic example](#basic-example)
+* [Additional notes](#additional-notes)
+* [Developers - How to run the test suite](#developers---how-to-run-the-test-suite)
+
 API
 ---
 
