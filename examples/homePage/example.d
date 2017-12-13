@@ -5,7 +5,9 @@ import mysql;
 void main(string[] args)
 {
 	// Connect
-	auto connectionStr = args[1];
+	auto connectionStr = "host=localhost;port=3306;user=yourname;pwd=pass123;db=mysqln_testdb";
+	if(args.length > 1)
+		connectionStr = args[1];
 	Connection conn = new Connection(connectionStr);
 	scope(exit) conn.close();
 
