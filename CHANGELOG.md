@@ -3,11 +3,7 @@ v1.2.0 - TBD
 
 Housekeeping: Deprecations, cleanup and doc improvements.
 
-- **New:** API documentation now displays the lib version and permalinks to
-	the homepages of the project, the current API docs, the latest API docs
-	and the list of api docs for previous versions. (@Abscissa)
 - **Fixed:** Glaring mistakes in the example from `README` and `example.d`. (@Abscissa)
-- **Fixed:** Various documentation updates. (@Abscissa)
 - **Removed:** Removed deprecated symbols: (@Abscissa)
 	- queryResult: Use querySet instead.
 	- querySequence: Use query instead.
@@ -25,6 +21,13 @@ Housekeeping: Deprecations, cleanup and doc improvements.
 		receive `Row[]` instead of a ResultSet.
 	- MYXDataPending: No longer thrown by mysql-native, as of v1.1.4. You can
 		safely remove all MYXDataPending handling from your code.
+- **Docs:** API documentation now displays the lib version and permalinks to
+	the homepages of the project, the current API docs, the latest API docs
+	and the list of api docs for previous versions. (@Abscissa)
+- **Docs:** Various documentation updates. (@Abscissa)
+- **Docs:**
+	[#128](https://github.com/mysql-d/mysql-native/issues/128):
+	Show connection string format in readme example. (@Abscissa)
 - **Tests:** Include `example.d` in tests. (@Abscissa)
 - **Tests:** Deprecated messages when compiling tests. (@Abscissa)
 - **Tests:** Add a travis job to test after a `dub upgrade`. (@SingingBush)
