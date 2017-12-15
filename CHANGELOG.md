@@ -1,4 +1,4 @@
-v1.2.0 - TBD
+v1.2.0 - 2017-12-15
 =====================
 
 Housekeeping: Deprecations, cleanup and doc improvements.

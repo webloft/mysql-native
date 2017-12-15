@@ -20,3 +20,5 @@ mysql-native
 examples/homePage/example
 
 ddoc/packageVersion.ddoc
+
+source/mysql/packageVersion.d
