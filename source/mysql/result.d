@@ -250,6 +250,15 @@ public:
 	}
 }
 
+/// Deprecated. Replaced by
+/// $(LINK2 https://dlang.org/phobos/std_variant.html, std.variant.Variant).
+deprecated("Use std.variant.Variant instead.")
+struct DBValue
+{
+	Variant value;
+	bool isNull;
+}
+
 /++
 A $(LINK2 http://dlang.org/phobos/std_range_primitives.html#isRandomAccessRange, random access range)
 of Row.
@@ -547,3 +556,7 @@ public:
 	+/
 	@property ulong rowCount() const pure nothrow { return _numRowsFetched; }
 }
+
+///ditto
+deprecated("Use ResultRange instead.")
+alias ResultSequence = ResultRange;

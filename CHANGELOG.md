@@ -1,3 +1,13 @@
+v1.2.1 - 2017-01-13
+=====================
+
+Fix semver mistake by re-adding deleted symbols.
+
+- **Fixed:** [Semver](https://semver.org/) Requires ALL breaking changes to bump
+  the MAJOR version number, never just the MINOR. Fixed this by re-adding the
+  old deprecated symbols which were deleted in the previous release. They will
+  be removed again in the next release, v2.0.0.
+
 v1.2.0 - 2017-12-15
 =====================
 
