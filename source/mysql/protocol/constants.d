@@ -7,7 +7,7 @@ Server capability flags.
 During the connection handshake process, the server sends a uint of flags
 describing its capabilities.
 
-See_Also: http://dev.mysql.com/doc/internals/en/connection-phase.html#capability-flags
+See_Also: $(LINK http://dev.mysql.com/doc/internals/en/connection-phase.html#capability-flags)
 +/
 enum SvrCapFlags: uint
 {
@@ -85,7 +85,7 @@ enum RefreshFlags : ubyte
 
 /++
 Type of Command Packet (COM_XXX)
-See_Also: http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Command_Packet_.28Overview.29
+See_Also: $(LINK http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Command_Packet_.28Overview.29)
 +/
 enum CommandType : ubyte
 {
@@ -125,26 +125,26 @@ enum ResultPacketMarker : ubyte
 {
 	/++
 	Server reports an error
-	See_Also: http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Error_Packet
+	See_Also: $(LINK http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Error_Packet)
 	+/
 	error   = 0xff,
 
 	/++
 	No error, no result set.
-	See_Also: http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#OK_Packet
+	See_Also: $(LINK http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#OK_Packet)
 	+/
 	ok      = 0x00,
 
 	/++
 	Server reports end of data
-	See_Also: http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#EOF_Packet
+	See_Also: $(LINK http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#EOF_Packet)
 	+/
 	eof     = 0xfe,
 }
 
 /++
 Field Flags
-See_Also: http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Field_Packet
+See_Also: $(LINK http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Field_Packet)
 +/
 enum FieldFlags : ushort
 {

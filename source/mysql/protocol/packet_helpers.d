@@ -747,7 +747,7 @@ Extract number of bytes used for this LCB
 
 Returns the number of bytes required to store this LCB
 
-See_Also: http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Elements
+See_Also: $(LINK http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Elements)
 
 Returns: 0 if it's a null value, or number of bytes in other cases
 +/
@@ -872,7 +872,7 @@ body
 /++
 Parse Length Coded String
 
-See_Also: http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Elements
+See_Also: $(LINK http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Elements)
 +/
 string consume(T:LCS)(ref ubyte[] packet) pure
 in

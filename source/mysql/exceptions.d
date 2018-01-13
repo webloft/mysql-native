@@ -19,7 +19,7 @@ class MYX: Exception
 The server sent back a MySQL error code and message. If the server is 4.1+,
 there should also be an ANSI/ODBC-standard SQLSTATE error code.
 
-See_Also: https://dev.mysql.com/doc/refman/5.5/en/error-messages-server.html
+See_Also: $(LINK https://dev.mysql.com/doc/refman/5.5/en/error-messages-server.html)
 +/
 class MYXReceived: MYX
 {

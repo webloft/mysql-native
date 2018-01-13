@@ -19,7 +19,7 @@ void enforcePacketOK(string file = __FILE__, size_t line = __LINE__)(OKErrorPack
 
 /++
 A struct representing an OK or Error packet
-See_Also: http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Types_Of_Result_Packets
+See_Also: $(LINK http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Types_Of_Result_Packets)
 OK packets begin with a zero byte - Error packets with 0xff
 +/
 struct OKErrorPacket
@@ -86,7 +86,7 @@ A struct representing a field (column) description packet
 These packets, one for each column are sent before the data of a result set,
 followed by an EOF packet.
 
-See_Also: http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Field_Packet
+See_Also: $(LINK http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Field_Packet)
 +/
 struct FieldDescription
 {
@@ -256,7 +256,7 @@ An EOF packet is also called "Last Data Packet" or "End Packet".
 
 These EOF packets contain a server status and a warning count.
 
-See_Also: http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#EOF_Packet
+See_Also: $(LINK http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#EOF_Packet)
 +/
 struct EOFPacket
 {
