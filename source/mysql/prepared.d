@@ -129,7 +129,7 @@ unittest
 
 		auto preparedHello = prepareFunction(cn, "hello", 1);
 		preparedHello.setArgs("World");
-		ResultSet rs = preparedHello.querySet();
+		auto rs = preparedHello.query.array;
 		assert(rs.length == 1);
 		assert(rs[0][0] == "Hello World!");
 	}
@@ -179,7 +179,7 @@ unittest
 		preparedInsert2.setArgs(2001, "inserted string 1");
 		preparedInsert2.exec();
 
-		ResultSet rs = querySet(cn, "SELECT stringcol FROM basetest WHERE intcol=2001");
+		auto rs = query(cn, "SELECT stringcol FROM basetest WHERE intcol=2001").array;
 		assert(rs.length == 1);
 		assert(rs[0][0] == "inserted string 1");
 	}
@@ -255,19 +255,16 @@ private:
 		assertNotThrown!MYXNotPrepared(preparedInsert = cn.prepare(insertSQL));
 		assertNotThrown!MYXNotPrepared(preparedSelect = cn.prepare(selectSQL));
 		assertNotThrown!MYXNotPrepared(preparedInsert.exec());
-		assertNotThrown!MYXNotPrepared(preparedSelect.querySet());
 		assertNotThrown!MYXNotPrepared(preparedSelect.query().each());
 		assertNotThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
 		
 		preparedInsert.release();
 		assertThrown!MYXNotPrepared(preparedInsert.exec());
-		assertNotThrown!MYXNotPrepared(preparedSelect.querySet());
 		assertNotThrown!MYXNotPrepared(preparedSelect.query().each());
 		assertNotThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
 
 		preparedSelect.release();
 		assertThrown!MYXNotPrepared(preparedInsert.exec());
-		assertThrown!MYXNotPrepared(preparedSelect.querySet());
 		assertThrown!MYXNotPrepared(preparedSelect.query().each());
 		assertThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
 	}
@@ -726,42 +723,6 @@ public:
 	}
 
 	/++
-	Execute a prepared SQL SELECT command where you expect the entire
-	result set all at once.
-
-	This is deprecated because the same thing can be achieved via `query`().
-	$(LINK2 https://dlang.org/phobos/std_array.html#array, `array()`).
-
-	If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
-	then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
-	`exec` instead for such commands.
-
-	If there are long data items among the expected result columns you can use
-	the csa param to specify that they are to be subject to chunked transfer via a
-	delegate.
-
-	Type_Mappings: $(TYPE_MAPPINGS)
-
-	Params: csa = An optional array of ColumnSpecialization structs.
-	Returns: A (possibly empty) ResultSet.
-
-	Example:
-	---
-	// Do this instead of using querySet:
-	Row[] allAtOnce = myPrepared.query("SELECT * from myTable").array;
-	---
-	+/
-	deprecated("Import std.array and use 'query(...).array' to receive 'Row[]' instead of a ResultSet")
-	ResultSet querySet(ColumnSpecialization[] csa = null)
-	{
-		enforceNotReleased();
-		return querySetImpl(
-			csa, true, _conn,
-			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa)
-		);
-	}
-
-	/++
 	Execute a prepared SQL SELECT command where you want to deal with the
 	result set one row at a time.
 
@@ -1036,7 +997,7 @@ public:
 		immutable selectSQL = "SELECT * FROM `setNullArg`";
 		auto preparedInsert = cn.prepare(insertSQL);
 		assert(preparedInsert.sql == insertSQL);
-		ResultSet rs;
+		Row[] rs;
 
 		{
 			Nullable!int nullableInt;
@@ -1057,13 +1018,13 @@ public:
 
 		preparedInsert.setArg(0, 5);
 		preparedInsert.exec();
-		rs = cn.querySet(selectSQL);
+		rs = cn.query(selectSQL).array;
 		assert(rs.length == 1);
 		assert(rs[0][0] == 5);
 
 		preparedInsert.setArg(0, null);
 		preparedInsert.exec();
-		rs = cn.querySet(selectSQL);
+		rs = cn.query(selectSQL).array;
 		assert(rs.length == 2);
 		assert(rs[0][0] == 5);
 		assert(rs[1].isNull(0));
@@ -1071,7 +1032,7 @@ public:
 
 		preparedInsert.setArg(0, Variant(null));
 		preparedInsert.exec();
-		rs = cn.querySet(selectSQL);
+		rs = cn.query(selectSQL).array;
 		assert(rs.length == 3);
 		assert(rs[0][0] == 5);
 		assert(rs[1].isNull(0));

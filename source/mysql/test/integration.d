@@ -956,33 +956,6 @@ unittest
 	auto prepared = cn.prepare(selectSQL);
 	auto preparedSelectNoRows = cn.prepare(selectNoRowsSQL);
 	
-	// Test querySet
-	ResultSet rs = cn.querySet(selectSQL);
-	assert(rs.length == 3);
-	assert(rs[0].length == 2);
-	assert(rs[0][0] == 11);
-	assert(rs[0][1] == "aaa");
-	assert(rs[1].length == 2);
-	assert(rs[1][0] == 22);
-	assert(rs[1][1] == "bbb");
-	assert(rs[2].length == 2);
-	assert(rs[2][0] == 33);
-	assert(rs[2][1] == "ccc");
-	assert(rs[2][$-1] == "ccc");
-
-	// Test prepared querySet
-	rs = prepared.querySet();
-	assert(rs.length == 3);
-	assert(rs[0].length == 2);
-	assert(rs[0][0] == 11);
-	assert(rs[0][1] == "aaa");
-	assert(rs[1].length == 2);
-	assert(rs[1][0] == 22);
-	assert(rs[1][1] == "bbb");
-	assert(rs[2].length == 2);
-	assert(rs[2][0] == 33);
-	assert(rs[2][1] == "ccc");
-	
 	{
 		// Test query
 		ResultRange rseq = cn.query(selectSQL);
@@ -1046,7 +1019,7 @@ unittest
 		assert(nullableRow[0] == 11);
 		assert(nullableRow[1] == "aaa");
 		// Were all results correctly purged? Can I still issue another command?
-		cn.querySet(selectSQL);
+		cn.query(selectSQL).array;
 
 		nullableRow = cn.queryRow(selectNoRowsSQL);
 		assert(nullableRow.isNull);
@@ -1057,7 +1030,7 @@ unittest
 		assert(nullableRow[0] == 11);
 		assert(nullableRow[1] == "aaa");
 		// Were all results correctly purged? Can I still issue another command?
-		cn.querySet(selectSQL);
+		cn.query(selectSQL).array;
 
 		nullableRow = preparedSelectNoRows.queryRow();
 		assert(nullableRow.isNull);
@@ -1072,14 +1045,14 @@ unittest
 		assert(resultI == 11);
 		assert(resultS == "aaa");
 		// Were all results correctly purged? Can I still issue another command?
-		cn.querySet(selectSQL);
+		cn.query(selectSQL).array;
 
 		// Test prepared queryRowTuple
 		prepared.queryRowTuple(resultI, resultS);
 		assert(resultI == 11);
 		assert(resultS == "aaa");
 		// Were all results correctly purged? Can I still issue another command?
-		cn.querySet(selectSQL);
+		cn.query(selectSQL).array;
 	}
 
 	{
@@ -1090,7 +1063,7 @@ unittest
 		assert(!result.isNull);
 		assert(result.get == 11); // Explicit "get" here works around DMD #17482
 		// Were all results correctly purged? Can I still issue another command?
-		cn.querySet(selectSQL);
+		cn.query(selectSQL).array;
 
 		result = cn.queryValue(selectNoRowsSQL);
 		assert(result.isNull);
@@ -1100,7 +1073,7 @@ unittest
 		assert(!result.isNull);
 		assert(result.get == 11); // Explicit "get" here works around DMD #17482
 		// Were all results correctly purged? Can I still issue another command?
-		cn.querySet(selectSQL);
+		cn.query(selectSQL).array;
 
 		result = preparedSelectNoRows.queryValue();
 		assert(result.isNull);

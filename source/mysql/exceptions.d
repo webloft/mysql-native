@@ -14,8 +14,6 @@ class MYX: Exception
 		super(msg, file, line);
 	}
 }
-deprecated("This has been renamed MYX")
-alias MySQLException = MYX;
 
 /++
 The server sent back a MySQL error code and message. If the server is 4.1+,
@@ -40,38 +38,6 @@ class MYXReceived: MYX
 		super("MySQL error: " ~ msg, file, line);
 	}
 }
-deprecated("This has been renamed MYXReceived")
-alias MySQLReceivedException = MYXReceived;
-
-/++
-This exception is no longer used by mysql-native and will be removed
-in an upcoming release.
-
-Previously, this was thrown when attempting to communicate with the server
-(ex: executing SQL or creating a new prepared statement) while the server
-was still sending results data. Any `mysql.result.ResultRange` was required to
-be consumed or purged before anything else was allowed to be done on the
-connection (as per inherent limitations of the MySQL client-server protocol).
-
-But as of mysql-native v1.1.4 (as discussed in
-$(LINK2 https://github.com/mysql-d/mysql-native/issues/117, issue #117)),
-this behavior was changed. Any communication with the server now purges any
-active `mysql.result.ResultRange` automatically (See also,
-`mysql.result.ResultRange.isValid`). As a result, this exception is never
-thrown anymore.
-+/
-deprecated("No longer thrown by mysql-native, as of v1.1.4. You can safely remove all MYXDataPending handling from your code.")
-class MYXDataPending: MYX
-{
-	this(string file = __FILE__, size_t line = __LINE__) pure
-	{
-		super("Data is pending on the connection. Any existing ResultRange "~
-			"must be consumed or purged before performing any other communication "~
-			"with the server.", file, line);
-	}
-}
-deprecated("No longer thrown by mysql-native, as of v1.1.4. You can safely remove all MYXDataPending handling from your code.")
-alias MySQLDataPendingException = MYXDataPending;
 
 /++
 Received invalid data from the server which violates the MySQL network protocol.
@@ -86,8 +52,6 @@ class MYXProtocol: MYX
 		super(msg, file, line);
 	}
 }
-deprecated("This has been renamed MYXProtocol")
-alias MySQLProtocolException = MYXProtocol;
 
 /++
 Thrown when attempting to use a prepared statement which had already been released.
@@ -99,8 +63,6 @@ class MYXNotPrepared: MYX
 		super("The prepared statement has already been released.", file, line);
 	}
 }
-deprecated("This has been renamed MYXNotPrepared")
-alias MySQLNotPreparedException = MYXNotPrepared;
 
 /++
 Common base class of MYXResultRecieved and MYXNoResultRecieved.
@@ -123,8 +85,6 @@ class MYXWrongFunction: MYX
 		super(msg, file, line);
 	}
 }
-deprecated("This has been renamed MYXWrongFunction")
-alias MySQLWrongFunctionException = MYXWrongFunction;
 
 /++
 Thrown when a result set was returned unexpectedly. Use the query functions
@@ -142,8 +102,6 @@ class MYXResultRecieved: MYXWrongFunction
 		);
 	}
 }
-deprecated("This has been renamed MYXResultRecieved")
-alias MySQLResultRecievedException = MYXResultRecieved;
 
 /++
 Thrown when the executed query, unexpectedly, did not produce a result set.
@@ -161,8 +119,6 @@ class MYXNoResultRecieved: MYXWrongFunction
 		);
 	}
 }
-deprecated("This has been renamed MYXNoResultRecieved")
-alias MySQLNoResultRecievedException = MYXNoResultRecieved;
 
 /++
 Thrown when attempting to use a range that's been invalidated.
@@ -176,8 +132,6 @@ class MYXInvalidatedRange: MYX
 		super(msg, file, line);
 	}
 }
-deprecated("This has been renamed MYXInvalidatedRange")
-alias MySQLInvalidatedRangeException = MYXInvalidatedRange;
 
 debug(MYSQL_INTEGRATION_TESTS)
 unittest
@@ -199,22 +153,18 @@ unittest
 	Prepared preparedSelect;
 	int queryTupleResult;
 	assertNotThrown!MYXWrongFunction(cn.exec(insertSQL));
-	assertNotThrown!MYXWrongFunction(cn.querySet(selectSQL));
 	assertNotThrown!MYXWrongFunction(cn.query(selectSQL).each());
 	assertNotThrown!MYXWrongFunction(cn.queryRowTuple(selectSQL, queryTupleResult));
 	assertNotThrown!MYXWrongFunction(preparedInsert = cn.prepare(insertSQL));
 	assertNotThrown!MYXWrongFunction(preparedSelect = cn.prepare(selectSQL));
 	assertNotThrown!MYXWrongFunction(preparedInsert.exec());
-	assertNotThrown!MYXWrongFunction(preparedSelect.querySet());
 	assertNotThrown!MYXWrongFunction(preparedSelect.query().each());
 	assertNotThrown!MYXWrongFunction(preparedSelect.queryRowTuple(queryTupleResult));
 
 	assertThrown!MYXResultRecieved(cn.exec(selectSQL));
-	assertThrown!MYXNoResultRecieved(cn.querySet(insertSQL));
 	assertThrown!MYXNoResultRecieved(cn.query(insertSQL).each());
 	assertThrown!MYXNoResultRecieved(cn.queryRowTuple(insertSQL, queryTupleResult));
 	assertThrown!MYXResultRecieved(preparedSelect.exec());
-	assertThrown!MYXNoResultRecieved(preparedInsert.querySet());
 	assertThrown!MYXNoResultRecieved(preparedInsert.query().each());
 	assertThrown!MYXNoResultRecieved(preparedInsert.queryRowTuple(queryTupleResult));
 }

@@ -2,6 +2,12 @@ v2.0.0 - TBD
 =====================
 
 - **Removed:** Re-removed all deprecated symbols that were removed in v1.2.0 (@Abscissa)
+- **Removed:** Removed deprecated symbols: (@Abscissa)
+	- MySQL[whatever]Exception: Use `MYX[whatever]` instead.
+	- querySet/ResultSet: Import std.array and use `query(...).array` to
+		receive `Row[]` instead of a ResultSet.
+	- MYXDataPending: No longer thrown by mysql-native, as of v1.1.4. You can
+		safely remove all MYXDataPending handling from your code.
 
 v1.2.1 - 2017-01-13
 =====================

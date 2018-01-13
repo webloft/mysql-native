@@ -1,6 +1,7 @@
 ﻿/// Retrieve metadata from a DB.
 module mysql.metadata;
 
+import std.array;
 import std.conv;
 import std.datetime;
 import std.exception;
@@ -88,7 +89,7 @@ private:
 		string query = procs ? "SHOW PROCEDURE STATUS WHERE db='": "SHOW FUNCTION STATUS WHERE db='";
 		query ~= _con.currentDB ~ "'";
 
-		auto rs = _con.querySet(query);
+		auto rs = _con.query(query).array;
 		MySQLProcedure[] pa;
 		pa.length = rs.length;
 		foreach (size_t i; 0..rs.length)
@@ -161,7 +162,7 @@ public:
 	+/
 	string[] databases()
 	{
-		auto rs = _con.querySet("SHOW DATABASES");
+		auto rs = _con.query("SHOW DATABASES").array;
 		string[] dbNames;
 		dbNames.length = rs.length;
 		foreach (size_t i; 0..rs.length)
@@ -177,7 +178,7 @@ public:
 	+/
 	string[] tables()
 	{
-		auto rs = _con.querySet("SHOW TABLES");
+		auto rs = _con.query("SHOW TABLES").array;
 		string[] tblNames;
 		tblNames.length = rs.length;
 		foreach (size_t i; 0..rs.length)
@@ -207,7 +208,7 @@ public:
 			" COLUMN_KEY, EXTRA, PRIVILEGES, COLUMN_COMMENT" ~
 			" FROM information_schema.COLUMNS WHERE" ~
 			" table_schema='" ~ _con.currentDB ~ "' AND table_name='" ~ table ~ "'";
-		auto rs = _con.querySet(query);
+		auto rs = _con.query(query).array;
 		ColumnInfo[] ca;
 		ca.length = rs.length;
 		foreach (size_t i; 0..rs.length)
