@@ -14,6 +14,10 @@ module mysql.pool;
 import std.conv;
 import mysql.connection;
 import mysql.protocol.constants;
+debug(MYSQL_INTEGRATION_TESTS)
+{
+	import mysql.test.common;
+}
 
 version(Have_vibe_d_core) version = IncludeMySQLPool;
 version(MySQLDocs)        version = IncludeMySQLPool;
@@ -59,11 +63,16 @@ version(IncludeMySQLPool)
 	}
 
 	/++
-	A lightweight interface to a MySQL/MariaDB  database using vibe.d's
+	A lightweight convenience interface to a MySQL/MariaDB database using vibe.d's
 	$(LINK2 http://vibed.org/api/vibe.core.connectionpool/ConnectionPool, ConnectionPool).
 
 	You have to include vibe.d in your project to be able to use this class.
 	If you don't want to, refer to `mysql.connection.Connection`.
+
+	If, for any reason, this class doesn't suit your needs, it's easy to just
+	use vibe.d's $(LINK2 http://vibed.org/api/vibe.core.connectionpool/ConnectionPool, ConnectionPool)
+	directly. Simply provide it with a delegate that creates a new `mysql.connection.Connection`
+	and does any other custom processing if needed.
 	+/
 	class MySQLPool {
 		private {
@@ -73,13 +82,18 @@ version(IncludeMySQLPool)
 			string m_database;
 			ushort m_port;
 			SvrCapFlags m_capFlags;
+			void delegate(Connection) m_onNewConnection;
 			ConnectionPool!Connection m_pool;
 		}
 
 		/// Sets up a connection pool with the provided connection settings.
+		///
+		/// The optional `onNewConnection` param allows you to set a callback
+		/// which will be run every time a new connection is created.
 		this(string host, string user, string password, string database,
 			ushort port = 3306, uint maxConcurrent = (uint).max,
-			SvrCapFlags capFlags = defaultClientFlags)
+			SvrCapFlags capFlags = defaultClientFlags,
+			void delegate(Connection) onNewConnection = null)
 		{
 			m_host = host;
 			m_user = user;
@@ -87,27 +101,42 @@ version(IncludeMySQLPool)
 			m_database = database;
 			m_port = port;
 			m_capFlags = capFlags;
+			m_onNewConnection = onNewConnection;
 			m_pool = new ConnectionPool!Connection(&createConnection);
 		}
 
 		///ditto
 		this(string host, string user, string password, string database,
-			ushort port, SvrCapFlags capFlags)
+			ushort port, SvrCapFlags capFlags, void delegate(Connection) onNewConnection = null)
 		{
-			this(host, user, password, database, port, (uint).max, capFlags);
+			this(host, user, password, database, port, (uint).max, capFlags, onNewConnection);
 		}
 
 		///ditto
-		this(string connStr, uint maxConcurrent = (uint).max, SvrCapFlags capFlags = defaultClientFlags)
+		this(string host, string user, string password, string database,
+			ushort port, void delegate(Connection) onNewConnection)
+		{
+			this(host, user, password, database, port, (uint).max, defaultClientFlags, onNewConnection);
+		}
+
+		///ditto
+		this(string connStr, uint maxConcurrent = (uint).max, SvrCapFlags capFlags = defaultClientFlags,
+			void delegate(Connection) onNewConnection = null)
 		{
 			auto parts = Connection.parseConnectionString(connStr);
-			this(parts[0], parts[1], parts[2], parts[3], to!ushort(parts[4]), capFlags);
+			this(parts[0], parts[1], parts[2], parts[3], to!ushort(parts[4]), capFlags, onNewConnection);
 		}
 
 		///ditto
-		this(string connStr, SvrCapFlags capFlags)
+		this(string connStr, SvrCapFlags capFlags, void delegate(Connection) onNewConnection = null)
 		{
-			this(connStr, (uint).max, capFlags);
+			this(connStr, (uint).max, capFlags, onNewConnection);
+		}
+
+		///ditto
+		this(string connStr, void delegate(Connection) onNewConnection)
+		{
+			this(connStr, (uint).max, defaultClientFlags, onNewConnection);
 		}
 
 		/++
@@ -128,9 +157,72 @@ version(IncludeMySQLPool)
 
 		private Connection createConnection()
 		{
-			return new Connection(m_host, m_user, m_password, m_database, m_port, m_capFlags);
+			auto conn = new Connection(m_host, m_user, m_password, m_database, m_port, m_capFlags);
+
+			if(m_onNewConnection)
+				m_onNewConnection(conn);
+
+			return conn;
 		}
 
+		
+		/// Get/set a callback delegate to be run every time a new connection
+		/// is created.
+		@property void onNewConnection(void delegate(Connection) onNewConnection)
+		{
+			m_onNewConnection = onNewConnection;
+		}
+
+		///ditto
+		@property void delegate(Connection) onNewConnection()
+		{
+			return m_onNewConnection;
+		}
+
+		debug(MYSQL_INTEGRATION_TESTS)
+		unittest
+		{
+			auto count = 0;
+			void callback(Connection conn)
+			{
+				count++;
+			}
+
+			// Test getting/setting
+			auto poolA = new MySQLPool(testConnectionStr, &callback);
+			auto poolB = new MySQLPool(testConnectionStr);
+			auto poolNoCallback = new MySQLPool(testConnectionStr);
+			
+			assert(poolA.onNewConnection == &callback);
+			assert(poolB.onNewConnection is null);
+			assert(poolNoCallback.onNewConnection is null);
+			
+			poolB.onNewConnection = &callback;
+			assert(poolB.onNewConnection == &callback);
+			assert(count == 0);
+
+			// Ensure callback is called
+			{
+				auto connA = poolA.lockConnection();
+				assert(!connA.closed);
+				assert(count == 1);
+				
+				auto connB = poolB.lockConnection();
+				assert(!connB.closed);
+				assert(count == 2);
+			}
+
+			// Ensure works with no callback
+			{
+				auto oldCount = count;
+				auto poolC = new MySQLPool(testConnectionStr);
+				auto connC = poolC.lockConnection();
+				assert(!connC.closed);
+				assert(count == oldCount);
+			}
+		}
+
+		
 		/++
 		Forwards to vibe.d's
 		$(LINK2 http://vibed.org/api/vibe.core.connectionpool/ConnectionPool.maxConcurrency, ConnectionPool.maxConcurrency)
