@@ -1069,3 +1069,21 @@ public:
 	/// Gets the result header's field descriptions.
 	@property FieldDescription[] resultFieldDescriptions() pure { return _rsh.fieldDescriptions; }
 }
+
+// An attempt to reproduce issue #81: Using mysql-native driver with no default database
+// I'm unable to actually reproduce the error, though.
+debug(MYSQLN_TESTS)
+unittest
+{
+	import mysql.escape;
+	mixin(scopedCn);
+	
+	cn.exec("DROP TABLE IF EXISTS `issue81`");
+	cn.exec("CREATE TABLE `issue81` (a INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+	cn.exec("INSERT INTO `issue117` (a) VALUES (1)");
+
+	auto cn2 = new Connection(text("host=", cn._host, ";port=", cn._port, ";user=", cn._user, ";pwd=", cn._pwd));
+	scope(exit) cn2.close();
+	
+	cn2.query("SELECT a FROM `"~mysqlEscape(cn._db).text~"`.`issue81`");
+}
