@@ -8,6 +8,9 @@ v2.0.0 - TBD
 		receive `Row[]` instead of a ResultSet.
 	- MYXDataPending: No longer thrown by mysql-native, as of v1.1.4. You can
 		safely remove all MYXDataPending handling from your code.
+- **New:** [#115](https://github.com/mysql-d/mysql-native/issues/115):
+	Added Prepared.lastInsertID to retrieve last ID inserted by the given
+	prepared statement. (@Abscissa)
 - **New:** [#147](https://github.com/mysql-d/mysql-native/issues/147):
 	Pools can take optional callback for when new connections are created (@Abscissa)
 - **Docs:** [#146](https://github.com/mysql-d/mysql-native/issues/146):

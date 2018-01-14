@@ -20,6 +20,8 @@ import mysql.protocol.packet_helpers;
 import mysql.protocol.sockets;
 import mysql.result;
 import mysql.types;
+debug(MYSQLN_TESTS)
+	import mysql.test.common;
 
 /++
 A struct to represent specializations of prepared statement parameters.
@@ -323,6 +325,7 @@ package:
 	PreparedStmtHeaders _psh;
 	Variant[] _inParams;
 	ParameterSpecialization[] _psa;
+	ulong _lastInsertID;
 
 	static ubyte[] makeBitmap(in Variant[] inParams)
 	{
@@ -711,10 +714,31 @@ public:
 	ulong exec()
 	{
 		enforceNotReleased();
-		return execImpl(
+		auto ra = execImpl(
 			_conn,
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa)
 		);
+		_lastInsertID = _conn.lastInsertID;
+		return ra;
+	}
+
+	debug(MYSQLN_TESTS)
+	unittest
+	{
+		mixin(scopedCn);
+		cn.exec("DROP TABLE IF EXISTS `testPreparedLastInsertID`");
+		cn.exec("CREATE TABLE `testPreparedLastInsertID` (
+			`a` INTEGER NOT NULL AUTO_INCREMENT,
+			PRIMARY KEY (a)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+		
+		auto stmt = cn.prepare("INSERT INTO `testPreparedLastInsertID` VALUES()");
+		stmt.exec();
+		assert(stmt.lastInsertID == 1);
+		stmt.exec();
+		assert(stmt.lastInsertID == 2);
+		stmt.exec();
+		assert(stmt.lastInsertID == 3);
 	}
 
 	/++
@@ -747,10 +771,12 @@ public:
 	ResultRange query(ColumnSpecialization[] csa = null)
 	{
 		enforceNotReleased();
-		return queryImpl(
+		auto result = queryImpl(
 			csa, _conn,
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa)
 		);
+		_lastInsertID = _conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+		return result;
 	}
 
 	/++
@@ -773,8 +799,10 @@ public:
 	Nullable!Row queryRow(ColumnSpecialization[] csa = null)
 	{
 		enforceNotReleased();
-		return queryRowImpl(csa, _conn,
+		auto result = queryRowImpl(csa, _conn,
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa));
+		_lastInsertID = _conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+		return result;
 	}
 
 	/++
@@ -798,12 +826,13 @@ public:
 	void queryRowTuple(T...)(ref T args)
 	{
 		enforceNotReleased();
-		return queryRowTupleImpl(
+		queryRowTupleImpl(
 			_conn,
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa),
 			args
 		);
-	}
+		_lastInsertID = _conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+}
 
 	/++
 	Execute a prepared SQL SELECT command and returns a single value,
@@ -832,8 +861,10 @@ public:
 	+/
 	Nullable!Variant queryValue(ColumnSpecialization[] csa = null)
 	{
-		return queryValueImpl(csa, _conn,
+		auto result = queryValueImpl(csa, _conn,
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa));
+		_lastInsertID = _conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+		return result;
 	}
 
 	/++
@@ -1096,6 +1127,11 @@ public:
 	{
 		return _psParams;
 	}
+
+	/// After a command that inserted a row into a table with an auto-increment
+	/// ID column, this method allows you to retrieve the last insert ID generated
+	/// from this prepared statement.
+	@property ulong lastInsertID() pure const nothrow { return _lastInsertID; }
 
 	/// Gets the prepared header's field descriptions.
 	@property FieldDescription[] preparedFieldDescriptions() pure { return _psh.fieldDescriptions; }
