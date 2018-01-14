@@ -861,6 +861,7 @@ public:
 	+/
 	Nullable!Variant queryValue(ColumnSpecialization[] csa = null)
 	{
+		enforceNotReleased();
 		auto result = queryValueImpl(csa, _conn,
 			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa));
 		_lastInsertID = _conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
