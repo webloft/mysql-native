@@ -54,7 +54,7 @@ struct ColumnInfo
 	string comment;
 }
 
-/// A struct to hold stored function metadata
+/// A struct to hold stored function metadata.
 struct MySQLProcedure
 {
 	string db;
@@ -71,7 +71,7 @@ struct MySQLProcedure
 }
 
 /++
-Facilities to recover meta-data from a connection
+Facilities to recover meta-data from a connection.
 
 It is important to bear in mind that the methods provided will only return the
 information that is available to the connected user. This may well be quite limited.
@@ -192,7 +192,7 @@ public:
 	Params:
 		table = The table name
 	Returns:
-		An array of ColumnInfo structs
+		An array of `ColumnInfo` structs
 	+/
 	ColumnInfo[] columns(string table)
 	{
@@ -294,13 +294,13 @@ public:
 		return ca;
 	}
 
-	/// Get list of stored functions in the current database, and their properties
+	/// Get list of stored functions in the current database, and their properties.
 	MySQLProcedure[] functions()
 	{
 		return stored(false);
 	}
 
-	/// Get list of stored procedures in the current database, and their properties
+	/// Get list of stored procedures in the current database, and their properties.
 	MySQLProcedure[] procedures()
 	{
 		return stored(true);

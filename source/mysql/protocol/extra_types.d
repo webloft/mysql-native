@@ -41,23 +41,23 @@ struct SQLValue
 /// Length Coded Binary Value
 struct LCB
 {
-	/// True if the LCB contains a null value
+	/// True if the `LCB` contains a null value
 	bool isNull;
 
-	/// True if the packet that created this LCB didn't have enough bytes
-	/// to store a value of the size specified. More bytes have to be fetched from the server
+	/// True if the packet that created this `LCB` didn't have enough bytes
+	/// to store a value of the size specified. More bytes have to be fetched from the server.
 	bool isIncomplete;
 
 	/// Number of bytes needed to store the value (Extracted from the LCB header. The header byte is not included)
 	ubyte numBytes;
 
-	/// Number of bytes total used for this LCB
+	/// Number of bytes total used for this `LCB`
 	@property ubyte totalBytes() pure const nothrow
 	{
 		return cast(ubyte)(numBytes <= 1 ? 1 : numBytes+1);
 	}
 
-	/// The decoded value. This is always 0 if isNull or isIncomplete is set.
+	/// The decoded value. This is always 0 if `isNull` or `isIncomplete` is set.
 	ulong value;
 
 	pure const nothrow invariant()
@@ -84,8 +84,10 @@ struct LCB
 }
 
 /// Length Coded String
+///
+/// Dummy struct just to tell what value we are using.
+/// We don't need to store anything here as the result is always a string.
 struct LCS
 {
-	// dummy struct just to tell what value we are using
-	// we don't need to store anything here as the result is always a string
+	// Nothing
 }

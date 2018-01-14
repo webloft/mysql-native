@@ -29,12 +29,12 @@ import mysql.result;
 /++
 A struct to represent specializations of prepared statement parameters.
 
-If you are executing a query that will include result columns that are large objects
+If you are executing a query that will include result columns that are large objects,
 it may be expedient to deal with the data as it is received rather than first buffering
 it to some sort of byte array. These two variables allow for this. If both are provided
 then the corresponding column will be fed to the stipulated delegate in chunks of
-chunkSize, with the possible exception of the last chunk, which may be smaller.
-The 'finished' argument will be set to true when the last chunk is set.
+`chunkSize`, with the possible exception of the last chunk, which may be smaller.
+The bool argument `finished` will be set to true when the last chunk is set.
 
 Be aware when specifying types for column specializations that for some reason the
 field descriptions returned for a resultset have all of the types TINYTEXT, MEDIUMTEXT,
@@ -142,7 +142,7 @@ escaped. Otherwise consider using `mysql.prepared.Prepared`.
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
-conn = An open Connection to the database.
+conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 
 Returns: The number of rows affected.
@@ -170,7 +170,7 @@ package ulong execImpl(Connection conn, ExecQueryImplInfo info)
 Execute a one-off SQL SELECT command where you want to deal with the
 result set one row at a time.
 
-If you need random access to the resulting Row elements,
+If you need random access to the resulting `mysql.result.Row` elements,
 simply call $(LINK2 https://dlang.org/phobos/std_array.html#array, `std.array.array()`)
 on the result.
 
@@ -183,17 +183,17 @@ repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise consider using `mysql.prepared.Prepared`.
 
 If there are long data items among the expected result columns you can use
-the csa param to specify that they are to be subject to chunked transfer via a
+the `csa` param to specify that they are to be subject to chunked transfer via a
 delegate.
 
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
-conn = An open Connection to the database.
+conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
-csa = An optional array of ColumnSpecialization structs.
+csa = An optional array of `ColumnSpecialization` structs.
 
-Returns: A (possibly empty) ResultRange.
+Returns: A (possibly empty) `mysql.result.ResultRange`.
 
 Example:
 ---
@@ -222,7 +222,7 @@ package ResultRange queryImpl(ColumnSpecialization[] csa,
 }
 
 /++
-Execute a one-off SQL SELECT command where you only want the first Row (if any).
+Execute a one-off SQL SELECT command where you only want the first `mysql.result.Row` (if any).
 
 If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
@@ -233,17 +233,17 @@ repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise consider using `mysql.prepared.Prepared`.
 
 If there are long data items among the expected result columns you can use
-the csa param to specify that they are to be subject to chunked transfer via a
+the `csa` param to specify that they are to be subject to chunked transfer via a
 delegate.
 
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
-conn = An open Connection to the database.
+conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
-csa = An optional array of ColumnSpecialization structs.
+csa = An optional array of `ColumnSpecialization` structs.
 
-Returns: Nullable!Row: This will be null (check via Nullable.isNull) if the
+Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
 +/
 Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = null)
@@ -267,8 +267,8 @@ package Nullable!Row queryRowImpl(ColumnSpecialization[] csa, Connection conn,
 }
 
 /++
-Execute a one-off SQL SELECT command where you only want the first Row, and
-place result values into a set of D variables.
+Execute a one-off SQL SELECT command where you only want the first `mysql.result.Row`,
+and place result values into a set of D variables.
 
 This method will throw if any column type is incompatible with the corresponding D variable.
 
@@ -287,11 +287,9 @@ escaped. Otherwise consider using `mysql.prepared.Prepared`.
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
-conn = An open Connection to the database.
+conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 args = The variables, taken by reference, to receive the values.
-
-Params: args = A tuple of D variables to receive the results.
 +/
 void queryRowTuple(T...)(Connection conn, string sql, ref T args)
 {
@@ -358,17 +356,17 @@ repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise consider using `mysql.prepared.Prepared`.
 
 If there are long data items among the expected result columns you can use
-the csa param to specify that they are to be subject to chunked transfer via a
+the `csa` param to specify that they are to be subject to chunked transfer via a
 delegate.
 
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
-conn = An open Connection to the database.
+conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
-csa = An optional array of ColumnSpecialization structs.
+csa = An optional array of `ColumnSpecialization` structs.
 
-Returns: Nullable!Variant: This will be null (check via Nullable.isNull) if the
+Returns: `Nullable!Variant`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
 +/
 Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] csa = null)
@@ -376,7 +374,7 @@ Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] 
 	return queryValueImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 
-/// Common implementation for mysql.commands.querySet and Prepared.querySet
+/// Common implementation for `mysql.commands.querySet` and `Prepared.querySet`
 package Nullable!Variant queryValueImpl(ColumnSpecialization[] csa, Connection conn,
 	ExecQueryImplInfo info)
 {

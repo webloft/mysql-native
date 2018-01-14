@@ -25,7 +25,7 @@ enum SvrCapFlags: uint
 	SSL                 = 0x0_0800, /// Can switch to SSL after handshake
 	IGNORE_SIGPIPE      = 0x0_1000, /// Ignore sigpipes?
 	TRANSACTIONS        = 0x0_2000, /// Transaction support
-	RESERVED            = 0x0_4000, //  Old flag for 4.1 protocol
+	RESERVED            = 0x0_4000, ///  Old flag for 4.1 protocol
 	SECURE_CONNECTION   = 0x0_8000, /// 4.1+ authentication
 	MULTI_STATEMENTS    = 0x1_0000, /// Multiple statement support
 	MULTI_RESULTS       = 0x2_0000, /// Multiple result set support
@@ -120,7 +120,7 @@ enum CommandType : ubyte
 	STMT_FETCH          = 0x1c,
 }
 
-/// Magic marker sent in the first byte of mysql results in response to auth or command packets
+/// Magic marker sent in the first byte of mysql results in response to auth or command packets.
 enum ResultPacketMarker : ubyte
 {
 	/++

@@ -54,7 +54,7 @@ class MYXProtocol: MYX
 }
 
 /++
-Thrown when attempting to use a prepared statement which had already been released.
+Thrown when attempting to use a prepared statement which has already been released.
 +/
 class MYXNotPrepared: MYX
 {
@@ -65,15 +65,17 @@ class MYXNotPrepared: MYX
 }
 
 /++
-Common base class of MYXResultRecieved and MYXNoResultRecieved.
+Common base class of `MYXResultRecieved` and `MYXNoResultRecieved`.
 
-Thrown when making the wrong choice between exec or query.
+Thrown when making the wrong choice between `mysql.commands.exec` versus `mysql.commands.query`.
 
-The query functions (query, queryRow, etc.) are for SQL statements
-such as SELECT that return results (even if the result set has zero elements.)
+The query functions (`mysql.commands.query`, `mysql.prepared.PreparedImpl.query`,
+`mysql.commands.queryRow`, etc.) are for SQL statements such as SELECT that
+return results (even if the result set has zero elements.)
 
-The exec functions are for SQL statements, such as INSERT, that never return
-result sets, but may return rowsAffected.
+The exec functions (`mysql.commands.exec` and `mysql.prepared.PreparedImpl.exec`)
+are for SQL statements, such as INSERT, that never return result sets,
+but may return `rowsAffected`.
 
 Using one of those functions, when the other should have been used instead,
 results in an exception derived from this.
@@ -87,9 +89,12 @@ class MYXWrongFunction: MYX
 }
 
 /++
-Thrown when a result set was returned unexpectedly. Use the query functions
-(query, queryRow, etc.), not exec for commands that return
-result sets (such as SELECT), even if the result set has zero elements.
+Thrown when a result set was returned unexpectedly.
+
+Use the query functions (`mysql.commands.query`,
+`mysql.prepared.PreparedImpl.query`, `mysql.commands.queryRow`, etc.),
+not `mysql.commands.exec` or `mysql.prepared.PreparedImpl.exec` for commands
+that return result sets (such as SELECT), even if the result set has zero elements.
 +/
 class MYXResultRecieved: MYXWrongFunction
 {
@@ -105,7 +110,9 @@ class MYXResultRecieved: MYXWrongFunction
 
 /++
 Thrown when the executed query, unexpectedly, did not produce a result set.
-Use the exec functions, not query (query, queryRow, etc.),
+
+Use the `mysql.commands.exec` and `mysql.prepared.PreparedImpl.exec` functions,
+not `mysql.commands.query` (`mysql.commands.query`, `mysql.prepared.PreparedImpl.query`, `mysql.commands.queryRow`, etc.),
 for commands that don't produce result sets (such as INSERT).
 +/
 class MYXNoResultRecieved: MYXWrongFunction
@@ -122,7 +129,8 @@ class MYXNoResultRecieved: MYXWrongFunction
 
 /++
 Thrown when attempting to use a range that's been invalidated.
-In particular, when using a ResultRange after a new command
+
+This can occur when using a `mysql.result.ResultRange` after a new command
 has been issued on the same connection.
 +/
 class MYXInvalidatedRange: MYX

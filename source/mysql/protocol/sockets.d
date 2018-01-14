@@ -14,17 +14,17 @@ version(Have_vibe_d_core)
 		static assert(false, "mysql-native can't find Vibe.d's 'vibe.core.net'.");
 }
 
-// Phobos/Vibe.d type aliases
+/// Phobos/Vibe.d type aliases
 alias PlainPhobosSocket = std.socket.TcpSocket;
 version(Have_vibe_d_core)
 {
 	static import vibe.core.net;
-	alias PlainVibeDSocket = vibe.core.net.TCPConnection;
+	alias PlainVibeDSocket = vibe.core.net.TCPConnection; ///ditto
 }
 else
 {
 	// Dummy types
-	alias PlainVibeDSocket = Object;
+	alias PlainVibeDSocket = Object; ///ditto
 }
 
 alias OpenSocketCallbackPhobos = PlainPhobosSocket function(string,ushort);
@@ -32,8 +32,8 @@ alias OpenSocketCallbackVibeD = PlainVibeDSocket function(string,ushort);
 
 enum MySQLSocketType { phobos, vibed }
 
-// A minimal socket interface similar to Vibe.d's TCPConnection.
-// Used to wrap both Phobos and Vibe.d sockets with a common interface.
+/// A minimal socket interface similar to Vibe.d's TCPConnection.
+/// Used to wrap both Phobos and Vibe.d sockets with a common interface.
 interface MySQLSocket
 {
 	void close();
@@ -47,12 +47,12 @@ interface MySQLSocket
 	bool amOwner();
 }
 
-// Wraps a Phobos socket with the common interface
+/// Wraps a Phobos socket with the common interface
 class MySQLSocketPhobos : MySQLSocket
 {
 	private PlainPhobosSocket socket;
 
-	// The socket should already be open
+	/// The socket should already be open
 	this(PlainPhobosSocket socket)
 	{
 		enforceEx!MYX(socket, "Tried to use a null Phobos socket - Maybe the 'openSocket' callback returned null?");
@@ -102,13 +102,13 @@ class MySQLSocketPhobos : MySQLSocket
 	bool amOwner() { return true; }
 }
 
-// Wraps a Vibe.d socket with the common interface
 version(Have_vibe_d_core) {
+	/// Wraps a Vibe.d socket with the common interface
 	class MySQLSocketVibeD : MySQLSocket
 	{
 		private PlainVibeDSocket socket;
 
-		// The socket should already be open
+		/// The socket should already be open
 		this(PlainVibeDSocket socket)
 		{
 			enforceEx!MYX(socket, "Tried to use a null Vibe.d socket - Maybe the 'openSocket' callback returned null?");

@@ -153,7 +153,7 @@ with a leading length byte, and a minimal number of bytes to embody the data.
 
 Params: a = slice of a protocol packet beginning at the length byte for a
             chunk of Date data.
-Returns: A populated or default initialized std.datetime.Date struct.
+Returns: A populated or default initialized `std.datetime.Date` struct.
 +/
 Date toDate(in ubyte[] a) pure
 {
@@ -174,7 +174,7 @@ Function to extract a Date from a text encoded column value.
 Text representations of a Date are as in 2011-11-11
 
 Params: s = A string representation of the time difference.
-Returns: A populated or default initialized std.datetime.Date struct.
+Returns: A populated or default initialized `std.datetime.Date` struct.
 +/
 Date toDate(string s)
 {
@@ -192,7 +192,7 @@ Function to pack a Date into a binary encoding for transmission to the server.
 Time/date structures are packed into a string of bytes with a leading length
 byte, and a minimal number of bytes to embody the data.
 
-Params: dt = std.datetime.Date struct.
+Params: dt = `std.datetime.Date` struct.
 Returns: Packed ubyte[].
 +/
 ubyte[] pack(in Date dt) pure nothrow
@@ -223,7 +223,7 @@ with a leading length byte, and a minimal number of bytes to embody the data.
 
 Params: a = slice of a protocol packet beginning at the length byte for a
             chunk of DateTime data
-Returns: A populated or default initialized std.datetime.DateTime struct.
+Returns: A populated or default initialized `std.datetime.DateTime` struct.
 +/
 DateTime toDateTime(in ubyte[] a) pure
 {
@@ -257,7 +257,7 @@ Function to extract a DateTime from a text encoded column value.
 Text representations of a DateTime are as in 2011-11-11 12:20:02
 
 Params: s = A string representation of the time difference.
-Returns: A populated or default initialized std.datetime.DateTime struct.
+Returns: A populated or default initialized `std.datetime.DateTime` struct.
 +/
 DateTime toDateTime(string s)
 {
@@ -281,7 +281,7 @@ Function to extract a DateTime from a ulong.
 This is used to support the TimeStamp  struct.
 
 Params: x = A ulong e.g. 20111111122002UL.
-Returns: A populated std.datetime.DateTime struct.
+Returns: A populated `std.datetime.DateTime` struct.
 +/
 DateTime toDateTime(ulong x)
 {
@@ -309,7 +309,7 @@ Function to pack a DateTime into a binary encoding for transmission to the serve
 Time/date structures are packed into a string of bytes with a leading length byte,
 and a minimal number of bytes to embody the data.
 
-Params: dt = std.datetime.DateTime struct.
+Params: dt = `std.datetime.DateTime` struct.
 Returns: Packed ubyte[].
 +/
 ubyte[] pack(in DateTime dt) pure nothrow
@@ -772,11 +772,11 @@ byte getNumLCBBytes(in ubyte lcbHeader) pure nothrow
 /++
 Decodes a Length Coded Binary from a packet
 
-See_Also: struct LCB
+See_Also: struct `mysql.protocol.extra_types.LCB`
 
-Parameters:
+Params:
 packet = A packet that starts with a LCB. The bytes is popped off
-         iff the packet is complete. See LCB.
+         iff the packet is complete. See `mysql.protocol.extra_types.LCB`.
 
 Returns: A decoded LCB value
 +/
@@ -837,10 +837,10 @@ body
 /++
 Decodes a Length Coded Binary from a packet
 
-See_Also: struct LCB
+See_Also: struct `mysql.protocol.extra_types.LCB`
 
-Parameters:
- packet = A packet that starts with a LCB. See LCB.
+Params:
+packet = A packet that starts with a LCB. See `mysql.protocol.extra_types.LCB`.
 
 Returns: A decoded LCB value
 +/
@@ -905,13 +905,13 @@ body
 }
 
 /++
-Converts a value into a sequence of bytes and fills the supplied array
+Converts a value into a sequence of bytes and fills the supplied array.
 
-Parameters:
-IsInt24 = If only the most significant 3 bytes from the value should be used
-value = The value to add to array
+Params:
+IsInt24 = If only the most significant 3 bytes from the value should be used.
+value = The value to add to array.
 array = The array we should add the values for. It has to be large enough,
-        and the values are packed starting index 0
+        and the values are packed starting index 0.
 +/
 void packInto(T, bool IsInt24 = false)(T value, ubyte[] array) pure nothrow
 in
@@ -1114,7 +1114,7 @@ unittest
 }
 
 /// Set packet length and number. It's important that the length of packet has
-/// already been set to the final state as its length is used
+/// already been set to the final state as its length is used.
 void setPacketHeader(ref ubyte[] packet, ubyte packetNumber) pure nothrow
 in
 {

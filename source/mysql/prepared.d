@@ -24,17 +24,11 @@ import mysql.types;
 /++
 A struct to represent specializations of prepared statement parameters.
 
-Strongly considering the removal of the isNull field, now that Prepared
-can handle `null` as a value just fine.
-
-There are two specializations. First you can set an isNull flag to indicate that the
-parameter is to have the SQL NULL value.
-
-Second, if you need to send large objects to the database it might be convenient to
-send them in pieces. These two variables allow for this. If both are provided
-then the corresponding column will be populated by calling the delegate repeatedly.
-the source should fill the indicated slice with data and arrange for the delegate to
-return the length of the data supplied. Af that is less than the chunkSize
+If you need to send large objects to the database it might be convenient to
+send them in pieces. The `chunkSize` and `chunkDelegate` variables allow for this.
+If both are provided then the corresponding column will be populated by calling the delegate repeatedly.
+The source should fill the indicated slice with data and arrange for the delegate to
+return the length of the data supplied. If that is less than the `chunkSize`
 then the chunk will be assumed to be the last one.
 +/
 struct ParameterSpecialization
@@ -55,8 +49,8 @@ Encapsulation of a prepared statement.
 Commands that are expected to return a result set - queries - have distinctive
 methods that are enforced. That is it will be an error to call such a method
 with an SQL command that does not produce a result set. So for commands like
-SELECT, use the `query` functions. For other commands, like
-INSERT/UPDATE/CREATE/etc, use `exec`.
+SELECT, use the `PreparedImpl.query` functions. For other commands, like
+INSERT/UPDATE/CREATE/etc, use `PreparedImpl.exec`.
 
 Internally, `Prepared` simply wraps a `PreparedImpl` with
 $(LINK2 https://dlang.org/phobos/std_typecons.html#.RefCounted, `RefCounted`),
@@ -69,6 +63,7 @@ struct Prepared
 	RefCounted!(PreparedImpl, RefCountedAutoInitialize.no) preparedImpl;
 	alias preparedImpl this;
 	
+	/// false if the statement is uninitialized or has been released.
 	@property bool isPrepared() pure const
 	{
 		return preparedImpl.refCountedStore.isInitialized && !preparedImpl.isReleased;
@@ -87,7 +82,7 @@ The server will then proceed to send prepared statement headers,
 including parameter descriptions, and result set field descriptions,
 followed by an EOF packet.
 
-Throws: MYX if the server has a problem.
+Throws: `mysql.exceptions.MYX` if the server has a problem.
 +/
 Prepared prepare(Connection conn, string sql)
 {
@@ -100,7 +95,7 @@ Convenience function to create a prepared statement which calls a stored functio
 Be careful that your numArgs is correct. If it isn't, you may get a
 `mysql.exceptions.MYX` with a very unclear error message.
 
-Throws: MYX if the server has a problem.
+Throws: `mysql.exceptions.MYX` if the server has a problem.
 
 Params:
 	name = The name of the stored function.
@@ -144,7 +139,7 @@ possible with MySQL to present them as a result set.
 Be careful that your numArgs is correct. If it isn't, you may get a
 `mysql.exceptions.MYX` with a very unclear error message.
 
-Throws: MYX if the server has a problem.
+Throws: `mysql.exceptions.MYX` if the server has a problem.
 
 Params:
 	name = The name of the stored procedure.
@@ -726,7 +721,7 @@ public:
 	Execute a prepared SQL SELECT command where you want to deal with the
 	result set one row at a time.
 
-	If you need random access to the resulting Row elements,
+	If you need random access to the resulting `mysql.result.Row` elements,
 	simply call $(LINK2 https://dlang.org/phobos/std_array.html#array, `std.array.array()`)
 	on the result.
 
@@ -735,13 +730,13 @@ public:
 	`exec` instead for such commands.
 
 	If there are long data items among the expected result columns you can use
-	the csa param to specify that they are to be subject to chunked transfer via a
+	the `csa` param to specify that they are to be subject to chunked transfer via a
 	delegate.
 
 	Type_Mappings: $(TYPE_MAPPINGS)
 
-	Params: csa = An optional array of ColumnSpecialization structs.
-	Returns: A (possibly empty) ResultRange.
+	Params: csa = An optional array of `mysql.commands.ColumnSpecialization` structs.
+	Returns: A (possibly empty) `mysql.result.ResultRange`.
 
 	Example:
 	---
@@ -759,20 +754,20 @@ public:
 	}
 
 	/++
-	Execute a prepared SQL SELECT command where you only want the first Row (if any).
+	Execute a prepared SQL SELECT command where you only want the first `mysql.result.Row` (if any).
 
 	If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 	then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 	`exec` instead for such commands.
 
 	If there are long data items among the expected result columns you can use
-	the csa param to specify that they are to be subject to chunked transfer via a
+	the `csa` param to specify that they are to be subject to chunked transfer via a
 	delegate.
 
 	Type_Mappings: $(TYPE_MAPPINGS)
 
-	Params: csa = An optional array of ColumnSpecialization structs.
-	Returns: Nullable!Row: This will be null (check via Nullable.isNull) if the
+	Params: csa = An optional array of `mysql.commands.ColumnSpecialization` structs.
+	Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 	query resulted in an empty result set.
 	+/
 	Nullable!Row queryRow(ColumnSpecialization[] csa = null)
@@ -783,8 +778,8 @@ public:
 	}
 
 	/++
-	Execute a prepared SQL SELECT command where you only want the first Row, and
-	place result values into a set of D variables.
+	Execute a prepared SQL SELECT command where you only want the first `mysql.result.Row`,
+	and place result values into a set of D variables.
 	
 	This method will throw if any column type is incompatible with the corresponding D variable.
 
@@ -826,13 +821,13 @@ public:
 	`exec` instead for such commands.
 
 	If there are long data items among the expected result columns you can use
-	the csa param to specify that they are to be subject to chunked transfer via a
+	the `csa` param to specify that they are to be subject to chunked transfer via a
 	delegate.
 
 	Type_Mappings: $(TYPE_MAPPINGS)
 
-	Params: csa = An optional array of ColumnSpecialization structs.
-	Returns: Nullable!Variant: This will be null (check via Nullable.isNull) if the
+	Params: csa = An optional array of `mysql.commands.ColumnSpecialization` structs.
+	Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 	query resulted in an empty result set.
 	+/
 	Nullable!Variant queryValue(ColumnSpecialization[] csa = null)
@@ -930,8 +925,9 @@ public:
 
 	Type_Mappings: $(TYPE_MAPPINGS)
 
-	Params: va = External list of Variants to be used as parameters
-	               psnList = any required specializations
+	Params:
+	va = External list of Variants to be used as parameters
+	psnList = Any required specializations
 	+/
 	void setArgs(Variant[] va, ParameterSpecialization[] psnList= null)
 	{
@@ -975,7 +971,7 @@ public:
 		setArg(index, null);
 	}
 
-	/// Gets the SQL command for this prepared statement
+	/// Gets the SQL command for this prepared statement.
 	string sql()
 	{
 		return _sql;
@@ -1053,15 +1049,15 @@ public:
 	Notes:
 	
 	In actuality, the server might not immediately be told to release the
-	statement (although this instance of Prepared will still behave as though
+	statement (although this instance of `Prepared` will still behave as though
 	it's been released, regardless).
 	
-	This is because there could be a ResultRange with results still pending
+	This is because there could be a `mysql.result.ResultRange` with results still pending
 	for retreival, and the protocol doesn't allow sending commands (such as
 	"release a prepared statement") to the server while data is pending.
 	Therefore, this function may instead queue the statement to be released
 	when it is safe to do so: Either the next time a result set is purged or
-	the next time a command (such as query or exec) is performed (because
+	the next time a command (such as `query` or `exec`) is performed (because
 	such commands automatically purge any pending results).
 	+/
 	void release()

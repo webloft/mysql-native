@@ -5,7 +5,7 @@ $(LINK2 http://vibed.org/api/vibe.core.connectionpool/ConnectionPool, Connection
 You have to include vibe.d in your project to be able to use this class.
 If you don't want to, refer to `mysql.connection.Connection`.
 
-This provides various benefits over creating a new Connection manually,
+This provides various benefits over creating a new connection manually,
 such as automatically reusing old connections, and automatic cleanup (no need to close
 the connection when done).
 +/
@@ -29,20 +29,20 @@ version(IncludeMySQLPool)
 		$(LINK2 http://vibed.org/api/vibe.core.connectionpool/ConnectionPool, ConnectionPool)
 		class.
 
-		Not actually included in module mysql.pool. Only listed here for
+		Not actually included in module `mysql.pool`. Only listed here for
 		documentation purposes. For ConnectionPool and it's documentation, see:
 		$(LINK http://vibed.org/api/vibe.core.connectionpool/ConnectionPool)
 		+/
 		class ConnectionPool(T)
 		{
-			/// See: http://vibed.org/api/vibe.core.connectionpool/ConnectionPool.this
+			/// See: $(LINK http://vibed.org/api/vibe.core.connectionpool/ConnectionPool.this)
 			this(Connection delegate() connection_factory, uint max_concurrent = (uint).max)
 			{}
 
-			/// See: http://vibed.org/api/vibe.core.connectionpool/ConnectionPool.lockConnection
+			/// See: $(LINK http://vibed.org/api/vibe.core.connectionpool/ConnectionPool.lockConnection)
 			LockedConnection!T lockConnection() { return LockedConnection!T(); }
 
-			/// See: http://vibed.org/api/vibe.core.connectionpool/ConnectionPool.maxConcurrency
+			/// See: $(LINK http://vibed.org/api/vibe.core.connectionpool/ConnectionPool.maxConcurrency)
 			uint maxConcurrency;
 		}
 
@@ -51,7 +51,7 @@ version(IncludeMySQLPool)
 		$(LINK2 http://vibed.org/api/vibe.core.connectionpool/LockedConnection, LockedConnection)
 		struct.
 
-		Not actually included in module mysql.pool. Only listed here for
+		Not actually included in module `mysql.pool`. Only listed here for
 		documentation purposes. For LockedConnection and it's documentation, see:
 		$(LINK http://vibed.org/api/vibe.core.connectionpool/LockedConnection)
 		+/
@@ -118,9 +118,9 @@ version(IncludeMySQLPool)
 		(See vibe.d's
 		$(LINK2 http://vibed.org/api/vibe.core.connectionpool/LockedConnection, LockedConnection documentation).)
 
-		No other fiber will be given this Connection as long as your fiber still holds it.
+		No other fiber will be given this `mysql.connection.Connection` as long as your fiber still holds it.
 
-		There is no need to close, release or "unlock" this connection. It is
+		There is no need to close, release or unlock this connection. It is
 		reference-counted and will automatically be returned to the pool once
 		your fiber is done with it.
 		+/

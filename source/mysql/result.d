@@ -166,7 +166,7 @@ public:
 	/++
 	Simplify retrieval of a column value by index.
 	
-	To check for null, use Variant's .type property:
+	To check for null, use Variant's `type` property:
 	`row[index].type == typeid(typeof(null))`
 
 	Type_Mappings: $(TYPE_MAPPINGS)
@@ -207,8 +207,9 @@ public:
 	
 	Type_Mappings: $(TYPE_MAPPINGS)
 
-	Params: S = a struct type.
-	               s = an ref instance of the type
+	Params:
+	S = A struct type.
+	s = A ref instance of the type
 	+/
 	void toStruct(S)(ref S s) if (is(S == struct))
 	{
@@ -266,6 +267,13 @@ a `length` member. If you need random access, then just like any other range,
 you can simply convert this range to an array via
 $(LINK2 https://dlang.org/phobos/std_array.html#array, `std.array.array()`).
 
+A `ResultRange` becomes invalidated (and thus cannot be used) when the server
+is sent another command on the same connection. When an invalidated `ResultRange`
+is used, a `mysql.exceptions.MYXInvalidatedRange` is thrown. If you need to
+send the server another command, but still access these results afterwords,
+you can save the results for later by converting this range to an array via
+$(LINK2 https://dlang.org/phobos/std_array.html#array, `std.array.array()`).
+
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Example:
@@ -302,13 +310,22 @@ package:
 	}
 
 public:
-	/// Check whether the range can still we used, or has been invalidated
+	/++
+	Check whether the range can still we used, or has been invalidated.
+
+	A `ResultRange` becomes invalidated (and thus cannot be used) when the server
+	is sent another command on the same connection. When an invalidated `ResultRange`
+	is used, a `mysql.exceptions.MYXInvalidatedRange` is thrown. If you need to
+	send the server another command, but still access these results afterwords,
+	you can save the results for later by converting this range to an array via
+	$(LINK2 https://dlang.org/phobos/std_array.html#array, `std.array.array()`).
+	+/
 	@property bool isValid() const pure nothrow
 	{
 		return _con !is null && _commandID == _con.lastCommandID;
 	}
 
-	/// Make the ResultRange behave as an input range - empty
+	/// Check whether there are any rows left
 	@property bool empty() const pure nothrow
 	{
 		if(!isValid)
@@ -318,8 +335,6 @@ public:
 	}
 
 	/++
-	Make the ResultRange behave as an input range - front
-	
 	Gets the current row
 	+/
 	@property inout(Row) front() pure inout
@@ -330,8 +345,6 @@ public:
 	}
 
 	/++
-	Make the ResultRange behave as am input range - popFront()
-	
 	Progresses to the next row of the result set - that will then be 'front'
 	+/
 	void popFront()
@@ -382,7 +395,7 @@ public:
 	}
 
 	/++
-	Get the number of currently retrieved.
+	Get the number of rows retrieved so far.
 	
 	Note that this is not neccessarlly the same as the length of the range.
 	+/

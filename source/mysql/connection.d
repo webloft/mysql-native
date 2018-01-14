@@ -604,13 +604,14 @@ public:
 		cs = A connection string of the form "host=localhost;user=user;pwd=password;db=mysqld"
 			(TODO: The connection string needs work to allow for semicolons in its parts!)
 		socketType = Whether to use a Phobos or Vibe.d socket. Default is Phobos,
-			unless -version=Have_vibe_d_core is used.
+			unless compiled with `-version=Have_vibe_d_core` (set automatically
+			if using $(LINK2 http://code.dlang.org/getting_started, DUB)).
 		openSocket = Optional callback which should return a newly-opened Phobos
 			or Vibe.d TCP socket. This allows custom sockets to be used,
 			subclassed from Phobos's or Vibe.d's sockets.
 		host = An IP address in numeric dotted form, or as a host  name.
 		user = The user name to authenticate.
-		password = Users password.
+		password = User's password.
 		db = Desired initial database.
 		capFlags = The set of flag bits from the server's capabilities that the client requires
 	+/
@@ -717,7 +718,7 @@ public:
 	}
 
 	/++
-	Check whether this Connection is still connected to the server, or if
+	Check whether this `Connection` is still connected to the server, or if
 	the connection has been closed.
 	+/
 	@property bool closed()
@@ -776,14 +777,15 @@ public:
 
 	/++
 	Reconnects to the server using the same connection settings originally
-	used to create the Connection.
+	used to create the `Connection`.
 
-	Optionally takes a SvrCapFlags, allowing you to reconnect using a different
-	set of server capability flags (most users will not need to do this).
+	Optionally takes a `mysql.protocol.constants.SvrCapFlags`, allowing you to
+	reconnect using a different set of server capability flags.
 
-	If the connection is already open, this will do nothing. However, if you
-	request a different set of SvrCapFlags then was originally used to create
-	the Connection, the connection will be closed and then reconnected.
+	Normally, if the connection is already open, this will do nothing. However,
+	if you request a different set of `mysql.protocol.constants.SvrCapFlags`
+	then was originally used to create the `Connection`, the connection will
+	be closed and then reconnected using the new `mysql.protocol.constants.SvrCapFlags`.
 	+/
 	void reconnect()
 	{
@@ -877,8 +879,9 @@ public:
 	/++
 	Select a current database.
 	
+	Throws `mysql.exceptions.MYX` upon failure.
+
 	Params: dbName = Name of the requested database
-	Throws: MYX
 	+/
 	void selectDB(string dbName)
 	{
@@ -888,10 +891,11 @@ public:
 	}
 
 	/++
-	Check the server status
+	Check the server status.
 	
-	Returns: An OKErrorPacket from which server status can be determined
-	Throws: MYX
+	Throws `mysql.exceptions.MYX` upon failure.
+
+	Returns: An `mysql.protocol.packets.OKErrorPacket` from which server status can be determined
 	+/
 	OKErrorPacket pingServer()
 	{
@@ -902,8 +906,9 @@ public:
 	/++
 	Refresh some feature(s) of the server.
 	
-	Returns: An OKErrorPacket from which server status can be determined
-	Throws: MYX
+	Throws `mysql.exceptions.MYX` upon failure.
+
+	Returns: An `mysql.protocol.packets.OKErrorPacket` from which server status can be determined
 	+/
 	OKErrorPacket refreshServer(RefreshFlags flags)
 	{
@@ -912,18 +917,12 @@ public:
 	}
 
 	/++
-	Get the next Row of a pending result set.
+	Internal - Get the next `mysql.result.Row` of a pending result set.
 	
-	This method can be used after either execSQL() or execPrepared() have returned true
-	to retrieve result set rows sequentially.
+	This is intended to be internal, you should not use it directly.
+	It will not likely remain public in the future.
 	
-	Similar functionality is available via execSQLSequence() and execPreparedSequence() in
-	which case the interface is presented as a forward range of Rows.
-	
-	This method allows you to deal with very large result sets either a row at a time,
-	or by feeding the rows into some suitable container such as a linked list.
-	
-	Returns: A Row object.
+	Returns: A `mysql.result.Row` object.
 	+/
 	Row getNextRow()
 	{
@@ -955,9 +954,13 @@ public:
 	
 	When the server responds to a command that produces a result set, it
 	queues the whole set of corresponding packets over the current connection.
-	Before that Connection can embark on any new command, it must receive
+	Before that `Connection` can embark on any new command, it must receive
 	all of those packets and junk them.
-	http://www.mysqlperformanceblog.com/2007/07/08/mysql-net_write_timeout-vs-wait_timeout-and-protocol-notes/
+	
+	As of v1.1.4, this is done automatically as needed. But you can still
+	call this manually to force a purge to occur when you want.
+
+	See_Also: $(LINK http://www.mysqlperformanceblog.com/2007/07/08/mysql-net_write_timeout-vs-wait_timeout-and-protocol-notes/)
 	+/
 	ulong purgeResult()
 	{
@@ -1006,7 +1009,7 @@ public:
 	}
 
 	/++
-	Enable multiple statement commands
+	Enable multiple statement commands.
 	
 	This can be used later if this feature was not requested in the client capability flags.
 	
@@ -1027,7 +1030,7 @@ public:
 		enforceEx!MYXProtocol(packet[0] == 254 && packet.length == 5, "Unexpected response to SET_OPTION command");
 	}
 
-	/// Return the in-force protocol number
+	/// Return the in-force protocol number.
 	@property ubyte protocol() pure const nothrow { return _protocol; }
 	/// Server version
 	@property string serverVersion() pure const nothrow { return _serverVersion; }
@@ -1039,7 +1042,7 @@ public:
 	@property ubyte charSet() pure const nothrow { return _sCharSet; }
 	/// Current database
 	@property string currentDB() pure const nothrow { return _db; }
-	/// Socket type being used
+	/// Socket type being used, Phobos or Vibe.d
 	@property MySQLSocketType socketType() pure const nothrow { return _socketType; }
 
 	/// After a command that inserted a row into a table with an auto-increment
@@ -1047,14 +1050,17 @@ public:
 	@property ulong lastInsertID() pure const nothrow { return _insertID; }
 
 	/// This gets incremented every time a command is issued or results are purged,
-	/// so a ResultRange can tell whether it's been invalidated.
+	/// so a `mysql.result.ResultRange` can tell whether it's been invalidated.
 	@property ulong lastCommandID() pure const nothrow { return _lastCommandID; }
 
-	/// Gets whether rows are pending
+	/// Gets whether rows are pending.
+	///
+	/// Note, you may want `hasPending` instead.
 	@property bool rowsPending() pure const nothrow { return _rowsPending; }
 
 	/// Gets whether anything (rows, headers or binary) is pending.
 	/// New commands cannot be sent on a conncection while anything is pending.
+	/// (The pending data will automatically be purged.)
 	@property bool hasPending() pure const nothrow
 	{
 		return _rowsPending || _headersPending || _binaryPending;

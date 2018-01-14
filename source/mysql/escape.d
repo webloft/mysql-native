@@ -1,4 +1,11 @@
-/// Escape special characters in MySQL strings.
+/++
+Escape special characters in MySQL strings.
+
+Note, it is strongly recommended to use prepared statements instead of relying
+on manual escaping, as prepared statements are always safer, better and more
+reliable (see `mysql.prepared`). But if you absolutely must escape manually,
+the functionality is provided here.
++/
 module mysql.escape;
 
 
@@ -31,8 +38,8 @@ void mysql_escape ( Buffer, Input ) ( Input input, Buffer buffer )
 Struct to wrap around a string so it can be passed to formattedWrite and be
 properly escaped all using the buffer that formattedWrite provides.
 
-Template Params:
-	Input = Type of the input
+Params:
+	Input = (Template Param) Type of the input
 +/
 struct MysqlEscape ( Input )
 {
@@ -53,11 +60,9 @@ struct MysqlEscape ( Input )
 /++
 Helper function to easily construct a escape wrapper struct
 
-Template Params:
-	T = type of the input
-
 Params:
-	input = input to escape
+	T = (Template Param) Type of the input
+	input = Input to escape
 +/
 MysqlEscape!(T) mysqlEscape ( T ) ( T input )
 {
