@@ -29,7 +29,7 @@ import mysql.test.common;
 
 // Issue #40: Decoding LCB value for large feilds
 // And likely Issue #18: select varchar - thinks the package is incomplete while it's actually complete
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -52,7 +52,7 @@ unittest
 }
 
 // Issue #24: Driver doesn't like BIT
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -78,7 +78,7 @@ unittest
 }
 
 // Issue #33: TINYTEXT, TEXT, MEDIUMTEXT, LONGTEXT types treated as ubyte[]
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -104,7 +104,7 @@ unittest
 }
 
 // Issue #39: Unsupported SQL type NEWDECIMAL
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -114,7 +114,7 @@ unittest
 }
 
 // Issue #56: Result set quantity does not equal MySQL rows quantity
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -139,7 +139,7 @@ unittest
 }
 
 // Issue #66: Can't connect when omitting default database
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	auto a = Connection.parseConnectionString(testConnectionStr);
@@ -158,7 +158,7 @@ unittest
 }
 
 // Issue #117: Server packet out of order when Prepared is destroyed too early
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -182,7 +182,7 @@ unittest
 }
 
 // Issue #133: `queryValue`: result of 1 row & field `NULL` check inconsistency / error
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -199,7 +199,7 @@ unittest
 }
 
 // Issue #139: Server packet out of order when Prepared is destroyed too early
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -229,7 +229,7 @@ unittest
 }
 
 // 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	import mysql.types;

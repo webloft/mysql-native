@@ -14,7 +14,7 @@ module mysql.pool;
 import std.conv;
 import mysql.connection;
 import mysql.protocol.constants;
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 {
 	import mysql.test.common;
 }
@@ -179,7 +179,7 @@ version(IncludeMySQLPool)
 			return m_onNewConnection;
 		}
 
-		debug(MYSQL_INTEGRATION_TESTS)
+		debug(MYSQLN_TESTS)
 		unittest
 		{
 			auto count = 0;

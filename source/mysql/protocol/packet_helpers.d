@@ -1006,7 +1006,7 @@ ubyte[] packLCS(void[] a) pure nothrow
 }
 
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	static void testLCB(string parseLCBFunc)(bool shouldConsume)
@@ -1056,7 +1056,7 @@ unittest
 	testLCB!"decode"(false);
 }
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	ubyte[] buf;

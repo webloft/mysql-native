@@ -319,7 +319,7 @@ package void queryRowTupleImpl(T...)(Connection conn, ExecQueryImplInfo info, re
 }
 
 // Test what happends when queryRowTuple receives no rows
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	import mysql.prepared;

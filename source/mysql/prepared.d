@@ -110,7 +110,7 @@ Prepared prepareFunction(Connection conn, string name, int numArgs)
 ///
 unittest
 {
-	debug(MYSQL_INTEGRATION_TESTS)
+	debug(MYSQLN_TESTS)
 	{
 		import mysql.test.common;
 		mixin(scopedCn);
@@ -155,7 +155,7 @@ Prepared prepareProcedure(Connection conn, string name, int numArgs)
 ///
 unittest
 {
-	debug(MYSQL_INTEGRATION_TESTS)
+	debug(MYSQLN_TESTS)
 	{
 		import mysql.test.common;
 		import mysql.test.integration;
@@ -199,7 +199,7 @@ private string preparedPlaceholderArgs(int numArgs)
 	return sql;
 }
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	assert(preparedPlaceholderArgs(3) == "(?,?,?)");
@@ -230,7 +230,7 @@ private:
 		enforceEx!MYXNotPrepared(hStmt);
 	}
 
-	debug(MYSQL_INTEGRATION_TESTS)
+	debug(MYSQLN_TESTS)
 	unittest
 	{
 		import mysql.prepared;
@@ -977,7 +977,7 @@ public:
 		return _sql;
 	}
 
-	debug(MYSQL_INTEGRATION_TESTS)
+	debug(MYSQLN_TESTS)
 	unittest
 	{
 		import mysql.prepared;

@@ -12,6 +12,9 @@ v2.0.0 - TBD
 	Pools can take optional callback for when new connections are created (@Abscissa)
 - **Docs:** [#146](https://github.com/mysql-d/mysql-native/issues/146):
 	Make sure all ddox cross-linking is fixed. (@Abscissa)
+- **Internal:**
+	Renamed debug symbol `MYSQL_INTEGRATION_TESTS` to the more accurate
+	`MYSQLN_TESTS`. (@Abscissa)
 
 v1.2.1 - 2017-01-13
 =====================

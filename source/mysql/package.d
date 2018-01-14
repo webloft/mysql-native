@@ -76,7 +76,7 @@ public import mysql.protocol.constants : SvrCapFlags;
 public import mysql.result;
 public import mysql.types;
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 {
 	public import mysql.protocol.constants;
 	public import mysql.protocol.extra_types;

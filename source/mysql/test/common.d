@@ -26,11 +26,11 @@ import mysql.result;
 import mysql.types;
 
 /+
-To enable these tests, you have to add the MYSQL_INTEGRATION_TESTS
+To enable these tests, you have to add the MYSQLN_TESTS
 debug specifier. The reason it uses debug and not version is because dub
 doesn't allow adding version specifiers on the command-line.
 +/
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 {
 	import std.stdio;
 	import std.conv;

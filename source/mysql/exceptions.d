@@ -141,7 +141,7 @@ class MYXInvalidatedRange: MYX
 	}
 }
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	import std.exception;

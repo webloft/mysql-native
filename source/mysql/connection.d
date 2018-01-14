@@ -15,7 +15,7 @@ import mysql.protocol.constants;
 import mysql.protocol.packets;
 import mysql.protocol.sockets;
 import mysql.result;
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 {
 	import mysql.test.common;
 }
@@ -533,10 +533,10 @@ package:
 	}
 	StatementsToRelease!(PreparedImpl.immediateRelease) statementsToRelease;
 	
-	debug(MYSQL_INTEGRATION_TESTS) uint[] fakeRelease_released;
+	debug(MYSQLN_TESTS) uint[] fakeRelease_released;
 	unittest
 	{
-		debug(MYSQL_INTEGRATION_TESTS)
+		debug(MYSQLN_TESTS)
 		{
 			static void fakeRelease(Connection conn, uint id)
 			{

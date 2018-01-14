@@ -26,14 +26,14 @@ import mysql.test.common;
 
 alias indexOf = std.string.indexOf; // Needed on DMD 2.064.2
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	// Test connect/disconnect
 	mixin(scopedCn);
 }
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -66,7 +66,7 @@ unittest
 	cn.enableMultiStatements(false);
 }
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 {
 	void initBaseTestTables(Connection cn)
 	{
@@ -103,7 +103,7 @@ debug(MYSQL_INTEGRATION_TESTS)
 	}
 }
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	import mysql.prepared;
@@ -434,7 +434,7 @@ unittest
 +/
 }
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -550,7 +550,7 @@ https://github.com/simendsjo/mysqln
 +/
 
 // Bind values in prepared statements
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	import mysql.prepared;
@@ -662,7 +662,7 @@ unittest
 
 
 // Simple commands
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -686,7 +686,7 @@ unittest
 }
 /+
 // COM_FIELD_LIST and some ColumnDescription
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -769,7 +769,7 @@ unittest
 }
 +/
 /+
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -779,7 +779,7 @@ unittest
 +/
 
 // Simple text queries
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -798,7 +798,7 @@ unittest
 
 /+
 // Multi results
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -818,7 +818,7 @@ unittest
 +/
 
 // Create and query table
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	import mysql.prepared;
@@ -918,7 +918,7 @@ unittest
 	//assertBasicTests!DateTime("TIMESTAMP NULL", Timestamp(2013_10_03_12_55_35));
 }
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	import mysql.prepared;
@@ -937,7 +937,7 @@ unittest
 	assert(row[3] == 3);
 }
 
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	import mysql.prepared;
@@ -1124,7 +1124,7 @@ unittest
 // Note: This always tests example.d using Vibe sockets, regardless of
 // what kind of sockets the unittests are using. Once DUB Issue #1089
 // is fixed, this will always test example.d using Phobos sockets.
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	import std.file;
