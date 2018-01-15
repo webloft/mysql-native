@@ -1080,7 +1080,7 @@ unittest
 	
 	cn.exec("DROP TABLE IF EXISTS `issue81`");
 	cn.exec("CREATE TABLE `issue81` (a INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-	cn.exec("INSERT INTO `issue117` (a) VALUES (1)");
+	cn.exec("INSERT INTO `issue81` (a) VALUES (1)");
 
 	auto cn2 = new Connection(text("host=", cn._host, ";port=", cn._port, ";user=", cn._user, ";pwd=", cn._pwd));
 	scope(exit) cn2.close();
