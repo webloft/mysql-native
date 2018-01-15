@@ -1059,8 +1059,8 @@ public:
 	@property bool rowsPending() pure const nothrow { return _rowsPending; }
 
 	/// Gets whether anything (rows, headers or binary) is pending.
-	/// New commands cannot be sent on a conncection while anything is pending.
-	/// (The pending data will automatically be purged.)
+	/// New commands cannot be sent on a conncection while anything is pending
+	/// (the pending data will automatically be purged.)
 	@property bool hasPending() pure const nothrow
 	{
 		return _rowsPending || _headersPending || _binaryPending;
@@ -1085,5 +1085,5 @@ unittest
 	auto cn2 = new Connection(text("host=", cn._host, ";port=", cn._port, ";user=", cn._user, ";pwd=", cn._pwd));
 	scope(exit) cn2.close();
 	
-	cn2.query("SELECT a FROM `"~mysqlEscape(cn._db).text~"`.`issue81`");
+	cn2.query("SELECT * FROM `"~mysqlEscape(cn._db).text~"`.`issue81`");
 }
