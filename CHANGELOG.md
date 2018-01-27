@@ -1,3 +1,12 @@
+v1.2.2 - 2017-01-27
+=====================
+
+Bugfix
+
+- **Fixed:** [#154](https://github.com/mysql-d/mysql-native/issues/154),
+	[#155](https://github.com/mysql-d/mysql-native/issues/155):
+	Connection becomes unusable when mysql server closes socket. (@schveiguy)
+
 v1.2.1 - 2017-01-13
 =====================
 
