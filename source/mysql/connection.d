@@ -553,7 +553,7 @@ package:
 			}
 		}
 	}
-	StatementsToRelease!(PreparedImpl.immediateRelease) statementsToRelease;
+	StatementsToRelease!(Prepared.immediateRelease) statementsToRelease;
 	
 	debug(MYSQLN_TESTS) uint[] fakeRelease_released;
 	unittest

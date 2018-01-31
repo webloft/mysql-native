@@ -46,33 +46,6 @@ struct ParameterSpecialization
 alias PSN = ParameterSpecialization;
 
 /++
-Encapsulation of a prepared statement.
-
-Commands that are expected to return a result set - queries - have distinctive
-methods that are enforced. That is it will be an error to call such a method
-with an SQL command that does not produce a result set. So for commands like
-SELECT, use the `PreparedImpl.query` functions. For other commands, like
-INSERT/UPDATE/CREATE/etc, use `PreparedImpl.exec`.
-
-Internally, `Prepared` simply wraps a `PreparedImpl` with
-$(LINK2 https://dlang.org/phobos/std_typecons.html#.RefCounted, `RefCounted`),
-and offers access to the `PreparedImpl` members via "alias this".
-
-See the `PreparedImpl` documentation for the bulk of the `Prepared` interface.
-+/
-struct Prepared
-{
-	RefCounted!(PreparedImpl, RefCountedAutoInitialize.no) preparedImpl;
-	alias preparedImpl this;
-	
-	/// false if the statement is uninitialized or has been released.
-	@property bool isPrepared() pure const
-	{
-		return preparedImpl.refCountedStore.isInitialized && !preparedImpl.isReleased;
-	}
-}
-
-/++
 Submit an SQL command to the server to be compiled into a prepared statement.
 
 Internally, the result of a successful outcome will be a statement handle - an ID -
@@ -88,7 +61,7 @@ Throws: `mysql.exceptions.MYX` if the server has a problem.
 +/
 Prepared prepare(Connection conn, string sql)
 {
-	return Prepared( refCounted(PreparedImpl(conn, sql)) );
+	return Prepared(conn, sql);
 }
 
 /++
@@ -211,12 +184,21 @@ unittest
 }
 
 /++
-This is the internal implementation of `Prepared`. It is not intended to be
-used directly, as `Prepared` wraps a `PreparedImpl` with
+Encapsulation of a prepared statement.
+
+Commands that are expected to return a result set - queries - have distinctive
+methods that are enforced. That is it will be an error to call such a method
+with an SQL command that does not produce a result set. So for commands like
+SELECT, use the `PreparedImpl.query` functions. For other commands, like
+INSERT/UPDATE/CREATE/etc, use `PreparedImpl.exec`.
+
+Internally, `Prepared` simply wraps a `PreparedImpl` with
 $(LINK2 https://dlang.org/phobos/std_typecons.html#.RefCounted, `RefCounted`),
-and offers access to the public `PreparedImpl` members via "alias this".
+and offers access to the `PreparedImpl` members via "alias this".
+
+See the `PreparedImpl` documentation for the bulk of the `Prepared` interface.
 +/
-struct PreparedImpl
+struct Prepared
 {
 private:
 	Connection _conn;
@@ -265,8 +247,6 @@ private:
 		assertThrown!MYXNotPrepared(preparedSelect.query().each());
 		assertThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
 	}
-
-	@disable this(this); // Not copyable
 
 	/++
 	Submit an SQL command to the server to be compiled into a prepared statement.
