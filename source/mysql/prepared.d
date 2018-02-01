@@ -678,6 +678,11 @@ package:
 		return _hStmt == 0;
 	}
 
+	ExecQueryImplInfo getExecQueryImplInfo()
+	{
+		return ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa);
+	}
+	
 public:
 	/++
 	Execute a prepared command, such as INSERT/UPDATE/CREATE/etc.
@@ -694,10 +699,7 @@ public:
 	ulong exec(Connection conn)
 	{
 		enforceNotReleased();
-		auto ra = execImpl(
-			conn,
-			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa)
-		);
+		auto ra = execImpl(conn, getExecQueryImplInfo());
 		_lastInsertID = conn.lastInsertID;
 		return ra;
 	}
@@ -756,10 +758,7 @@ public:
 	ResultRange query(Connection conn, ColumnSpecialization[] csa = null)
 	{
 		enforceNotReleased();
-		auto result = queryImpl(
-			csa, conn,
-			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa)
-		);
+		auto result = queryImpl(csa, conn, getExecQueryImplInfo());
 		_lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 		return result;
 	}
@@ -789,8 +788,7 @@ public:
 	Nullable!Row queryRow(Connection conn, ColumnSpecialization[] csa = null)
 	{
 		enforceNotReleased();
-		auto result = queryRowImpl(csa, conn,
-			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa));
+		auto result = queryRowImpl(csa, conn, getExecQueryImplInfo());
 		_lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 		return result;
 	}
@@ -821,11 +819,7 @@ public:
 	void queryRowTuple(T...)(Connection conn, ref T args)
 	{
 		enforceNotReleased();
-		queryRowTupleImpl(
-			conn,
-			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa),
-			args
-		);
+		queryRowTupleImpl(conn, getExecQueryImplInfo(), args);
 		_lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	}
 	void queryRowTuple(T...)(ref T args) if(T.length == 0 || !is(T[0] : Connection))
@@ -862,8 +856,7 @@ public:
 	Nullable!Variant queryValue(Connection conn, ColumnSpecialization[] csa = null)
 	{
 		enforceNotReleased();
-		auto result = queryValueImpl(csa, conn,
-			ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa));
+		auto result = queryValueImpl(csa, conn, getExecQueryImplInfo());
 		_lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 		return result;
 	}
