@@ -492,7 +492,7 @@ package:
 		// any pending data is gone. Any statements to release will be released
 		// on the server automatically.
 		_headersPending = _rowsPending = _binaryPending = false;
-		statementsToRelease.clear();
+		statementQueue.clearRelease();
 		preparedLookup.clear();
 	}
 	
@@ -514,7 +514,7 @@ package:
 		try
 		{
 			purgeResult();
-			statementsToRelease.releaseAll();
+			statementQueue.processAll();
 		}
 		catch(Exception e)
 		{
@@ -594,6 +594,16 @@ package:
 		return info;
 	}
 
+	private static void immediateReleasePrepared(Connection conn, string sql)
+	{
+		auto statementId = conn.getPreparedId(sql);
+		if(statementId)
+		{
+			immediateReleasePreparedImpl(conn, statementId);
+			conn.preparedLookup.remove(sql);
+		}
+	}
+
 	package static void immediateReleasePreparedImpl(Connection conn, uint statementId)
 	{
 		if(!statementId)
@@ -629,98 +639,153 @@ package:
 			conn.preparedLookup.remove(sql);
 	}
 
+	/// Used by `StatementQueue` to keep track of sql statments to be
+	/// regestered or released as prepared statements.
+	static struct Task
+	{
+		enum Action {register, release}
+		
+		Action action; /// What to do: register or release?
+		string sql; /// Prepared statement's SQL
+	}
+	
 	/++
-	Keeps track of prepared statements queued to be released from the server.
+	Keeps track of prepared statements queued to be registered or released on the server.
 
-	Prepared statements aren't released immediately, because that
+	Prepared statements aren't registered or released immediately, because that
 	involves sending a command to the server even though there might be
 	results pending. (Can't send a command while results are pending.)
 	+/
-	static struct StatementsToRelease(alias doRelease)
+	static struct StatementQueue(alias register, alias release)
 	{
 		private Connection conn;
-		
-		/// Ids of prepared statements to be released.
+
+		/// List of statements to be registerd or released.
 		/// This uses assumeSafeAppend. Do not save copies of it.
-		uint[] ids;
+		Task[] tasks;
 		
-		void add(uint statementId)
+		void add(Task.Action action, string sql)
 		{
-			ids ~= statementId;
+			tasks ~= Task(action, sql);
 		}
 
-		/// Removes a prepared statement from the list of statements
-		/// to be released from the server.
-		/// Does nothing if the statement isn't on the list.
-		void remove(uint statementId)
+		/// Removes a task from the list of statements
+		/// to be registered or released from the server.
+		/// Does nothing if the task isn't on the list.
+		//TODO: Is this even used? If so, SHOULD it be used?
+		void remove(Task.Action action, string sql)
 		{
-			foreach(ref id; ids)
-			if(id == statementId)
-				id = 0;
+			auto task = Task(action, sql);
+			
+			foreach(ref currTask; tasks)
+			if(task == currTask)
+				currTask.sql = null;
 		}
 
-		/// Releases the prepared statements queued for release.
-		void releaseAll()
+		/// Performs action on all queued statemnts, and clears the queue.
+		void processAll()
 		{
-			foreach(id; ids)
-			if(id != 0)
-				doRelease(conn, id);
-
-			clear();
-		}
-
-		// clear all statements, and reset for using again.
-		private void clear()
-		{
-			if(ids.length)
+			foreach(task; tasks)
+			if(task.sql !is null)
 			{
-				ids.length = 0;
-				assumeSafeAppend(ids);
+				final switch(task.action)
+				{
+				case Task.Action.register: register(conn, task.sql); break;
+				case Task.Action.release:  release (conn, task.sql); break;
+				}
+			}
+
+			clearAll();
+		}
+
+		/// Clear all tasks, and reset for using again.
+		private void clearAll()
+		{
+			if(tasks.length)
+			{
+				tasks.length = 0;
+				assumeSafeAppend(tasks);
+			}
+		}
+
+		/// Clear all statements queued for release. Keep everything queued for register.
+		private void clearRelease()
+		{
+			if(tasks.length)
+			{
+				tasks.length = 0;
+				assumeSafeAppend(tasks);
 			}
 		}
 	}
-	StatementsToRelease!(immediateReleasePreparedImpl) statementsToRelease;
+	StatementQueue!(immediateRegisterPrepared, immediateReleasePrepared) statementQueue;
 	
-	debug(MYSQLN_TESTS) uint[] fakeRelease_released;
+	debug(MYSQLN_TESTS) string[] fakeRegister_result;
+	debug(MYSQLN_TESTS) string[] fakeRelease_result;
 	unittest
 	{
 		debug(MYSQLN_TESTS)
 		{
-			static void fakeRelease(Connection conn, uint id)
+			static void fakeRegister(Connection conn, string sql)
 			{
-				conn.fakeRelease_released ~= id;
+				conn.fakeRegister_result ~= sql;
+			}
+			
+			static void fakeRelease(Connection conn, string sql)
+			{
+				conn.fakeRelease_result ~= sql;
 			}
 			
 			mixin(scopedCn);
 			
-			StatementsToRelease!fakeRelease list;
+			enum taRegister = Task.Action.register;
+			enum taRelease = Task.Action.release;
+
+			StatementQueue!(fakeRegister, fakeRelease) list;
 			list.conn = cn;
-			assert(list.ids == []);
-			assert(cn.fakeRelease_released == []);
+			assert(list.tasks == []);
+			assert(cn.fakeRegister_result == []);
+			assert(cn.fakeRelease_result == []);
 
-			list.add(1);
-			assert(list.ids == [1]);
-			assert(cn.fakeRelease_released == []);
+			list.add(taRelease, "1");
+			assert(list.tasks == [Task(taRelease, "1")]);
+			assert(cn.fakeRegister_result == []);
+			assert(cn.fakeRelease_result == []);
 
-			list.add(7);
-			assert(list.ids == [1, 7]);
-			assert(cn.fakeRelease_released == []);
+			list.add(taRelease, "7");
+			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, "7")]);
+			assert(cn.fakeRegister_result == []);
+			assert(cn.fakeRelease_result == []);
 
-			list.add(9);
-			assert(list.ids == [1, 7, 9]);
-			assert(cn.fakeRelease_released == []);
+			list.add(taRelease, "9");
+			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, "7"), Task(taRelease, "9")]);
+			assert(cn.fakeRegister_result == []);
+			assert(cn.fakeRelease_result == []);
 
-			list.remove(5);
-			assert(list.ids == [1, 7, 9]);
-			assert(cn.fakeRelease_released == []);
+			list.remove(taRelease, "5");
+			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, "7"), Task(taRelease, "9")]);
+			assert(cn.fakeRegister_result == []);
+			assert(cn.fakeRelease_result == []);
 			
-			list.remove(7);
-			assert(list.ids == [1, 0, 9]);
-			assert(cn.fakeRelease_released == []);
+			list.remove(taRelease, "7");
+			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, null), Task(taRelease, "9")]);
+			assert(cn.fakeRegister_result == []);
+			assert(cn.fakeRelease_result == []);
 			
-			list.releaseAll();
-			assert(list.ids == []);
-			assert(cn.fakeRelease_released == [1, 9]);
+			list.remove(taRegister, "9");
+			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, null), Task(taRelease, "9")]);
+			assert(cn.fakeRegister_result == []);
+			assert(cn.fakeRelease_result == []);
+			
+			list.add(taRegister, "2");
+			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, null), Task(taRelease, "9"), Task(taRegister, "2")]);
+			assert(cn.fakeRegister_result == []);
+			assert(cn.fakeRelease_result == []);
+
+			list.processAll();
+			assert(list.tasks == []);
+			assert(cn.fakeRegister_result == ["2"]);
+			assert(cn.fakeRelease_result == ["1", "9"]);
 		}
 	}
 
@@ -819,7 +884,7 @@ public:
 		version(Have_vibe_d_core) {} else
 			enforceEx!MYX(socketType != MySQLSocketType.vibed, "Cannot use Vibe.d sockets without -version=Have_vibe_d_core");
 
-		statementsToRelease.conn = this;
+		statementQueue.conn = this;
 
 		_socketType = socketType;
 		_host = host;

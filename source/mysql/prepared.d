@@ -225,9 +225,7 @@ private:
 	}
 
 package:
-	//uint _hStmt; // Server's identifier for this prepared statement. This is 0 when released.
-	//ushort _psParams, _psWarnings;
-	//PreparedStmtHeaders _psh;
+	//ushort _psParams;
 	Variant[] _inParams;
 	ParameterSpecialization[] _psa;
 	ulong _lastInsertID;
@@ -1051,6 +1049,9 @@ public:
 		//_psWarnings = info._psWarnings;
 		//_psh        = info._psh;
 		
+		//TODO: Before Prepared can utilize delayed registration, ("_conn.statementQueue.add(Connection.Task.Action.register, _sql);")
+		//      the Prepared's _psParams, _inParams.length and _psa.length must automatically detect a registration
+		//      and update themselves before they're used.
 		_inParams.length = info._psParams;
 		_psa.length      = info._psParams;
 		_released = false;
@@ -1087,7 +1088,7 @@ public:
 		if(!info.isNull || !info._hStmt || _conn.closed())
 			return;
 
-		_conn.statementsToRelease.add(info._hStmt);
+		_conn.statementQueue.add(Connection.Task.Action.release, _sql);
 //		_hStmt = 0;
 	}
 
