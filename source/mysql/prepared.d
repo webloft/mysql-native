@@ -204,50 +204,6 @@ private:
 	Connection _conn;
 	string _sql;
 
-	void enforceNotReleased()
-	{
-		enforceNotReleased(_hStmt);
-	}
-
-	static void enforceNotReleased(uint hStmt)
-	{
-		enforceEx!MYXNotPrepared(hStmt);
-	}
-
-	debug(MYSQLN_TESTS)
-	unittest
-	{
-		import mysql.prepared;
-		import mysql.test.common;
-		mixin(scopedCn);
-
-		cn.exec("DROP TABLE IF EXISTS `enforceNotReleased`");
-		cn.exec("CREATE TABLE `enforceNotReleased` (
-			`val` INTEGER
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-
-		immutable insertSQL = "INSERT INTO `enforceNotReleased` VALUES (1), (2)";
-		immutable selectSQL = "SELECT * FROM `enforceNotReleased`";
-		Prepared preparedInsert;
-		Prepared preparedSelect;
-		int queryTupleResult;
-		assertNotThrown!MYXNotPrepared(preparedInsert = cn.prepare(insertSQL));
-		assertNotThrown!MYXNotPrepared(preparedSelect = cn.prepare(selectSQL));
-		assertNotThrown!MYXNotPrepared(preparedInsert.exec());
-		assertNotThrown!MYXNotPrepared(preparedSelect.query().each());
-		assertNotThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
-		
-		preparedInsert.release();
-		assertThrown!MYXNotPrepared(preparedInsert.exec());
-		assertNotThrown!MYXNotPrepared(preparedSelect.query().each());
-		assertNotThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
-
-		preparedSelect.release();
-		assertThrown!MYXNotPrepared(preparedInsert.exec());
-		assertThrown!MYXNotPrepared(preparedSelect.query().each());
-		assertThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
-	}
-
 	/++
 	Submit an SQL command to the server to be compiled into a prepared statement.
 
@@ -306,6 +262,50 @@ package:
 	Variant[] _inParams;
 	ParameterSpecialization[] _psa;
 	ulong _lastInsertID;
+
+	void enforceNotReleased()
+	{
+		enforceNotReleased(_hStmt);
+	}
+
+	static void enforceNotReleased(uint hStmt)
+	{
+		enforceEx!MYXNotPrepared(hStmt);
+	}
+
+	debug(MYSQLN_TESTS)
+	unittest
+	{
+		import mysql.prepared;
+		import mysql.test.common;
+		mixin(scopedCn);
+
+		cn.exec("DROP TABLE IF EXISTS `enforceNotReleased`");
+		cn.exec("CREATE TABLE `enforceNotReleased` (
+			`val` INTEGER
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+
+		immutable insertSQL = "INSERT INTO `enforceNotReleased` VALUES (1), (2)";
+		immutable selectSQL = "SELECT * FROM `enforceNotReleased`";
+		Prepared preparedInsert;
+		Prepared preparedSelect;
+		int queryTupleResult;
+		assertNotThrown!MYXNotPrepared(preparedInsert = cn.prepare(insertSQL));
+		assertNotThrown!MYXNotPrepared(preparedSelect = cn.prepare(selectSQL));
+		assertNotThrown!MYXNotPrepared(preparedInsert.exec());
+		assertNotThrown!MYXNotPrepared(preparedSelect.query().each());
+		assertNotThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
+		
+		preparedInsert.release();
+		assertThrown!MYXNotPrepared(preparedInsert.exec());
+		assertNotThrown!MYXNotPrepared(preparedSelect.query().each());
+		assertNotThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
+
+		preparedSelect.release();
+		assertThrown!MYXNotPrepared(preparedInsert.exec());
+		assertThrown!MYXNotPrepared(preparedSelect.query().each());
+		assertThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
+	}
 
 	static ubyte[] makeBitmap(in Variant[] inParams)
 	{
