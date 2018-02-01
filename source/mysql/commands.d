@@ -154,7 +154,10 @@ ulong exec(Connection conn, string sql)
 
 ulong exec(Connection conn, ref Prepared prepared)
 {
-	return prepared.exec(conn);
+	prepared.enforceNotReleased();
+	auto ra = execImpl(conn, prepared.getExecQueryImplInfo());
+	prepared._lastInsertID = conn.lastInsertID;
+	return ra;
 }
 
 /// Common implementation for mysql.commands.exec and Prepared.exec
@@ -213,7 +216,10 @@ ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null
 
 ResultRange query(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
 {
-	return prepared.query(conn, csa);
+	prepared.enforceNotReleased();
+	auto result = queryImpl(csa, conn, prepared.getExecQueryImplInfo());
+	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+	return result;
 }
 
 /// Common implementation for mysql.commands.query and Prepared.query
@@ -263,7 +269,10 @@ Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = 
 
 Nullable!Row queryRow(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
 {
-	return prepared.queryRow(conn, csa);
+	prepared.enforceNotReleased();
+	auto result = queryRowImpl(csa, conn, prepared.getExecQueryImplInfo());
+	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+	return result;
 }
 
 /// Common implementation for mysql.commands.querySet and Prepared.querySet
@@ -313,7 +322,9 @@ void queryRowTuple(T...)(Connection conn, string sql, ref T args)
 
 void queryRowTuple(T...)(Connection conn, ref Prepared prepared, ref T args)
 {
-	return prepared.queryRowTuple(conn, args);
+	prepared.enforceNotReleased();
+	queryRowTupleImpl(conn, prepared.getExecQueryImplInfo(), args);
+	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 }
 
 /// Common implementation for mysql.commands.queryRowTuple and Prepared.queryRowTuple
@@ -396,7 +407,10 @@ Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] 
 
 Nullable!Variant queryValue(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
 {
-	return prepared.queryValue(conn, csa);
+	prepared.enforceNotReleased();
+	auto result = queryValueImpl(csa, conn, prepared.getExecQueryImplInfo());
+	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+	return result;
 }
 
 /// Common implementation for `mysql.commands.querySet` and `Prepared.querySet`

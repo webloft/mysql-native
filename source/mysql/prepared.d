@@ -696,13 +696,6 @@ public:
 
 	Returns: The number of rows affected.
 	+/
-	ulong exec(Connection conn)
-	{
-		enforceNotReleased();
-		auto ra = execImpl(conn, getExecQueryImplInfo());
-		_lastInsertID = conn.lastInsertID;
-		return ra;
-	}
 	ulong exec()
 	{
 		import mysql.commands;
@@ -755,13 +748,6 @@ public:
 	Row[]       allAtOnce  = myPrepared.query("SELECT * from myTable").array;
 	---
 	+/
-	ResultRange query(Connection conn, ColumnSpecialization[] csa = null)
-	{
-		enforceNotReleased();
-		auto result = queryImpl(csa, conn, getExecQueryImplInfo());
-		_lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
-		return result;
-	}
 	ResultRange query(ColumnSpecialization[] csa = null)
 	{
 		import mysql.commands;
@@ -785,13 +771,6 @@ public:
 	Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 	query resulted in an empty result set.
 	+/
-	Nullable!Row queryRow(Connection conn, ColumnSpecialization[] csa = null)
-	{
-		enforceNotReleased();
-		auto result = queryRowImpl(csa, conn, getExecQueryImplInfo());
-		_lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
-		return result;
-	}
 	Nullable!Row queryRow(ColumnSpecialization[] csa = null)
 	{
 		import mysql.commands;
@@ -816,12 +795,6 @@ public:
 
 	Params: args = A tuple of D variables to receive the results.
 	+/
-	void queryRowTuple(T...)(Connection conn, ref T args)
-	{
-		enforceNotReleased();
-		queryRowTupleImpl(conn, getExecQueryImplInfo(), args);
-		_lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
-	}
 	void queryRowTuple(T...)(ref T args) if(T.length == 0 || !is(T[0] : Connection))
 	{
 		import mysql.commands;
@@ -853,13 +826,6 @@ public:
 	Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 	query resulted in an empty result set.
 	+/
-	Nullable!Variant queryValue(Connection conn, ColumnSpecialization[] csa = null)
-	{
-		enforceNotReleased();
-		auto result = queryValueImpl(csa, conn, getExecQueryImplInfo());
-		_lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
-		return result;
-	}
 	Nullable!Variant queryValue(ColumnSpecialization[] csa = null)
 	{
 		import mysql.commands;
