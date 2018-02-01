@@ -225,18 +225,30 @@ private:
 	}
 
 package:
-	uint _hStmt; // Server's identifier for this prepared statement. This is 0 when released.
-	ushort _psParams, _psWarnings;
-	PreparedStmtHeaders _psh;
+	//uint _hStmt; // Server's identifier for this prepared statement. This is 0 when released.
+	//ushort _psParams, _psWarnings;
+	//PreparedStmtHeaders _psh;
 	Variant[] _inParams;
 	ParameterSpecialization[] _psa;
 	ulong _lastInsertID;
+	bool _released = true;
 
+	uint getHStmt() const pure nothrow
+	{
+		if(_released)
+			return 0;
+		
+		return _conn.getPreparedId(_sql);
+	}
+	
+	//TODO: Move this to Connection
 	void enforceNotReleased()
 	{
+		auto _hStmt = getHStmt();
 		enforceNotReleased(_hStmt);
 	}
 
+	//TODO: Move this to Connection
 	static void enforceNotReleased(uint hStmt)
 	{
 		enforceEx!MYXNotPrepared(hStmt);
@@ -642,14 +654,17 @@ package:
 	}
 
 	/// Has this statement been released?
-	@property bool isReleased() pure const nothrow
+	//TODO: Move this to Connection
+	@property bool isReleased() const nothrow
 	{
+		auto _hStmt = getHStmt();
 		return _hStmt == 0;
 	}
 
 	ExecQueryImplInfo getExecQueryImplInfo()
 	{
-		return ExecQueryImplInfo(true, null, _hStmt, _psh, _inParams, _psa);
+		auto info = _conn.getPreparedServerInfo(_sql);
+		return ExecQueryImplInfo(true, null, info._hStmt, info._psh, _inParams, _psa);
 	}
 	
 public:
@@ -830,7 +845,8 @@ public:
 		// having a client side SQL parser I don't see what can be done.
 
 		enforceNotReleased();
-		enforceEx!MYX(index < _psParams, "Parameter index out of range.");
+		auto info = _conn.getPreparedServerInfo(_sql);
+		enforceEx!MYX(index < info._psParams, "Parameter index out of range.");
 
 		_inParams[index] = val;
 		psn.pIndex = index;
@@ -862,7 +878,9 @@ public:
 		if(T.length == 0 || !is(T[0] == Variant[]))
 	{
 		enforceNotReleased();
-		enforceEx!MYX(args.length == _psParams, "Argument list supplied does not match the number of parameters.");
+		//TODO: Store _psParams in Prepared upon registration. It'll be the same for every connection.
+		auto info = _conn.getPreparedServerInfo(_sql);
+		enforceEx!MYX(args.length == info._psParams, "Argument list supplied does not match the number of parameters.");
 
 		foreach (size_t i, arg; args)
 			setArg(i, arg);
@@ -897,7 +915,8 @@ public:
 	void setArgs(Variant[] va, ParameterSpecialization[] psnList= null)
 	{
 		enforceNotReleased();
-		enforceEx!MYX(va.length == _psParams, "Param count supplied does not match prepared statement");
+		auto info = _conn.getPreparedServerInfo(_sql);
+		enforceEx!MYX(va.length == info._psParams, "Param count supplied does not match prepared statement");
 		_inParams[] = va[];
 		if (psnList !is null)
 		{
@@ -916,7 +935,8 @@ public:
 	Variant getArg(size_t index)
 	{
 		enforceNotReleased();
-		enforceEx!MYX(index < _psParams, "Parameter index out of range.");
+		auto info = _conn.getPreparedServerInfo(_sql);
+		enforceEx!MYX(index < info._psParams, "Parameter index out of range.");
 		return _inParams[index];
 	}
 
@@ -1024,50 +1044,16 @@ public:
 			return;
 
 		//_conn.statementQueue.add(_sql);
-		auto info = immediateRegister(_conn, _sql);
-		_hStmt      = info._hStmt;
-		_psParams   = info._psParams;
-		_psWarnings = info._psWarnings;
-		_psh        = info._psh;
+		Connection.immediateRegisterPrepared(_conn, _sql);
+		auto info = _conn.getPreparedServerInfo(_sql);
+		//_hStmt      = info._hStmt;
+		//_psParams   = info._psParams;
+		//_psWarnings = info._psWarnings;
+		//_psh        = info._psh;
 		
 		_inParams.length = info._psParams;
 		_psa.length      = info._psParams;
-	}
-	package static PreparedServerInfo immediateRegister(Connection conn, string sql)
-	{
-		scope(failure) conn.kill();
-
-		PreparedServerInfo info;
-		
-		conn.sendCmd(CommandType.STMT_PREPARE, sql);
-		conn._fieldCount = 0;
-
-		//TODO: All packet handling should be moved into the mysql.protocol package.
-		ubyte[] packet = conn.getPacket();
-		if (packet.front == ResultPacketMarker.ok)
-		{
-			packet.popFront();
-			info._hStmt         = packet.consume!int();
-			conn._fieldCount    = packet.consume!short();
-			info._psParams      = packet.consume!short();
-
-			packet.popFront(); // one byte filler
-			info._psWarnings    = packet.consume!short();
-
-			// At this point the server also sends field specs for parameters
-			// and columns if there were any of each
-			info._psh = PreparedStmtHeaders(conn, conn._fieldCount, info._psParams);
-		}
-		else if(packet.front == ResultPacketMarker.error)
-		{
-			auto error = OKErrorPacket(packet);
-			enforcePacketOK(error);
-			assert(0); // FIXME: what now?
-		}
-		else
-			assert(0); // FIXME: what now?
-		
-		return info;
+		_released = false;
 	}
 
 	/++
@@ -1092,39 +1078,24 @@ public:
 	+/
 	void release()
 	{
-		if(_conn is null || !_hStmt || _conn.closed())
+		_released = true;
+
+		if(_conn is null)
 			return;
 
-		_conn.statementsToRelease.add(_hStmt);
-		_hStmt = 0;
-	}
-	package static void immediateRelease(Connection conn, uint statementId)
-	{
-		if(!statementId)
+		auto info = _conn.getPreparedServerInfo(_sql);
+		if(!info.isNull || !info._hStmt || _conn.closed())
 			return;
 
-		scope(failure) conn.kill();
-
-		if(conn.closed())
-			return;
-
-		//TODO: All low-level commms should be moved into the mysql.protocol package.
-		ubyte[9] packet_buf;
-		ubyte[] packet = packet_buf;
-		packet.setPacketHeader(0/*packet number*/);
-		conn.bumpPacket();
-		packet[4] = CommandType.STMT_CLOSE;
-		statementId.packInto(packet[5..9]);
-		conn.purgeResult();
-		conn.send(packet);
-		// It seems that the server does not find it necessary to send a response
-		// for this command.
+		_conn.statementsToRelease.add(info._hStmt);
+//		_hStmt = 0;
 	}
 
 	/// Gets the number of arguments this prepared statement expects to be passed in.
-	@property ushort numArgs() pure const nothrow
+	@property ushort numArgs() pure nothrow
 	{
-		return _psParams;
+		auto info = _conn.getPreparedServerInfo(_sql);
+		return info._psParams;
 	}
 
 	/// After a command that inserted a row into a table with an auto-increment
@@ -1133,8 +1104,8 @@ public:
 	@property ulong lastInsertID() pure const nothrow { return _lastInsertID; }
 
 	/// Gets the prepared header's field descriptions.
-	@property FieldDescription[] preparedFieldDescriptions() pure { return _psh.fieldDescriptions; }
+	@property FieldDescription[] preparedFieldDescriptions() pure { auto info = _conn.getPreparedServerInfo(_sql); return info._psh.fieldDescriptions; }
 
 	/// Gets the prepared header's param descriptions.
-	@property ParamDescription[] preparedParamDescriptions() pure { return _psh.paramDescriptions; }
+	@property ParamDescription[] preparedParamDescriptions() pure { auto info = _conn.getPreparedServerInfo(_sql); return info._psh.paramDescriptions; }
 }

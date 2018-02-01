@@ -5,8 +5,10 @@ import std.algorithm;
 import std.conv;
 import std.digest.sha;
 import std.exception;
+import std.range;
 import std.socket;
 import std.string;
+import std.typecons;
 
 import mysql.commands;
 import mysql.exceptions;
@@ -38,11 +40,17 @@ immutable SvrCapFlags defaultClientFlags =
 /// Per-connection info from the server about a registered prepared statement.
 package struct PreparedServerInfo
 {
-	// Server's identifier for this prepared statement.
-	// This is never 0 if it's been registered.
+	/// Server's identifier for this prepared statement.
+	/// This is never 0 if it's been registered.
 	uint _hStmt;
 
-	ushort _psParams, _psWarnings;
+	/// Number of parameters this statement takes.
+	/// 
+	/// This will be the same on all connections, but it's returned
+	/// by the server upon registration, so it's stored here.
+	ushort _psParams;
+
+	ushort _psWarnings;
 	PreparedStmtHeaders _psh;
 }
 
@@ -485,6 +493,7 @@ package:
 		// on the server automatically.
 		_headersPending = _rowsPending = _binaryPending = false;
 		statementsToRelease.clear();
+		preparedLookup.clear();
 	}
 	
 	/// Called whenever mysql-native needs to send a command to the server
@@ -514,6 +523,110 @@ package:
 			// reconnect.
 			kill();
 		}
+	}
+
+	/// Lookup per-connection prepared statement info by SQL
+	PreparedServerInfo[string] preparedLookup;
+	
+	/// Returns null if not found
+	Nullable!PreparedServerInfo getPreparedServerInfo(const string sql) pure nothrow
+	{
+		Nullable!PreparedServerInfo result;
+		
+		auto pInfo = sql in preparedLookup;
+		if(pInfo)
+			result = *pInfo;
+		
+		return result;
+	}
+	
+	/// Returns 0 if not found
+	uint getPreparedId(const string sql) pure const nothrow
+	{
+		auto pInfo = sql in preparedLookup;
+		return pInfo? pInfo._hStmt : 0;
+	}
+	
+	package static void immediateRegisterPrepared(Connection conn, string sql)
+	{
+		if(sql in conn.preparedLookup)
+			return;
+
+		auto info = immediateRegisterPreparedImpl(conn, sql);
+		conn.preparedLookup[sql] = info;
+	}
+
+	package static PreparedServerInfo immediateRegisterPreparedImpl(Connection conn, string sql)
+	{
+		scope(failure) conn.kill();
+
+		PreparedServerInfo info;
+		
+		conn.sendCmd(CommandType.STMT_PREPARE, sql);
+		conn._fieldCount = 0;
+
+		//TODO: All packet handling should be moved into the mysql.protocol package.
+		ubyte[] packet = conn.getPacket();
+		if(packet.front == ResultPacketMarker.ok)
+		{
+			packet.popFront();
+			info._hStmt         = packet.consume!int();
+			conn._fieldCount    = packet.consume!short();
+			info._psParams      = packet.consume!short();
+
+			packet.popFront(); // one byte filler
+			info._psWarnings    = packet.consume!short();
+
+			// At this point the server also sends field specs for parameters
+			// and columns if there were any of each
+			info._psh = PreparedStmtHeaders(conn, conn._fieldCount, info._psParams);
+		}
+		else if(packet.front == ResultPacketMarker.error)
+		{
+			auto error = OKErrorPacket(packet);
+			enforcePacketOK(error);
+			assert(0); // FIXME: what now?
+		}
+		else
+			assert(0); // FIXME: what now?
+		
+		
+		return info;
+	}
+
+	package static void immediateReleasePreparedImpl(Connection conn, uint statementId)
+	{
+		if(!statementId)
+			return;
+
+		scope(failure) conn.kill();
+
+		if(conn.closed())
+			return;
+
+		//TODO: All low-level commms should be moved into the mysql.protocol package.
+		ubyte[9] packet_buf;
+		ubyte[] packet = packet_buf;
+		packet.setPacketHeader(0/*packet number*/);
+		conn.bumpPacket();
+		packet[4] = CommandType.STMT_CLOSE;
+		statementId.packInto(packet[5..9]);
+		conn.purgeResult();
+		conn.send(packet);
+		// It seems that the server does not find it necessary to send a response
+		// for this command.
+
+		// Remove from preparedLookup
+		//TODO: This is temporary code until StatementsToRelease is modified to operate on sql instead of ids
+		string sql;
+		foreach(string currSql, ref info; conn.preparedLookup)
+		if(info._hStmt == statementId)
+		{
+			sql = currSql;
+			break;
+		}
+		if(sql)
+			conn.preparedLookup.remove(sql);
 	}
 
 	/++
@@ -566,7 +679,7 @@ package:
 			}
 		}
 	}
-	StatementsToRelease!(Prepared.immediateRelease) statementsToRelease;
+	StatementsToRelease!(immediateReleasePreparedImpl) statementsToRelease;
 	
 	debug(MYSQLN_TESTS) uint[] fakeRelease_released;
 	unittest
