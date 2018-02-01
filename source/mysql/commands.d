@@ -135,15 +135,16 @@ This method is intended for commands such as which do not produce a result set
 produces a result set (such as SELECT), `mysql.exceptions.MYXResultRecieved`
 will be thrown.
 
-Use this method when you are not going to be using the same command
-repeatedly and you are CERTAIN all the data you're sending is properly
-escaped. Otherwise consider using `mysql.prepared.Prepared`.
+Only use the `string sql` overload when you are not going to be using the same
+command repeatedly and you are CERTAIN all the data you're sending is properly
+escaped. Otherwise, consider using overload that takes a `Prepared`.
 
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
+prepared = The prepared statement to be run.
 
 Returns: The number of rows affected.
 +/
@@ -186,9 +187,9 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Use this method when you are not going to be using the same command
-repeatedly and you are CERTAIN all the data you're sending is properly
-escaped. Otherwise consider using `mysql.prepared.Prepared`.
+Only use the `string sql` overload when you are not going to be using the same
+command repeatedly and you are CERTAIN all the data you're sending is properly
+escaped. Otherwise, consider using overload that takes a `Prepared`.
 
 If there are long data items among the expected result columns you can use
 the `csa` param to specify that they are to be subject to chunked transfer via a
@@ -199,6 +200,7 @@ Type_Mappings: $(TYPE_MAPPINGS)
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
+prepared = The prepared statement to be run.
 csa = An optional array of `ColumnSpecialization` structs.
 
 Returns: A (possibly empty) `mysql.result.ResultRange`.
@@ -244,9 +246,9 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Use this method when you are not going to be using the same command
-repeatedly and you are CERTAIN all the data you're sending is properly
-escaped. Otherwise consider using `mysql.prepared.Prepared`.
+Only use the `string sql` overload when you are not going to be using the same
+command repeatedly and you are CERTAIN all the data you're sending is properly
+escaped. Otherwise, consider using overload that takes a `Prepared`.
 
 If there are long data items among the expected result columns you can use
 the `csa` param to specify that they are to be subject to chunked transfer via a
@@ -257,6 +259,7 @@ Type_Mappings: $(TYPE_MAPPINGS)
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
+prepared = The prepared statement to be run.
 csa = An optional array of `ColumnSpecialization` structs.
 
 Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
@@ -304,15 +307,16 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Use this method when you are not going to be using the same command
-repeatedly and you are CERTAIN all the data you're sending is properly
-escaped. Otherwise consider using `mysql.prepared.Prepared`.
+Only use the `string sql` overload when you are not going to be using the same
+command repeatedly and you are CERTAIN all the data you're sending is properly
+escaped. Otherwise, consider using overload that takes a `Prepared`.
 
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
+prepared = The prepared statement to be run.
 args = The variables, taken by reference, to receive the values.
 +/
 void queryRowTuple(T...)(Connection conn, string sql, ref T args)
@@ -382,9 +386,9 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Use this method when you are not going to be using the same command
-repeatedly and you are CERTAIN all the data you're sending is properly
-escaped. Otherwise consider using `mysql.prepared.Prepared`.
+Only use the `string sql` overload when you are not going to be using the same
+command repeatedly and you are CERTAIN all the data you're sending is properly
+escaped. Otherwise, consider using overload that takes a `Prepared`.
 
 If there are long data items among the expected result columns you can use
 the `csa` param to specify that they are to be subject to chunked transfer via a
@@ -395,6 +399,7 @@ Type_Mappings: $(TYPE_MAPPINGS)
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
+prepared = The prepared statement to be run.
 csa = An optional array of `ColumnSpecialization` structs.
 
 Returns: `Nullable!Variant`: This will be null (check via `Nullable.isNull`) if the
