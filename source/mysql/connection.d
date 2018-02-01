@@ -35,6 +35,17 @@ immutable SvrCapFlags defaultClientFlags =
 		SvrCapFlags.SECURE_CONNECTION;// | SvrCapFlags.MULTI_STATEMENTS |
 		//SvrCapFlags.MULTI_RESULTS;
 
+/// Per-connection info from the server about a registered prepared statement.
+package struct PreparedServerInfo
+{
+	// Server's identifier for this prepared statement.
+	// This is never 0 if it's been registered.
+	uint _hStmt;
+
+	ushort _psParams, _psWarnings;
+	PreparedStmtHeaders _psh;
+}
+
 /++
 A class representing a database connection.
 
@@ -119,9 +130,11 @@ package:
 	bool _rowsPending, _headersPending, _binaryPending;
 
 	// Field count of last performed command.
+	//TODO: Does Connection need to store this?
 	ushort _fieldCount;
 
 	// ResultSetHeaders of last performed command.
+	//TODO: Does Connection need to store this? Is this even used?
 	ResultSetHeaders _rsh;
 
 	// This tiny thing here is pretty critical. Pay great attention to it's maintenance, otherwise

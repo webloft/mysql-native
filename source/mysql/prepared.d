@@ -221,38 +221,7 @@ private:
 		this._conn = conn;
 		this._sql = sql;
 
-		scope(failure) conn.kill();
-
-		conn.sendCmd(CommandType.STMT_PREPARE, sql);
-		conn._fieldCount = 0;
-
-		//TODO: All packet handling should be moved into the mysql.protocol package.
-		ubyte[] packet = conn.getPacket();
-		if (packet.front == ResultPacketMarker.ok)
-		{
-			packet.popFront();
-			_hStmt              = packet.consume!int();
-			conn._fieldCount    = packet.consume!short();
-			_psParams           = packet.consume!short();
-
-			_inParams.length    = _psParams;
-			_psa.length         = _psParams;
-
-			packet.popFront(); // one byte filler
-			_psWarnings         = packet.consume!short();
-
-			// At this point the server also sends field specs for parameters
-			// and columns if there were any of each
-			_psh = PreparedStmtHeaders(conn, conn._fieldCount, _psParams);
-		}
-		else if(packet.front == ResultPacketMarker.error)
-		{
-			auto error = OKErrorPacket(packet);
-			enforcePacketOK(error);
-			assert(0); // FIXME: what now?
-		}
-		else
-			assert(0); // FIXME: what now?
+		register();
 	}
 
 package:
@@ -1034,14 +1003,79 @@ public:
 	}
 
 	/++
+	Register a prepared statement.
+	
+	Notes:
+	
+	In actuality, the server might not immediately be told to register the
+	statement.
+	
+	This is because there could be a `mysql.result.ResultRange` with results still pending
+	for retreival, and the protocol doesn't allow sending commands (such as
+	"register a prepared statement") to the server while data is pending.
+	Therefore, this function may instead queue the statement to be registered
+	when it is safe to do so: Either the next time a result set is purged or
+	the next time a command (such as `query` or `exec`) is performed (because
+	such commands automatically purge any pending results).
+	+/
+	void register()
+	{
+		if(_conn is null)
+			return;
+
+		//_conn.statementQueue.add(_sql);
+		auto info = immediateRegister(_conn, _sql);
+		_hStmt      = info._hStmt;
+		_psParams   = info._psParams;
+		_psWarnings = info._psWarnings;
+		_psh        = info._psh;
+		
+		_inParams.length = info._psParams;
+		_psa.length      = info._psParams;
+	}
+	package static PreparedServerInfo immediateRegister(Connection conn, string sql)
+	{
+		scope(failure) conn.kill();
+
+		PreparedServerInfo info;
+		
+		conn.sendCmd(CommandType.STMT_PREPARE, sql);
+		conn._fieldCount = 0;
+
+		//TODO: All packet handling should be moved into the mysql.protocol package.
+		ubyte[] packet = conn.getPacket();
+		if (packet.front == ResultPacketMarker.ok)
+		{
+			packet.popFront();
+			info._hStmt         = packet.consume!int();
+			conn._fieldCount    = packet.consume!short();
+			info._psParams      = packet.consume!short();
+
+			packet.popFront(); // one byte filler
+			info._psWarnings    = packet.consume!short();
+
+			// At this point the server also sends field specs for parameters
+			// and columns if there were any of each
+			info._psh = PreparedStmtHeaders(conn, conn._fieldCount, info._psParams);
+		}
+		else if(packet.front == ResultPacketMarker.error)
+		{
+			auto error = OKErrorPacket(packet);
+			enforcePacketOK(error);
+			assert(0); // FIXME: what now?
+		}
+		else
+			assert(0); // FIXME: what now?
+		
+		return info;
+	}
+
+	/++
 	Release a prepared statement.
 	
 	This method tells the server that it can dispose of the information it
 	holds about the current prepared statement.
 
-	This method can be called during a GC collection. Allocations should be
-	avoided if possible as it could crash the GC.
-	
 	Notes:
 	
 	In actuality, the server might not immediately be told to release the
