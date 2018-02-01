@@ -152,6 +152,11 @@ ulong exec(Connection conn, string sql)
 	return execImpl(conn, ExecQueryImplInfo(false, sql));
 }
 
+ulong exec(Connection conn, ref Prepared prepared)
+{
+	return prepared.exec(conn);
+}
+
 /// Common implementation for mysql.commands.exec and Prepared.exec
 package ulong execImpl(Connection conn, ExecQueryImplInfo info)
 {
@@ -206,6 +211,11 @@ ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null
 	return queryImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 
+ResultRange query(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+{
+	return prepared.query(conn, csa);
+}
+
 /// Common implementation for mysql.commands.query and Prepared.query
 package ResultRange queryImpl(ColumnSpecialization[] csa,
 	Connection conn, ExecQueryImplInfo info)
@@ -251,6 +261,11 @@ Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = 
 	return queryRowImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 
+Nullable!Row queryRow(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+{
+	return prepared.queryRow(conn, csa);
+}
+
 /// Common implementation for mysql.commands.querySet and Prepared.querySet
 package Nullable!Row queryRowImpl(ColumnSpecialization[] csa, Connection conn,
 	ExecQueryImplInfo info)
@@ -294,6 +309,11 @@ args = The variables, taken by reference, to receive the values.
 void queryRowTuple(T...)(Connection conn, string sql, ref T args)
 {
 	return queryRowTupleImpl(conn, ExecQueryImplInfo(false, sql), args);
+}
+
+void queryRowTuple(T...)(Connection conn, ref Prepared prepared, ref T args)
+{
+	return prepared.queryRowTuple(conn, args);
 }
 
 /// Common implementation for mysql.commands.queryRowTuple and Prepared.queryRowTuple
@@ -372,6 +392,11 @@ query resulted in an empty result set.
 Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {
 	return queryValueImpl(csa, conn, ExecQueryImplInfo(false, sql));
+}
+
+Nullable!Variant queryValue(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+{
+	return prepared.queryValue(conn, csa);
 }
 
 /// Common implementation for `mysql.commands.querySet` and `Prepared.querySet`
