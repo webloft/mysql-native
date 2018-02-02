@@ -44,13 +44,18 @@ package struct PreparedServerInfo
 	/// This is never 0 if it's been registered.
 	uint _hStmt;
 
+	ushort _psWarnings;
+
 	/// Number of parameters this statement takes.
 	/// 
 	/// This will be the same on all connections, but it's returned
 	/// by the server upon registration, so it's stored here.
 	ushort _psParams;
 
-	ushort _psWarnings;
+	/// Prepared statement headers
+	///
+	/// This will be the same on all connections, but it's returned
+	/// by the server upon registration, so it's stored here.
 	PreparedStmtHeaders _psh;
 }
 

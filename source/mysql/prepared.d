@@ -186,6 +186,10 @@ unittest
 /++
 Encapsulation of a prepared statement.
 
+Create this via the function `prepare`. Set your arguments (if any) via
+the functions provided, and then run the statement by passing it to
+`exec`/`query`/etc in place of the sql string parameter.
+
 Commands that are expected to return a result set - queries - have distinctive
 methods that are enforced. That is it will be an error to call such a method
 with an SQL command that does not produce a result set. So for commands like
@@ -225,12 +229,14 @@ private:
 	}
 
 package:
-	//ushort _psParams;
+	ushort _numParams; /// Number of parameters this prepared statement takes
+	PreparedStmtHeaders _headers;
 	Variant[] _inParams;
 	ParameterSpecialization[] _psa;
 	ulong _lastInsertID;
-	bool _released = true;
+	bool _released = true; //TODO: Only used by getHStmt. Delete this when getHStmt is removed.
 
+	//TODO: Need to eliminate this
 	uint getHStmt() const pure nothrow
 	{
 		if(_released)
@@ -662,7 +668,7 @@ package:
 	ExecQueryImplInfo getExecQueryImplInfo()
 	{
 		auto info = _conn.getPreparedServerInfo(_sql);
-		return ExecQueryImplInfo(true, null, info._hStmt, info._psh, _inParams, _psa);
+		return ExecQueryImplInfo(true, null, info._hStmt, _headers, _inParams, _psa);
 	}
 	
 public:
@@ -843,8 +849,7 @@ public:
 		// having a client side SQL parser I don't see what can be done.
 
 		enforceNotReleased();
-		auto info = _conn.getPreparedServerInfo(_sql);
-		enforceEx!MYX(index < info._psParams, "Parameter index out of range.");
+		enforceEx!MYX(index < _numParams, "Parameter index out of range.");
 
 		_inParams[index] = val;
 		psn.pIndex = index;
@@ -876,9 +881,7 @@ public:
 		if(T.length == 0 || !is(T[0] == Variant[]))
 	{
 		enforceNotReleased();
-		//TODO: Store _psParams in Prepared upon registration. It'll be the same for every connection.
-		auto info = _conn.getPreparedServerInfo(_sql);
-		enforceEx!MYX(args.length == info._psParams, "Argument list supplied does not match the number of parameters.");
+		enforceEx!MYX(args.length == _numParams, "Argument list supplied does not match the number of parameters.");
 
 		foreach (size_t i, arg; args)
 			setArg(i, arg);
@@ -914,7 +917,7 @@ public:
 	{
 		enforceNotReleased();
 		auto info = _conn.getPreparedServerInfo(_sql);
-		enforceEx!MYX(va.length == info._psParams, "Param count supplied does not match prepared statement");
+		enforceEx!MYX(va.length == _numParams, "Param count supplied does not match prepared statement");
 		_inParams[] = va[];
 		if (psnList !is null)
 		{
@@ -934,7 +937,7 @@ public:
 	{
 		enforceNotReleased();
 		auto info = _conn.getPreparedServerInfo(_sql);
-		enforceEx!MYX(index < info._psParams, "Parameter index out of range.");
+		enforceEx!MYX(index < _numParams, "Parameter index out of range.");
 		return _inParams[index];
 	}
 
@@ -1049,9 +1052,8 @@ public:
 		//_psWarnings = info._psWarnings;
 		//_psh        = info._psh;
 		
-		//TODO: Before Prepared can utilize delayed registration, ("_conn.statementQueue.add(Connection.Task.Action.register, _sql);")
-		//      the Prepared's _psParams, _inParams.length and _psa.length must automatically detect a registration
-		//      and update themselves before they're used.
+		_headers         = info._psh;
+		_numParams       = info._psParams;
 		_inParams.length = info._psParams;
 		_psa.length      = info._psParams;
 		_released = false;
@@ -1095,8 +1097,7 @@ public:
 	/// Gets the number of arguments this prepared statement expects to be passed in.
 	@property ushort numArgs() pure nothrow
 	{
-		auto info = _conn.getPreparedServerInfo(_sql);
-		return info._psParams;
+		return _numParams;
 	}
 
 	/// After a command that inserted a row into a table with an auto-increment
@@ -1105,8 +1106,8 @@ public:
 	@property ulong lastInsertID() pure const nothrow { return _lastInsertID; }
 
 	/// Gets the prepared header's field descriptions.
-	@property FieldDescription[] preparedFieldDescriptions() pure { auto info = _conn.getPreparedServerInfo(_sql); return info._psh.fieldDescriptions; }
+	@property FieldDescription[] preparedFieldDescriptions() pure { return _headers.fieldDescriptions; }
 
 	/// Gets the prepared header's param descriptions.
-	@property ParamDescription[] preparedParamDescriptions() pure { auto info = _conn.getPreparedServerInfo(_sql); return info._psh.paramDescriptions; }
+	@property ParamDescription[] preparedParamDescriptions() pure { return _headers.paramDescriptions; }
 }
