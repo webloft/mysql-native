@@ -234,29 +234,6 @@ package:
 	Variant[] _inParams;
 	ParameterSpecialization[] _psa;
 	ulong _lastInsertID;
-	bool _released = true; //TODO: Only used by getHStmt. Delete this when getHStmt is removed.
-
-	//TODO: Need to eliminate this
-	uint getHStmt() const pure nothrow
-	{
-		if(_released)
-			return 0;
-		
-		return _conn.getPreparedId(_sql);
-	}
-	
-	//TODO: Move this to Connection
-	void enforceNotReleased()
-	{
-		auto _hStmt = getHStmt();
-		enforceNotReleased(_hStmt);
-	}
-
-	//TODO: Move this to Connection
-	static void enforceNotReleased(uint hStmt)
-	{
-		enforceEx!MYXNotPrepared(hStmt);
-	}
 
 	debug(MYSQLN_TESTS)
 	unittest
@@ -657,18 +634,9 @@ package:
 		conn.send(packet);
 	}
 
-	/// Has this statement been released?
-	//TODO: Move this to Connection
-	@property bool isReleased() const nothrow
+	ExecQueryImplInfo getExecQueryImplInfo(uint statementId)
 	{
-		auto _hStmt = getHStmt();
-		return _hStmt == 0;
-	}
-
-	ExecQueryImplInfo getExecQueryImplInfo()
-	{
-		auto info = _conn.getPreparedServerInfo(_sql);
-		return ExecQueryImplInfo(true, null, info._hStmt, _headers, _inParams, _psa);
+		return ExecQueryImplInfo(true, null, statementId, _headers, _inParams, _psa);
 	}
 	
 public:
@@ -848,7 +816,6 @@ public:
 		// in the variant array, or provided explicitly. This sucks, but short of
 		// having a client side SQL parser I don't see what can be done.
 
-		enforceNotReleased();
 		enforceEx!MYX(index < _numParams, "Parameter index out of range.");
 
 		_inParams[index] = val;
@@ -859,7 +826,6 @@ public:
 	///ditto
 	void setArg(T)(size_t index, Nullable!T val, ParameterSpecialization psn = PSN(0, SQLType.INFER_FROM_D_TYPE, 0, null))
 	{
-		enforceNotReleased();
 		if(val.isNull)
 			setArg(index, null, psn);
 		else
@@ -880,7 +846,6 @@ public:
 	void setArgs(T...)(T args)
 		if(T.length == 0 || !is(T[0] == Variant[]))
 	{
-		enforceNotReleased();
 		enforceEx!MYX(args.length == _numParams, "Argument list supplied does not match the number of parameters.");
 
 		foreach (size_t i, arg; args)
@@ -915,8 +880,6 @@ public:
 	+/
 	void setArgs(Variant[] va, ParameterSpecialization[] psnList= null)
 	{
-		enforceNotReleased();
-		auto info = _conn.getPreparedServerInfo(_sql);
 		enforceEx!MYX(va.length == _numParams, "Param count supplied does not match prepared statement");
 		_inParams[] = va[];
 		if (psnList !is null)
@@ -935,8 +898,6 @@ public:
 	+/
 	Variant getArg(size_t index)
 	{
-		enforceNotReleased();
-		auto info = _conn.getPreparedServerInfo(_sql);
 		enforceEx!MYX(index < _numParams, "Parameter index out of range.");
 		return _inParams[index];
 	}
@@ -953,7 +914,6 @@ public:
 	+/
 	void setNullArg(size_t index)
 	{
-		enforceNotReleased();
 		setArg(index, null);
 	}
 
@@ -1044,19 +1004,13 @@ public:
 		if(_conn is null)
 			return;
 
-		//_conn.statementQueue.add(_sql);
 		Connection.immediateRegisterPrepared(_conn, _sql);
 		auto info = _conn.getPreparedServerInfo(_sql);
-		//_hStmt      = info._hStmt;
-		//_psParams   = info._psParams;
-		//_psWarnings = info._psWarnings;
-		//_psh        = info._psh;
 		
 		_headers         = info._psh;
 		_numParams       = info._psParams;
 		_inParams.length = info._psParams;
 		_psa.length      = info._psParams;
-		_released = false;
 	}
 
 	/++
@@ -1081,17 +1035,14 @@ public:
 	+/
 	void release()
 	{
-		_released = true;
-
 		if(_conn is null)
 			return;
 
 		auto info = _conn.getPreparedServerInfo(_sql);
-		if(!info.isNull || !info._hStmt || _conn.closed())
+		if(info.isNull || !info._hStmt || _conn.closed())
 			return;
 
 		_conn.statementQueue.add(Connection.Task.Action.release, _sql);
-//		_hStmt = 0;
 	}
 
 	/// Gets the number of arguments this prepared statement expects to be passed in.

@@ -57,6 +57,10 @@ package struct PreparedServerInfo
 	/// This will be the same on all connections, but it's returned
 	/// by the server upon registration, so it's stored here.
 	PreparedStmtHeaders _psh;
+	
+	/// Not actually from the server. Connection uses this to keep track
+	/// of statements that should be treated as having been released.
+	bool queuedForRelease = false;
 }
 
 /++
@@ -552,6 +556,11 @@ package:
 		return pInfo? pInfo._hStmt : 0;
 	}
 	
+	void enforceNotReleased(Nullable!PreparedServerInfo info)
+	{
+		enforceEx!MYXNotPrepared( isPreparedRegistered(info) );
+	}
+
 	package static void immediateRegisterPrepared(Connection conn, string sql)
 	{
 		if(sql in conn.preparedLookup)
@@ -630,18 +639,6 @@ package:
 		conn.send(packet);
 		// It seems that the server does not find it necessary to send a response
 		// for this command.
-
-		// Remove from preparedLookup
-		//TODO: This is temporary code until StatementsToRelease is modified to operate on sql instead of ids
-		string sql;
-		foreach(string currSql, ref info; conn.preparedLookup)
-		if(info._hStmt == statementId)
-		{
-			sql = currSql;
-			break;
-		}
-		if(sql)
-			conn.preparedLookup.remove(sql);
 	}
 
 	/// Used by `StatementQueue` to keep track of sql statments to be
@@ -671,6 +668,7 @@ package:
 		
 		void add(Task.Action action, string sql)
 		{
+			setQueuedForRelease(action, sql, true);
 			tasks ~= Task(action, sql);
 		}
 
@@ -681,10 +679,13 @@ package:
 		void remove(Task.Action action, string sql)
 		{
 			auto task = Task(action, sql);
-			
+
 			foreach(ref currTask; tasks)
 			if(task == currTask)
+			{
 				currTask.sql = null;
+				setQueuedForRelease(action, sql, false);
+			}
 		}
 
 		/// Performs action on all queued statemnts, and clears the queue.
@@ -698,6 +699,8 @@ package:
 				case Task.Action.register: register(conn, task.sql); break;
 				case Task.Action.release:  release (conn, task.sql); break;
 				}
+
+				setQueuedForRelease(task.action, task.sql, false);
 			}
 
 			clearAll();
@@ -706,6 +709,10 @@ package:
 		/// Clear all tasks, and reset for using again.
 		private void clearAll()
 		{
+			foreach(task; tasks)
+			if(task.sql !is null)
+				setQueuedForRelease(task.action, task.sql, false);
+
 			if(tasks.length)
 			{
 				tasks.length = 0;
@@ -716,10 +723,24 @@ package:
 		/// Clear all statements queued for release. Keep everything queued for register.
 		private void clearRelease()
 		{
+			foreach(task; tasks)
+			if(task.sql !is null)
+				setQueuedForRelease(task.action, task.sql, false);
+
 			if(tasks.length)
 			{
 				tasks.length = 0;
 				assumeSafeAppend(tasks);
+			}
+		}
+
+		private void setQueuedForRelease(Task.Action action, string sql, bool value)
+		{
+			if(action == Task.Action.release && sql in conn.preparedLookup)
+			{
+				auto info = conn.preparedLookup[sql];
+				info.queuedForRelease = value;
+				conn.preparedLookup[sql] = info;
 			}
 		}
 	}
@@ -1286,6 +1307,18 @@ public:
 
 	/// Gets the result header's field descriptions.
 	@property FieldDescription[] resultFieldDescriptions() pure { return _rsh.fieldDescriptions; }
+
+	/// Is the given SQL registered on this connection as a prepared statement?
+	bool isPreparedRegistered(string sql)
+	{
+		return isPreparedRegistered( getPreparedServerInfo(sql) );
+	}
+
+	///ditto
+	package bool isPreparedRegistered(Nullable!PreparedServerInfo info)
+	{
+		return !info.isNull && info._hStmt && !info.queuedForRelease;
+	}
 }
 
 // An attempt to reproduce issue #81: Using mysql-native driver with no default database
