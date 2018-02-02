@@ -64,6 +64,110 @@ package struct PreparedServerInfo
 }
 
 /++
+This is a wrapper over `Prepared` which is provided ONLY as a
+temporary aid in upgrading to mysql-native v2.0.0 and its
+new connection-independent model of prepared statements.
+
+In most cases, this layer shouldn't even be needed. But if you have many
+lines of code making calls to exec/query the same prepared statement,
+then this may be helpful.
+
+To use this temporary compatability layer, change instances of:
+
+---
+auto stmt = conn.prepare(...);
+---
+
+to:
+
+---
+auto stmt = conn.prepareBackwardCompat(...);
+---
+
+And then your prepared statement should work as before.
+
+BUT DO NOT LEAVE IT LIKE THIS! Ultimately, you should update
+your prepared statement code to the mysql-native v2.0.0 API, by changing
+instances of:
+
+---
+stmt.exec()
+stmt.query()
+stmt.queryRow()
+stmt.queryRowTuple(outputArgs...)
+stmt.queryValue()
+---
+
+to:
+
+---
+conn.exec(stmt)
+conn.query(stmt)
+conn.queryRow(stmt)
+conn.queryRowTuple(stmt, outputArgs...)
+conn.queryValue(stmt)
+---
+
+Both of the above syntaxes can be used with a `BackwardCompatPrepared`
+(the `Connection` passed directly to `exec`/`query` will override the
+one embedded associated with your `BackwardCompatPrepared`).
+
+Once all of your code is updated, you can change `prepareBackwardCompat`
+back to `prepare` again, and your upgrade will be complete.
++/
+struct BackwardCompatPrepared
+{
+	import std.variant;
+	
+	private Connection _conn;
+	package Prepared _prepared;
+
+	/// Access underlying `Prepared`
+	@property Prepared prepared() { return _prepared; }
+
+	alias _prepared this;
+
+	/++
+	This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+	
+	See `BackwardCompatPrepared` for more info.
+	+/
+	deprecated("Change 'preparedStmt.exec()' to 'conn.exec(preparedStmt)'")
+	ulong exec()
+	{
+		return .exec(_conn, _prepared);
+	}
+
+	///ditto
+	deprecated("Change 'preparedStmt.query()' to 'conn.query(preparedStmt)'")
+	ResultRange query(ColumnSpecialization[] csa = null)
+	{
+		return .query(_conn, _prepared, csa);
+	}
+
+	///ditto
+	deprecated("Change 'preparedStmt.queryRow()' to 'conn.queryRow(preparedStmt)'")
+	Nullable!Row queryRow(ColumnSpecialization[] csa = null)
+	{
+		return .queryRow(_conn, _prepared, csa);
+	}
+
+	///ditto
+	deprecated("Change 'preparedStmt.queryRowTuple(outArgs...)' to 'conn.queryRowTuple(preparedStmt, outArgs...)'")
+	void queryRowTuple(T...)(ref T args) if(T.length == 0 || !is(T[0] : Connection))
+	{
+		return .queryRowTuple(_conn, _prepared, args);
+	}
+
+	///ditto
+	deprecated("Change 'preparedStmt.queryValue()' to 'conn.queryValue(preparedStmt)'")
+	Nullable!Variant queryValue(ColumnSpecialization[] csa = null)
+	{
+		return .queryValue(_conn, _prepared, csa);
+	}
+}
+
+/++
 A class representing a database connection.
 
 If you are using Vibe.d, consider using `mysql.pool.MySQLPool` instead of

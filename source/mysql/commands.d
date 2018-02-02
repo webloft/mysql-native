@@ -153,6 +153,7 @@ ulong exec(Connection conn, string sql)
 	return execImpl(conn, ExecQueryImplInfo(false, sql));
 }
 
+///ditto
 ulong exec(Connection conn, ref Prepared prepared)
 {
 	auto preparedInfo = conn.getPreparedServerInfo(prepared.sql);
@@ -161,6 +162,19 @@ ulong exec(Connection conn, ref Prepared prepared)
 	auto ra = execImpl(conn, prepared.getExecQueryImplInfo(preparedInfo._hStmt));
 	prepared._lastInsertID = conn.lastInsertID;
 	return ra;
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+ulong exec(Connection conn, ref BackwardCompatPrepared prepared)
+{
+	auto p = prepared.prepared;
+	auto result = exec(conn, p);
+	prepared._prepared = p;
+	return result;
 }
 
 /// Common implementation for mysql.commands.exec and Prepared.exec
@@ -218,6 +232,7 @@ ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null
 	return queryImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 
+///ditto
 ResultRange query(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
 {
 	auto preparedInfo = conn.getPreparedServerInfo(prepared.sql);
@@ -225,6 +240,19 @@ ResultRange query(Connection conn, ref Prepared prepared, ColumnSpecialization[]
 
 	auto result = queryImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo._hStmt));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+	return result;
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+ResultRange query(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+{
+	auto p = prepared.prepared;
+	auto result = query(conn, p, csa);
+	prepared._prepared = p;
 	return result;
 }
 
@@ -274,6 +302,7 @@ Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = 
 	return queryRowImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 
+///ditto
 Nullable!Row queryRow(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
 {
 	auto preparedInfo = conn.getPreparedServerInfo(prepared.sql);
@@ -281,6 +310,19 @@ Nullable!Row queryRow(Connection conn, ref Prepared prepared, ColumnSpecializati
 
 	auto result = queryRowImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo._hStmt));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+	return result;
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+Nullable!Row queryRow(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+{
+	auto p = prepared.prepared;
+	auto result = queryRow(conn, p, csa);
+	prepared._prepared = p;
 	return result;
 }
 
@@ -330,6 +372,7 @@ void queryRowTuple(T...)(Connection conn, string sql, ref T args)
 	return queryRowTupleImpl(conn, ExecQueryImplInfo(false, sql), args);
 }
 
+///ditto
 void queryRowTuple(T...)(Connection conn, ref Prepared prepared, ref T args)
 {
 	auto preparedInfo = conn.getPreparedServerInfo(prepared.sql);
@@ -337,6 +380,19 @@ void queryRowTuple(T...)(Connection conn, ref Prepared prepared, ref T args)
 
 	queryRowTupleImpl(conn, prepared.getExecQueryImplInfo(preparedInfo._hStmt), args);
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+void queryRowTuple(T...)(Connection conn, ref BackwardCompatPrepared prepared, ref T args)
+{
+	auto p = prepared.prepared;
+	auto result = queryRowTuple(conn, p, args);
+	prepared._prepared = p;
+	return result;
 }
 
 /// Common implementation for mysql.commands.queryRowTuple and Prepared.queryRowTuple
@@ -418,6 +474,7 @@ Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] 
 	return queryValueImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 
+///ditto
 Nullable!Variant queryValue(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
 {
 	auto preparedInfo = conn.getPreparedServerInfo(prepared.sql);
@@ -425,6 +482,19 @@ Nullable!Variant queryValue(Connection conn, ref Prepared prepared, ColumnSpecia
 
 	auto result = queryValueImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo._hStmt));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+	return result;
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+Nullable!Variant queryValue(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+{
+	auto p = prepared.prepared;
+	auto result = queryValue(conn, p, csa);
+	prepared._prepared = p;
 	return result;
 }
 

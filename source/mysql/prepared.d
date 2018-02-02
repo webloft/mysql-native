@@ -65,6 +65,18 @@ Prepared prepare(Connection conn, string sql)
 }
 
 /++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+deprecated("This is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0. "~
+"You should migrate from this to the Prepared-compatible exec/query overloads in 'mysql.commands'.")
+BackwardCompatPrepared prepareBackwardCompat(Connection conn, string sql)
+{
+	return BackwardCompatPrepared(conn, prepare(conn, sql));
+}
+
+/++
 Convenience function to create a prepared statement which calls a stored function.
 
 Be careful that your numArgs is correct. If it isn't, you may get a
@@ -249,11 +261,11 @@ package:
 
 		immutable insertSQL = "INSERT INTO `enforceNotReleased` VALUES (1), (2)";
 		immutable selectSQL = "SELECT * FROM `enforceNotReleased`";
-		Prepared preparedInsert;
-		Prepared preparedSelect;
+		BackwardCompatPrepared preparedInsert;
+		BackwardCompatPrepared preparedSelect;
 		int queryTupleResult;
-		assertNotThrown!MYXNotPrepared(preparedInsert = cn.prepare(insertSQL));
-		assertNotThrown!MYXNotPrepared(preparedSelect = cn.prepare(selectSQL));
+		assertNotThrown!MYXNotPrepared(preparedInsert = cn.prepareBackwardCompat(insertSQL));
+		assertNotThrown!MYXNotPrepared(preparedSelect = cn.prepareBackwardCompat(selectSQL));
 		assertNotThrown!MYXNotPrepared(preparedInsert.exec());
 		assertNotThrown!MYXNotPrepared(preparedSelect.query().each());
 		assertNotThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
