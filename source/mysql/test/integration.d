@@ -211,7 +211,7 @@ unittest
 	rs[0].toStruct(x);
 	assert(x.a == -128 && x.b == 65535 && x.c == 42 && x.s == "ABC" && to!string(x.d) == "22.4");
 
-	auto stmt = cn.prepare("select * from basetest limit 1");
+	auto stmt = cn.prepareBackwardCompat("select * from basetest limit 1");
 	rs = stmt.query.array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == true);
@@ -237,7 +237,7 @@ unittest
 	assert(rs[0].isNull(17) == true);
 	assert(rs[0][18] == "11234.4325", rs[0][18].toString());
 
-	stmt = cn.prepare("insert into basetest (intcol, stringcol) values(?, ?)");
+	stmt = cn.prepareBackwardCompat("insert into basetest (intcol, stringcol) values(?, ?)");
 	Variant[] va;
 	va.length = 2;
 	va[0] = 42;
@@ -250,7 +250,7 @@ unittest
 		stmt.setArg(1, stmt.getArg(1) ~ "x");
 	}
 
-	stmt = cn.prepare("insert into basetest (intcol, stringcol) values(?, ?)");
+	stmt = cn.prepareBackwardCompat("insert into basetest (intcol, stringcol) values(?, ?)");
 	//Variant[] va;
 	va.length = 2;
 	va[0] = 42;
@@ -270,7 +270,7 @@ unittest
 	cn.queryRowTuple("select intcol, stringcol from basetest where bytecol=-128 limit 1", a, b);
 	assert(a == 42 && b == "The quick brown fox");
 
-	stmt = cn.prepare("select intcol, stringcol from basetest where bytecol=? limit 1");
+	stmt = cn.prepareBackwardCompat("select intcol, stringcol from basetest where bytecol=? limit 1");
 	Variant[] va2;
 	va2.length = 1;
 	va2[0] = cast(byte) -128;
@@ -280,7 +280,7 @@ unittest
 	stmt.queryRowTuple(a, b);
 	assert(a == 42 && b == "The quick brown fox");
 
-	stmt = cn.prepare("update basetest set intcol=? where bytecol=-128");
+	stmt = cn.prepareBackwardCompat("update basetest set intcol=? where bytecol=-128");
 	int referred = 555;
 	stmt.setArgs(referred);
 	stmt.exec();
@@ -308,11 +308,11 @@ unittest
 
 	auto func = cn.prepareFunction("hello", 1);
 	func.setArgs(g);
-	auto funcResult = func.queryValue();
+	auto funcResult = cn.queryValue(func);
 	assert(!funcResult.isNull && funcResult.get == "Hello Gorgeous!");
 	g = "Hotlips";
 	func.setArgs(g);
-	funcResult = func.queryValue();
+	funcResult = cn.queryValue(func);
 	assert(!funcResult.isNull && funcResult.get == "Hello Hotlips!");
 
 	// Test execProcedure()
@@ -327,7 +327,7 @@ unittest
 	int m = 2001;
 	auto proc = cn.prepareProcedure("insert2", 2);
 	proc.setArgs(m, g);
-	proc.exec();
+	cn.exec(proc);
 
 	cn.queryRowTuple("select stringcol from basetest where intcol=2001", reply);
 	assert(reply == g);
@@ -335,7 +335,7 @@ unittest
 	g = "inserted string 2";
 	m = 2002;
 	proc.setArgs(m, g);
-	proc.exec();
+	cn.exec(proc);
 
 	cn.queryRowTuple("select stringcol from basetest where intcol=2002", reply);
 	assert(reply == g);
@@ -567,7 +567,7 @@ unittest
 	Row[] rs;
 	//Table tbl;
 	Row row;
-	Prepared stmt;
+	BackwardCompatPrepared stmt;
 
 	// Index out of bounds throws
 	/+
@@ -582,7 +582,7 @@ unittest
 	// Select without result
 	cn.truncate("manytypes");
 	cn.exec("INSERT INTO manytypes (i, f) VALUES (1, NULL)");
-	stmt = cn.prepare("SELECT * FROM manytypes WHERE i = ?");
+	stmt = cn.prepareBackwardCompat("SELECT * FROM manytypes WHERE i = ?");
 	{
 		auto val = 2;
 		stmt.setArg(0, val);
@@ -596,7 +596,7 @@ unittest
 	// Bind single primitive value
 	cn.truncate("manytypes");
 	cn.exec("INSERT INTO manytypes (i, f) VALUES (1, NULL)");
-	stmt = cn.prepare("SELECT * FROM manytypes WHERE i = ?");
+	stmt = cn.prepareBackwardCompat("SELECT * FROM manytypes WHERE i = ?");
 	{
 		auto val = 1;
 		stmt.setArg(0, val);
@@ -609,7 +609,7 @@ unittest
 	{
 		auto val1 = 1;
 		auto val2 = 2;
-		stmt = cn.prepare("SELECT * FROM manytypes WHERE i = ? AND f = ?");
+		stmt = cn.prepareBackwardCompat("SELECT * FROM manytypes WHERE i = ? AND f = ?");
 		stmt.setArgs(val1, val2);
 		row = stmt.queryRow();
 	}
@@ -626,7 +626,7 @@ unittest
 	// Insert null
 	cn.truncate("manytypes");
 	{
-		auto prepared = cn.prepare("INSERT INTO manytypes (i, f) VALUES (1, ?)");
+		auto prepared = cn.prepareBackwardCompat("INSERT INTO manytypes (i, f) VALUES (1, ?)");
 		//TODO: Using `prepared.setArgs(null);` results in: Param count supplied does not match prepared statement
 		//      Can anything be done about that?
 		prepared.setArg(0, null);
@@ -638,7 +638,7 @@ unittest
 	cn.truncate("manytypes");
 	cn.exec("INSERT INTO manytypes (i, f) VALUES (1, NULL)");
 	{
-		stmt = cn.prepare("SELECT i FROM manytypes WHERE f <=> ?");
+		stmt = cn.prepareBackwardCompat("SELECT i FROM manytypes WHERE f <=> ?");
 		//TODO: Using `stmt.setArgs(null);` results in: Param count supplied does not match prepared statement
 		//      Can anything be done about that?
 		stmt.setArg(0, null);
@@ -840,7 +840,7 @@ unittest
 		auto okp = cn.exec(insertNullSql);
 		//assert(okp.affectedRows == 1);
 		assert(okp == 1);
-		okp = cn.prepare(insertNullSql).exec();
+		okp = cn.prepareBackwardCompat(insertNullSql).exec();
 		//assert(okp.affectedRows == 1);
 		assert(okp == 1);
 
@@ -850,7 +850,7 @@ unittest
 		assert(x.get.type == typeid(typeof(null)));
 
 		// NULL as bound param
-		auto inscmd = cn.prepare("INSERT INTO "~tablename~" VALUES (?)");
+		auto inscmd = cn.prepareBackwardCompat("INSERT INTO "~tablename~" VALUES (?)");
 		cn.exec("TRUNCATE "~tablename);
 
 		inscmd.setArgs([Variant(null)]);
@@ -923,7 +923,7 @@ unittest
 {
 	import mysql.prepared;
 	mixin(scopedCn);
-	auto stmt = cn.prepare(
+	auto stmt = cn.prepareBackwardCompat(
 			"SELECT * FROM information_schema.character_sets"~
 			" WHERE CHARACTER_SET_NAME=?");
 	auto val = "utf8";
@@ -953,8 +953,8 @@ unittest
 	immutable selectSQL          = "SELECT * FROM `coupleTypes` ORDER BY i ASC";
 	immutable selectBackwardsSQL = "SELECT `s`,`i` FROM `coupleTypes` ORDER BY i DESC";
 	immutable selectNoRowsSQL    = "SELECT * FROM `coupleTypes` WHERE s='no such match'";
-	auto prepared = cn.prepare(selectSQL);
-	auto preparedSelectNoRows = cn.prepare(selectNoRowsSQL);
+	auto prepared = cn.prepareBackwardCompat(selectSQL);
+	auto preparedSelectNoRows = cn.prepareBackwardCompat(selectNoRowsSQL);
 	
 	{
 		// Test query

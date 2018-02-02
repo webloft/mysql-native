@@ -111,7 +111,7 @@ unittest
 
 		auto preparedHello = prepareFunction(cn, "hello", 1);
 		preparedHello.setArgs("World");
-		auto rs = preparedHello.query.array;
+		auto rs = cn.query(preparedHello).array;
 		assert(rs.length == 1);
 		assert(rs[0][0] == "Hello World!");
 	}
@@ -159,7 +159,7 @@ unittest
 
 		auto preparedInsert2 = prepareProcedure(cn, "insert2", 2);
 		preparedInsert2.setArgs(2001, "inserted string 1");
-		preparedInsert2.exec();
+		cn.exec(preparedInsert2);
 
 		auto rs = query(cn, "SELECT stringcol FROM basetest WHERE intcol=2001").array;
 		assert(rs.length == 1);
@@ -664,11 +664,11 @@ public:
 
 	Returns: The number of rows affected.
 	+/
-	ulong exec()
+	/+ulong exec()
 	{
 		import mysql.commands;
 		return .exec(_conn, this);
-	}
+	}+/
 
 	debug(MYSQLN_TESTS)
 	unittest
@@ -680,7 +680,7 @@ public:
 			PRIMARY KEY (a)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 		
-		auto stmt = cn.prepare("INSERT INTO `testPreparedLastInsertID` VALUES()");
+		auto stmt = cn.prepareBackwardCompat("INSERT INTO `testPreparedLastInsertID` VALUES()");
 		stmt.exec();
 		assert(stmt.lastInsertID == 1);
 		stmt.exec();
@@ -716,11 +716,11 @@ public:
 	Row[]       allAtOnce  = myPrepared.query("SELECT * from myTable").array;
 	---
 	+/
-	ResultRange query(ColumnSpecialization[] csa = null)
+	/+ResultRange query(ColumnSpecialization[] csa = null)
 	{
 		import mysql.commands;
 		return .query(_conn, this, csa);
-	}
+	}+/
 
 	/++
 	Execute a prepared SQL SELECT command where you only want the first `mysql.result.Row` (if any).
@@ -739,11 +739,11 @@ public:
 	Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 	query resulted in an empty result set.
 	+/
-	Nullable!Row queryRow(ColumnSpecialization[] csa = null)
+	/+Nullable!Row queryRow(ColumnSpecialization[] csa = null)
 	{
 		import mysql.commands;
 		return .queryRow(_conn, this, csa);
-	}
+	}+/
 
 	/++
 	Execute a prepared SQL SELECT command where you only want the first `mysql.result.Row`,
@@ -763,11 +763,11 @@ public:
 
 	Params: args = A tuple of D variables to receive the results.
 	+/
-	void queryRowTuple(T...)(ref T args) if(T.length == 0 || !is(T[0] : Connection))
+	/+void queryRowTuple(T...)(ref T args) if(T.length == 0 || !is(T[0] : Connection))
 	{
 		import mysql.commands;
 		return .queryRowTuple(_conn, this, args);
-	}
+	}+/
 
 	/++
 	Execute a prepared SQL SELECT command and returns a single value,
@@ -794,11 +794,11 @@ public:
 	Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 	query resulted in an empty result set.
 	+/
-	Nullable!Variant queryValue(ColumnSpecialization[] csa = null)
+	/+Nullable!Variant queryValue(ColumnSpecialization[] csa = null)
 	{
 		import mysql.commands;
 		return .queryValue(_conn, this, csa);
-	}
+	}+/
 
 	/++
 	Prepared statement parameter setter.
@@ -949,7 +949,7 @@ public:
 
 		immutable insertSQL = "INSERT INTO `setNullArg` VALUES (?)";
 		immutable selectSQL = "SELECT * FROM `setNullArg`";
-		auto preparedInsert = cn.prepare(insertSQL);
+		auto preparedInsert = cn.prepareBackwardCompat(insertSQL);
 		assert(preparedInsert.sql == insertSQL);
 		Row[] rs;
 

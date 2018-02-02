@@ -28,7 +28,7 @@ void main(string[] args)
 	assert(range.front[1] == "Bob");
 
 	// Prepared statements
-	Prepared prepared = prepare(conn, "SELECT * FROM `tablename` WHERE `name`=? OR `name`=?");
+	BackwardCompatPrepared prepared = prepareBackwardCompat(conn, "SELECT * FROM `tablename` WHERE `name`=? OR `name`=?");
 	prepared.setArgs("Bob", "Bobby");
 	ResultRange bobs = prepared.query();
 	bobs.close(); // Skip them
@@ -42,7 +42,7 @@ void main(string[] args)
 	assert(rs[1][1] == "Bob");
 
 	// Nulls
-	Prepared insert = prepare(conn, "INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)");
+	BackwardCompatPrepared insert = prepareBackwardCompat(conn, "INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)");
 	insert.setArgs(null, "Cam"); // Also takes Nullable!T
 	insert.exec();
 	range = query(conn, "SELECT * FROM `tablename` WHERE `name`='Cam'");

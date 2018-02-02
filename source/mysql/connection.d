@@ -120,7 +120,7 @@ struct BackwardCompatPrepared
 	import std.variant;
 	
 	private Connection _conn;
-	package Prepared _prepared;
+	Prepared _prepared;
 
 	/// Access underlying `Prepared`
 	@property Prepared prepared() { return _prepared; }

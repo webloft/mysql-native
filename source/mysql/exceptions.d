@@ -146,6 +146,7 @@ unittest
 {
 	import std.exception;
 	import mysql.commands;
+	import mysql.connection : BackwardCompatPrepared;
 	import mysql.prepared;
 	import mysql.test.common : scopedCn, createCn;
 	mixin(scopedCn);
@@ -157,14 +158,14 @@ unittest
 
 	immutable insertSQL = "INSERT INTO `wrongFunctionException` VALUES (1), (2)";
 	immutable selectSQL = "SELECT * FROM `wrongFunctionException`";
-	Prepared preparedInsert;
-	Prepared preparedSelect;
+	BackwardCompatPrepared preparedInsert;
+	BackwardCompatPrepared preparedSelect;
 	int queryTupleResult;
 	assertNotThrown!MYXWrongFunction(cn.exec(insertSQL));
 	assertNotThrown!MYXWrongFunction(cn.query(selectSQL).each());
 	assertNotThrown!MYXWrongFunction(cn.queryRowTuple(selectSQL, queryTupleResult));
-	assertNotThrown!MYXWrongFunction(preparedInsert = cn.prepare(insertSQL));
-	assertNotThrown!MYXWrongFunction(preparedSelect = cn.prepare(selectSQL));
+	assertNotThrown!MYXWrongFunction(preparedInsert = cn.prepareBackwardCompat(insertSQL));
+	assertNotThrown!MYXWrongFunction(preparedSelect = cn.prepareBackwardCompat(selectSQL));
 	assertNotThrown!MYXWrongFunction(preparedInsert.exec());
 	assertNotThrown!MYXWrongFunction(preparedSelect.query().each());
 	assertNotThrown!MYXWrongFunction(preparedSelect.queryRowTuple(queryTupleResult));
