@@ -69,8 +69,7 @@ This function is provided ONLY as a temporary aid in upgrading to mysql-native v
 
 See `BackwardCompatPrepared` for more info.
 +/
-deprecated("This is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0. "~
-"You should migrate from this to the Prepared-compatible exec/query overloads in 'mysql.commands'.")
+deprecated("This is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0. You should migrate from this to the Prepared-compatible exec/query overloads in 'mysql.commands'.")
 BackwardCompatPrepared prepareBackwardCompat(Connection conn, string sql)
 {
 	return BackwardCompatPrepared(conn, prepare(conn, sql));

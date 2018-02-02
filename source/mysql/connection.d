@@ -606,7 +606,11 @@ package:
 		// on the server automatically.
 		_headersPending = _rowsPending = _binaryPending = false;
 		statementQueue.clear();
-		preparedLookup.clear();
+		
+		static if(__traits(compiles, (){ int[int] aa; aa.clear(); }))
+			preparedLookup.clear();
+		else
+			preparedLookup = null;
 	}
 	
 	/// Called whenever mysql-native needs to send a command to the server
