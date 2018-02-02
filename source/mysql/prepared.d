@@ -1042,7 +1042,7 @@ public:
 		if(info.isNull || !info._hStmt || _conn.closed())
 			return;
 
-		_conn.statementQueue.add(Connection.Task.Action.release, _sql);
+		_conn.statementQueue.add(_sql);
 	}
 
 	/// Gets the number of arguments this prepared statement expects to be passed in.

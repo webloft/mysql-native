@@ -501,7 +501,7 @@ package:
 		// any pending data is gone. Any statements to release will be released
 		// on the server automatically.
 		_headersPending = _rowsPending = _binaryPending = false;
-		statementQueue.clearRelease();
+		statementQueue.clear();
 		preparedLookup.clear();
 	}
 	
@@ -523,7 +523,7 @@ package:
 		try
 		{
 			purgeResult();
-			statementQueue.processAll();
+			statementQueue.releaseAll();
 		}
 		catch(Exception e)
 		{
@@ -641,102 +641,68 @@ package:
 		// for this command.
 	}
 
-	/// Used by `StatementQueue` to keep track of sql statments to be
-	/// regestered or released as prepared statements.
-	static struct Task
-	{
-		enum Action {register, release}
-		
-		Action action; /// What to do: register or release?
-		string sql; /// Prepared statement's SQL
-	}
-	
 	/++
-	Keeps track of prepared statements queued to be registered or released on the server.
+	Keeps track of prepared statements queued to be released on the server.
 
-	Prepared statements aren't registered or released immediately, because that
+	Prepared statements aren't released immediately, because that
 	involves sending a command to the server even though there might be
 	results pending. (Can't send a command while results are pending.)
 	+/
-	static struct StatementQueue(alias register, alias release)
+	static struct StatementReleaseQueue(alias release)
 	{
 		private Connection conn;
 
-		/// List of statements to be registerd or released.
+		/// List of sql statements to be released.
 		/// This uses assumeSafeAppend. Do not save copies of it.
-		Task[] tasks;
+		string[] sqlList;
 		
-		void add(Task.Action action, string sql)
+		void add(string sql)
 		{
-			setQueuedForRelease(action, sql, true);
-			tasks ~= Task(action, sql);
+			setQueuedForRelease(sql, true);
+			sqlList ~= sql;
 		}
 
 		/// Removes a task from the list of statements
-		/// to be registered or released from the server.
+		/// to be released from the server.
 		/// Does nothing if the task isn't on the list.
-		//TODO: Is this even used? If so, SHOULD it be used?
-		void remove(Task.Action action, string sql)
+		void remove(string sql)
 		{
-			auto task = Task(action, sql);
-
-			foreach(ref currTask; tasks)
-			if(task == currTask)
+			foreach(ref currSql; sqlList)
+			if(sql == currSql)
 			{
-				currTask.sql = null;
-				setQueuedForRelease(action, sql, false);
+				currSql = null;
+				setQueuedForRelease(sql, false);
 			}
 		}
 
-		/// Performs action on all queued statemnts, and clears the queue.
-		void processAll()
+		/// Releases all queued statemnts, and clears the queue.
+		void releaseAll()
 		{
-			foreach(task; tasks)
-			if(task.sql !is null)
-			{
-				final switch(task.action)
-				{
-				case Task.Action.register: register(conn, task.sql); break;
-				case Task.Action.release:  release (conn, task.sql); break;
-				}
+			foreach(sql; sqlList)
+			if(sql !is null)
+				release(conn, sql);
 
-				setQueuedForRelease(task.action, task.sql, false);
-			}
-
-			clearAll();
+			clear();
 		}
 
-		/// Clear all tasks, and reset for using again.
-		private void clearAll()
+		/// Clear all queued statements, and reset for using again.
+		private void clear()
 		{
-			foreach(task; tasks)
-			if(task.sql !is null)
-				setQueuedForRelease(task.action, task.sql, false);
+			foreach(sql; sqlList)
+				setQueuedForRelease(sql, false);
 
-			if(tasks.length)
+			if(sqlList.length)
 			{
-				tasks.length = 0;
-				assumeSafeAppend(tasks);
+				sqlList.length = 0;
+				assumeSafeAppend(sqlList);
 			}
 		}
 
-		/// Clear all statements queued for release. Keep everything queued for register.
-		private void clearRelease()
+		/// Set `queuedForRelease` flag for a statement in `preparedLookup`.
+		/// Does nothing if statement not in `preparedLookup`.
+		private void setQueuedForRelease(string sql, bool value)
 		{
-			foreach(task; tasks)
-			if(task.sql !is null)
-				setQueuedForRelease(task.action, task.sql, false);
-
-			if(tasks.length)
-			{
-				tasks.length = 0;
-				assumeSafeAppend(tasks);
-			}
-		}
-
-		private void setQueuedForRelease(Task.Action action, string sql, bool value)
-		{
-			if(action == Task.Action.release && sql in conn.preparedLookup)
+			if(sql in conn.preparedLookup)
 			{
 				auto info = conn.preparedLookup[sql];
 				info.queuedForRelease = value;
@@ -744,19 +710,13 @@ package:
 			}
 		}
 	}
-	StatementQueue!(immediateRegisterPrepared, immediateReleasePrepared) statementQueue;
+	StatementReleaseQueue!(immediateReleasePrepared) statementQueue;
 	
-	debug(MYSQLN_TESTS) string[] fakeRegister_result;
 	debug(MYSQLN_TESTS) string[] fakeRelease_result;
 	unittest
 	{
 		debug(MYSQLN_TESTS)
 		{
-			static void fakeRegister(Connection conn, string sql)
-			{
-				conn.fakeRegister_result ~= sql;
-			}
-			
 			static void fakeRelease(Connection conn, string sql)
 			{
 				conn.fakeRelease_result ~= sql;
@@ -764,53 +724,33 @@ package:
 			
 			mixin(scopedCn);
 			
-			enum taRegister = Task.Action.register;
-			enum taRelease = Task.Action.release;
-
-			StatementQueue!(fakeRegister, fakeRelease) list;
+			StatementReleaseQueue!(fakeRelease) list;
 			list.conn = cn;
-			assert(list.tasks == []);
-			assert(cn.fakeRegister_result == []);
+			assert(list.sqlList == []);
 			assert(cn.fakeRelease_result == []);
 
-			list.add(taRelease, "1");
-			assert(list.tasks == [Task(taRelease, "1")]);
-			assert(cn.fakeRegister_result == []);
+			list.add("1");
+			assert(list.sqlList == ["1"]);
 			assert(cn.fakeRelease_result == []);
 
-			list.add(taRelease, "7");
-			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, "7")]);
-			assert(cn.fakeRegister_result == []);
+			list.add("7");
+			assert(list.sqlList == ["1", "7"]);
 			assert(cn.fakeRelease_result == []);
 
-			list.add(taRelease, "9");
-			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, "7"), Task(taRelease, "9")]);
-			assert(cn.fakeRegister_result == []);
+			list.add("9");
+			assert(list.sqlList == ["1", "7", "9"]);
 			assert(cn.fakeRelease_result == []);
 
-			list.remove(taRelease, "5");
-			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, "7"), Task(taRelease, "9")]);
-			assert(cn.fakeRegister_result == []);
+			list.remove("5");
+			assert(list.sqlList == ["1", "7", "9"]);
 			assert(cn.fakeRelease_result == []);
 			
-			list.remove(taRelease, "7");
-			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, null), Task(taRelease, "9")]);
-			assert(cn.fakeRegister_result == []);
-			assert(cn.fakeRelease_result == []);
-			
-			list.remove(taRegister, "9");
-			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, null), Task(taRelease, "9")]);
-			assert(cn.fakeRegister_result == []);
-			assert(cn.fakeRelease_result == []);
-			
-			list.add(taRegister, "2");
-			assert(list.tasks == [Task(taRelease, "1"), Task(taRelease, null), Task(taRelease, "9"), Task(taRegister, "2")]);
-			assert(cn.fakeRegister_result == []);
+			list.remove("7");
+			assert(list.sqlList == ["1", null, "9"]);
 			assert(cn.fakeRelease_result == []);
 
-			list.processAll();
-			assert(list.tasks == []);
-			assert(cn.fakeRegister_result == ["2"]);
+			list.releaseAll();
+			assert(list.sqlList == []);
 			assert(cn.fakeRelease_result == ["1", "9"]);
 		}
 	}
