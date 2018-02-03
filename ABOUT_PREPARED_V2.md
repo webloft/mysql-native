@@ -142,6 +142,14 @@ other info Prepared uses, needs to come from the server.) However, once
 created, the Prepared will no longer hold any reference, or any other
 ties, to any one particular Connection.
 
+- `prepare()` will move from `mysql.prepared` to `mysql.connection` since
+it relies on `Connection`. This will eliminate `mysql.prepared`'s dependency
+on `mysql.connection`.
+
+- Any runtime instance of `Prepare` will be not only be connection-independent,
+but could (in theory) even be applied to completely different types of
+transports having nothing to do with `mysql.connection` at all.
+
 I think that neatly addresses all of the problems above.
 
 Does all this mean mysql-native is getting too high-level for its charter?

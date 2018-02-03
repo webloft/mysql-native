@@ -37,6 +37,156 @@ immutable SvrCapFlags defaultClientFlags =
 		SvrCapFlags.SECURE_CONNECTION;// | SvrCapFlags.MULTI_STATEMENTS |
 		//SvrCapFlags.MULTI_RESULTS;
 
+/++
+Submit an SQL command to the server to be compiled into a prepared statement.
+
+Internally, the result of a successful outcome will be a statement handle - an ID -
+for the prepared statement, a count of the parameters required for
+excution of the statement, and a count of the columns that will be present
+in any result set that the command generates.
+
+The server will then proceed to send prepared statement headers,
+including parameter descriptions, and result set field descriptions,
+followed by an EOF packet.
+
+Throws: `mysql.exceptions.MYX` if the server has a problem.
++/
+Prepared prepare(Connection conn, string sql)
+{
+	auto info = conn.registerPrepared(sql);
+	return Prepared(conn, sql, info.headers, info.numParams);
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+deprecated("This is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0. You should migrate from this to the Prepared-compatible exec/query overloads in 'mysql.commands'.")
+BackwardCompatPrepared prepareBackwardCompat(Connection conn, string sql)
+{
+	return BackwardCompatPrepared(conn, prepare(conn, sql));
+}
+
+/++
+Convenience function to create a prepared statement which calls a stored function.
+
+Be careful that your numArgs is correct. If it isn't, you may get a
+`mysql.exceptions.MYX` with a very unclear error message.
+
+Throws: `mysql.exceptions.MYX` if the server has a problem.
+
+Params:
+	name = The name of the stored function.
+	numArgs = The number of arguments the stored procedure takes.
++/
+Prepared prepareFunction(Connection conn, string name, int numArgs)
+{
+	auto sql = "select " ~ name ~ preparedPlaceholderArgs(numArgs);
+	return prepare(conn, sql);
+}
+
+///
+unittest
+{
+	debug(MYSQLN_TESTS)
+	{
+		import mysql.test.common;
+		mixin(scopedCn);
+
+		exec(cn, `DROP FUNCTION IF EXISTS hello`);
+		exec(cn, `
+			CREATE FUNCTION hello (s CHAR(20))
+			RETURNS CHAR(50) DETERMINISTIC
+			RETURN CONCAT('Hello ',s,'!')
+		`);
+
+		auto preparedHello = prepareFunction(cn, "hello", 1);
+		preparedHello.setArgs("World");
+		auto rs = cn.query(preparedHello).array;
+		assert(rs.length == 1);
+		assert(rs[0][0] == "Hello World!");
+	}
+}
+
+/++
+Convenience function to create a prepared statement which calls a stored procedure.
+
+OUT parameters are currently not supported. It should generally be
+possible with MySQL to present them as a result set.
+
+Be careful that your numArgs is correct. If it isn't, you may get a
+`mysql.exceptions.MYX` with a very unclear error message.
+
+Throws: `mysql.exceptions.MYX` if the server has a problem.
+
+Params:
+	name = The name of the stored procedure.
+	numArgs = The number of arguments the stored procedure takes.
+
++/
+Prepared prepareProcedure(Connection conn, string name, int numArgs)
+{
+	auto sql = "call " ~ name ~ preparedPlaceholderArgs(numArgs);
+	return prepare(conn, sql);
+}
+
+///
+unittest
+{
+	debug(MYSQLN_TESTS)
+	{
+		import mysql.test.common;
+		import mysql.test.integration;
+		mixin(scopedCn);
+		initBaseTestTables(cn);
+
+		exec(cn, `DROP PROCEDURE IF EXISTS insert2`);
+		exec(cn, `
+			CREATE PROCEDURE insert2 (IN p1 INT, IN p2 CHAR(50))
+			BEGIN
+				INSERT INTO basetest (intcol, stringcol) VALUES(p1, p2);
+			END
+		`);
+
+		auto preparedInsert2 = prepareProcedure(cn, "insert2", 2);
+		preparedInsert2.setArgs(2001, "inserted string 1");
+		cn.exec(preparedInsert2);
+
+		auto rs = query(cn, "SELECT stringcol FROM basetest WHERE intcol=2001").array;
+		assert(rs.length == 1);
+		assert(rs[0][0] == "inserted string 1");
+	}
+}
+
+private string preparedPlaceholderArgs(int numArgs)
+{
+	auto sql = "(";
+	bool comma = false;
+	foreach(i; 0..numArgs)
+	{
+		if (comma)
+			sql ~= ",?";
+		else
+		{
+			sql ~= "?";
+			comma = true;
+		}
+	}
+	sql ~= ")";
+
+	return sql;
+}
+
+debug(MYSQLN_TESTS)
+unittest
+{
+	assert(preparedPlaceholderArgs(3) == "(?,?,?)");
+	assert(preparedPlaceholderArgs(2) == "(?,?)");
+	assert(preparedPlaceholderArgs(1) == "(?)");
+	assert(preparedPlaceholderArgs(0) == "()");
+}
+
 /// Per-connection info from the server about a registered prepared statement.
 package struct PreparedServerInfo
 {
@@ -668,32 +818,34 @@ package:
 	{
 		enforceEx!MYXNotPrepared( isPreparedRegistered(info) );
 	}
-
-	package static void immediateRegisterPrepared(Connection conn, string sql)
+	
+	/// If already registered, simply returns the cached `PreparedServerInfo`.
+	PreparedServerInfo registerPrepared(string sql)
 	{
-		if(sql in conn.preparedLookup)
-			return;
+		if(auto pInfo = sql in preparedLookup)
+			return *pInfo;
 
-		auto info = immediateRegisterPreparedImpl(conn, sql);
-		conn.preparedLookup[sql] = info;
+		auto info = registerPreparedImpl(sql);
+		preparedLookup[sql] = info;
+		return info;
 	}
 
-	package static PreparedServerInfo immediateRegisterPreparedImpl(Connection conn, string sql)
+	PreparedServerInfo registerPreparedImpl(string sql)
 	{
-		scope(failure) conn.kill();
+		scope(failure) kill();
 
 		PreparedServerInfo info;
 		
-		conn.sendCmd(CommandType.STMT_PREPARE, sql);
-		conn._fieldCount = 0;
+		sendCmd(CommandType.STMT_PREPARE, sql);
+		_fieldCount = 0;
 
 		//TODO: All packet handling should be moved into the mysql.protocol package.
-		ubyte[] packet = conn.getPacket();
+		ubyte[] packet = getPacket();
 		if(packet.front == ResultPacketMarker.ok)
 		{
 			packet.popFront();
 			info.statementId    = packet.consume!int();
-			conn._fieldCount    = packet.consume!short();
+			_fieldCount         = packet.consume!short();
 			info.numParams      = packet.consume!short();
 
 			packet.popFront(); // one byte filler
@@ -701,7 +853,7 @@ package:
 
 			// At this point the server also sends field specs for parameters
 			// and columns if there were any of each
-			info.headers = PreparedStmtHeaders(conn, conn._fieldCount, info.numParams);
+			info.headers = PreparedStmtHeaders(this, _fieldCount, info.numParams);
 		}
 		else if(packet.front == ResultPacketMarker.error)
 		{

@@ -46,155 +46,6 @@ struct ParameterSpecialization
 alias PSN = ParameterSpecialization;
 
 /++
-Submit an SQL command to the server to be compiled into a prepared statement.
-
-Internally, the result of a successful outcome will be a statement handle - an ID -
-for the prepared statement, a count of the parameters required for
-excution of the statement, and a count of the columns that will be present
-in any result set that the command generates.
-
-The server will then proceed to send prepared statement headers,
-including parameter descriptions, and result set field descriptions,
-followed by an EOF packet.
-
-Throws: `mysql.exceptions.MYX` if the server has a problem.
-+/
-Prepared prepare(Connection conn, string sql)
-{
-	return Prepared(conn, sql);
-}
-
-/++
-This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
-
-See `BackwardCompatPrepared` for more info.
-+/
-deprecated("This is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0. You should migrate from this to the Prepared-compatible exec/query overloads in 'mysql.commands'.")
-BackwardCompatPrepared prepareBackwardCompat(Connection conn, string sql)
-{
-	return BackwardCompatPrepared(conn, prepare(conn, sql));
-}
-
-/++
-Convenience function to create a prepared statement which calls a stored function.
-
-Be careful that your numArgs is correct. If it isn't, you may get a
-`mysql.exceptions.MYX` with a very unclear error message.
-
-Throws: `mysql.exceptions.MYX` if the server has a problem.
-
-Params:
-	name = The name of the stored function.
-	numArgs = The number of arguments the stored procedure takes.
-+/
-Prepared prepareFunction(Connection conn, string name, int numArgs)
-{
-	auto sql = "select " ~ name ~ preparedPlaceholderArgs(numArgs);
-	return prepare(conn, sql);
-}
-
-///
-unittest
-{
-	debug(MYSQLN_TESTS)
-	{
-		import mysql.test.common;
-		mixin(scopedCn);
-
-		exec(cn, `DROP FUNCTION IF EXISTS hello`);
-		exec(cn, `
-			CREATE FUNCTION hello (s CHAR(20))
-			RETURNS CHAR(50) DETERMINISTIC
-			RETURN CONCAT('Hello ',s,'!')
-		`);
-
-		auto preparedHello = prepareFunction(cn, "hello", 1);
-		preparedHello.setArgs("World");
-		auto rs = cn.query(preparedHello).array;
-		assert(rs.length == 1);
-		assert(rs[0][0] == "Hello World!");
-	}
-}
-
-/++
-Convenience function to create a prepared statement which calls a stored procedure.
-
-OUT parameters are currently not supported. It should generally be
-possible with MySQL to present them as a result set.
-
-Be careful that your numArgs is correct. If it isn't, you may get a
-`mysql.exceptions.MYX` with a very unclear error message.
-
-Throws: `mysql.exceptions.MYX` if the server has a problem.
-
-Params:
-	name = The name of the stored procedure.
-	numArgs = The number of arguments the stored procedure takes.
-
-+/
-Prepared prepareProcedure(Connection conn, string name, int numArgs)
-{
-	auto sql = "call " ~ name ~ preparedPlaceholderArgs(numArgs);
-	return prepare(conn, sql);
-}
-
-///
-unittest
-{
-	debug(MYSQLN_TESTS)
-	{
-		import mysql.test.common;
-		import mysql.test.integration;
-		mixin(scopedCn);
-		initBaseTestTables(cn);
-
-		exec(cn, `DROP PROCEDURE IF EXISTS insert2`);
-		exec(cn, `
-			CREATE PROCEDURE insert2 (IN p1 INT, IN p2 CHAR(50))
-			BEGIN
-				INSERT INTO basetest (intcol, stringcol) VALUES(p1, p2);
-			END
-		`);
-
-		auto preparedInsert2 = prepareProcedure(cn, "insert2", 2);
-		preparedInsert2.setArgs(2001, "inserted string 1");
-		cn.exec(preparedInsert2);
-
-		auto rs = query(cn, "SELECT stringcol FROM basetest WHERE intcol=2001").array;
-		assert(rs.length == 1);
-		assert(rs[0][0] == "inserted string 1");
-	}
-}
-
-private string preparedPlaceholderArgs(int numArgs)
-{
-	auto sql = "(";
-	bool comma = false;
-	foreach(i; 0..numArgs)
-	{
-		if (comma)
-			sql ~= ",?";
-		else
-		{
-			sql ~= "?";
-			comma = true;
-		}
-	}
-	sql ~= ")";
-
-	return sql;
-}
-
-debug(MYSQLN_TESTS)
-unittest
-{
-	assert(preparedPlaceholderArgs(3) == "(?,?,?)");
-	assert(preparedPlaceholderArgs(2) == "(?,?)");
-	assert(preparedPlaceholderArgs(1) == "(?)");
-	assert(preparedPlaceholderArgs(0) == "()");
-}
-
-/++
 Encapsulation of a prepared statement.
 
 Create this via the function `prepare`. Set your arguments (if any) via
@@ -220,7 +71,12 @@ private:
 	string _sql;
 
 	/++
-	Submit an SQL command to the server to be compiled into a prepared statement.
+	Constructor. You probably want `mysqln.connection.prepare` instead of this.
+ 	
+	Call `mysqln.connection.prepare` instead of this, unless you are creating
+	your own transport bypassing `mysql.connection.Connection` entirely.
+	The prepared statement must be registered on the server BEFORE this is
+	called (which `mysqln.connection.prepare` does).
 
 	Internally, the result of a successful outcome will be a statement handle - an ID -
 	for the prepared statement, a count of the parameters required for
@@ -231,12 +87,15 @@ private:
 	including parameter descriptions, and result set field descriptions,
 	followed by an EOF packet.
 	+/
-	public this(Connection conn, string sql)
+	//TODO: Move this to public section below
+	public this(Connection conn, string sql, PreparedStmtHeaders headers, ushort numParams)
 	{
-		this._conn = conn;
-		this._sql = sql;
-
-		register();
+		this._conn       = conn;
+		this._sql        = sql;
+		this._headers    = headers;
+		this._numParams  = numParams;
+		_inParams.length = numParams;
+		_psa.length      = numParams;
 	}
 
 package:
@@ -863,36 +722,6 @@ public:
 		assert(rs[2].isNull(0));
 		assert(rs[1][0].type == typeid(typeof(null)));
 		assert(rs[2][0].type == typeid(typeof(null)));
-	}
-
-	/++
-	Register a prepared statement.
-	
-	Notes:
-	
-	In actuality, the server might not immediately be told to register the
-	statement.
-	
-	This is because there could be a `mysql.result.ResultRange` with results still pending
-	for retreival, and the protocol doesn't allow sending commands (such as
-	"register a prepared statement") to the server while data is pending.
-	Therefore, this function may instead queue the statement to be registered
-	when it is safe to do so: Either the next time a result set is purged or
-	the next time a command (such as `query` or `exec`) is performed (because
-	such commands automatically purge any pending results).
-	+/
-	void register()
-	{
-		if(_conn is null)
-			return;
-
-		Connection.immediateRegisterPrepared(_conn, _sql);
-		auto info = _conn.getPreparedServerInfo(_sql);
-		
-		_headers         = info.headers;
-		_numParams       = info.numParams;
-		_inParams.length = info.numParams;
-		_psa.length      = info.numParams;
 	}
 
 	/++

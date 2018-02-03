@@ -50,6 +50,10 @@ handles all the details necessary to make this work. If you wish to know
 exactly how this is done, see
 [ABOUT_PREPARED_V2.md](https://github.com/mysql-d/mysql-native/blob/master/ABOUT_PREPARED_V2.md).
 
+Also, note that `prepare()` function has moved from `mysql.prepared` to
+`mysql.connection` as it is specific to `mysql.connection.Connection`, and
+this helps keep `mysql.prepared` completely non-dependent on `mysql.connection`.
+
 Since these changes may become tedious and time-consuming, and your project
 may have other pressing priorities, mysql-native offers a *temporary*
 backwards-compatibility tool which may be of some help:

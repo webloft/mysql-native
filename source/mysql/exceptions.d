@@ -146,6 +146,7 @@ unittest
 {
 	import std.exception;
 	import mysql.commands;
+	import mysql.connection;
 	import mysql.prepared;
 	import mysql.test.common : scopedCn, createCn;
 	mixin(scopedCn);
