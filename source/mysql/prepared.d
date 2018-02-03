@@ -67,7 +67,6 @@ See the `PreparedImpl` documentation for the bulk of the `Prepared` interface.
 struct Prepared
 {
 private:
-	Connection _conn;
 	string _sql;
 
 package:
@@ -499,9 +498,8 @@ public:
 	including parameter descriptions, and result set field descriptions,
 	followed by an EOF packet.
 	+/
-	this(Connection conn, string sql, PreparedStmtHeaders headers, ushort numParams)
+	this(string sql, PreparedStmtHeaders headers, ushort numParams)
 	{
-		this._conn       = conn;
 		this._sql        = sql;
 		this._headers    = headers;
 		this._numParams  = numParams;

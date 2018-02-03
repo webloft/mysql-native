@@ -60,7 +60,7 @@ Throws: `mysql.exceptions.MYX` if the server has a problem.
 Prepared prepare(Connection conn, string sql)
 {
 	auto info = conn.registerPrepared(sql);
-	return Prepared(conn, sql, info.headers, info.numParams);
+	return Prepared(sql, info.headers, info.numParams);
 }
 
 /++
