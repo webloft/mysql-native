@@ -390,9 +390,8 @@ See `BackwardCompatPrepared` for more info.
 void queryRowTuple(T...)(Connection conn, ref BackwardCompatPrepared prepared, ref T args)
 {
 	auto p = prepared.prepared;
-	auto result = queryRowTuple(conn, p, args);
+	queryRowTuple(conn, p, args);
 	prepared._prepared = p;
-	return result;
 }
 
 /// Common implementation for mysql.commands.queryRowTuple and Prepared.queryRowTuple
