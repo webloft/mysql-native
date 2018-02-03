@@ -83,7 +83,7 @@ package bool execQueryImpl(Connection conn, ExecQueryImplInfo info, out ulong ra
 
 	// Send data
 	if(info.isPrepared)
-		Prepared.sendCommand(conn, info.hStmt, info.psh, info.inParams, info.psa);
+		ProtocolPrepared.sendCommand(conn, info.hStmt, info.psh, info.inParams, info.psa);
 	else
 	{
 		conn.sendCmd(CommandType.QUERY, info.sql);
@@ -177,7 +177,7 @@ ulong exec(Connection conn, ref BackwardCompatPrepared prepared)
 	return result;
 }
 
-/// Common implementation for mysql.commands.exec and Prepared.exec
+/// Common implementation for `exec` overloads
 package ulong execImpl(Connection conn, ExecQueryImplInfo info)
 {
 	ulong rowsAffected;
@@ -256,7 +256,7 @@ ResultRange query(Connection conn, ref BackwardCompatPrepared prepared, ColumnSp
 	return result;
 }
 
-/// Common implementation for mysql.commands.query and Prepared.query
+/// Common implementation for `query` overloads
 package ResultRange queryImpl(ColumnSpecialization[] csa,
 	Connection conn, ExecQueryImplInfo info)
 {
@@ -326,7 +326,7 @@ Nullable!Row queryRow(Connection conn, ref BackwardCompatPrepared prepared, Colu
 	return result;
 }
 
-/// Common implementation for mysql.commands.querySet and Prepared.querySet
+/// Common implementation for `querySet` overloads.
 package Nullable!Row queryRowImpl(ColumnSpecialization[] csa, Connection conn,
 	ExecQueryImplInfo info)
 {
@@ -394,7 +394,7 @@ void queryRowTuple(T...)(Connection conn, ref BackwardCompatPrepared prepared, r
 	prepared._prepared = p;
 }
 
-/// Common implementation for mysql.commands.queryRowTuple and Prepared.queryRowTuple
+/// Common implementation for `queryRowTuple` overloads.
 package void queryRowTupleImpl(T...)(Connection conn, ExecQueryImplInfo info, ref T args)
 {
 	ulong ra;
@@ -497,7 +497,7 @@ Nullable!Variant queryValue(Connection conn, ref BackwardCompatPrepared prepared
 	return result;
 }
 
-/// Common implementation for `mysql.commands.querySet` and `Prepared.querySet`
+/// Common implementation for `queryValue` overloads.
 package Nullable!Variant queryValueImpl(ColumnSpecialization[] csa, Connection conn,
 	ExecQueryImplInfo info)
 {
