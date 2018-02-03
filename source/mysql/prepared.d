@@ -11,7 +11,6 @@ import std.typecons;
 import std.variant;
 
 import mysql.commands;
-import mysql.connection;
 import mysql.exceptions;
 import mysql.protocol.constants;
 import mysql.protocol.extra_types;
@@ -79,7 +78,7 @@ package:
 	debug(MYSQLN_TESTS)
 	unittest
 	{
-		import mysql.prepared;
+		import mysql.connection;
 		import mysql.test.common;
 		mixin(scopedCn);
 
@@ -280,7 +279,7 @@ public:
 	debug(MYSQLN_TESTS)
 	unittest
 	{
-		import mysql.prepared;
+		import mysql.connection;
 		import mysql.test.common;
 		mixin(scopedCn);
 
@@ -351,6 +350,7 @@ public:
 	debug(MYSQLN_TESTS)
 	unittest
 	{
+		import mysql.connection;
 		mixin(scopedCn);
 		cn.exec("DROP TABLE IF EXISTS `testPreparedLastInsertID`");
 		cn.exec("CREATE TABLE `testPreparedLastInsertID` (
