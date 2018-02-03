@@ -617,10 +617,16 @@ unittest
 	assert(row[1] == 2);
 
 	/+
+	// Commented out because leaving args unspecified is currently unsupported,
+	// and I'm not convinced it should be allowed.
+	
 	// Insert null - params defaults to null
-	cn.truncate("manytypes");
-	cn.prepareCmd("INSERT INTO manytypes (i, f) VALUES (1, ?)" ).exec();
-	cn.assertScalar!int("SELECT i FROM manytypes WHERE f IS NULL", 1);
+	{
+		cn.truncate("manytypes");
+		auto prep = cn.prepare("INSERT INTO manytypes (i, f) VALUES (1, ?)");
+		cn.exec(prep);
+		cn.assertScalar!int("SELECT i FROM manytypes WHERE f IS NULL", 1);
+	}
 	+/
 
 	// Insert null
@@ -648,16 +654,14 @@ unittest
 	}
 
 	// rebind parameter
-	/+
 	cn.truncate("manytypes");
 	cn.exec("INSERT INTO manytypes (i, f) VALUES (1, NULL)");
-	cmd = cn.prepareCmd("SELECT i FROM manytypes WHERE f <=> ?");
-	cmd.bind(0, 1);
-	tbl = cmd.query_()[0];
+	auto cmd = cn.prepare("SELECT i FROM manytypes WHERE f <=> ?");
+	cmd.setArg(0, 1);
+	auto tbl = cn.query(cmd).array();
 	assert(tbl.length == 0);
-	cmd.bind(0, null);
-	assert(cmd.queryScalar().get!int == 1);
-	+/
+	cmd.setArg(0, null);
+	assert(cn.queryValue(cmd).get.get!int == 1);
 }
 
 
