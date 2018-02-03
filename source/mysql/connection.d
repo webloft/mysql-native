@@ -48,7 +48,7 @@ if you prefer eager registration.
 
 Internally, the result of a successful outcome will be a statement handle - an ID -
 for the prepared statement, a count of the parameters required for
-excution of the statement, and a count of the columns that will be present
+execution of the statement, and a count of the columns that will be present
 in any result set that the command generates.
 
 The server will then proceed to send prepared statement headers,
@@ -822,7 +822,7 @@ package:
 	
 	void enforceNotReleased(Nullable!PreparedServerInfo info)
 	{
-		enforceEx!MYXNotPrepared( isPreparedRegistered(info) );
+		enforceEx!MYXNotPrepared( isRegistered(info) );
 	}
 	
 	/// If already registered, simply returns the cached `PreparedServerInfo`.
@@ -1530,13 +1530,13 @@ public:
 	}
 
 	/// Is the given SQL registered on this connection as a prepared statement?
-	bool isPreparedRegistered(string sql)
+	bool isRegistered(string sql)
 	{
-		return isPreparedRegistered( getPreparedServerInfo(sql) );
+		return isRegistered( getPreparedServerInfo(sql) );
 	}
 
 	///ditto
-	package bool isPreparedRegistered(Nullable!PreparedServerInfo info)
+	package bool isRegistered(Nullable!PreparedServerInfo info)
 	{
 		return !info.isNull && info.statementId && !info.queuedForRelease;
 	}
