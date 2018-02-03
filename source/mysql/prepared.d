@@ -100,12 +100,12 @@ package:
 		assertNotThrown!MYXNotPrepared(cn.query(preparedSelect).each());
 		assertNotThrown!MYXNotPrepared(cn.queryRowTuple(preparedSelect, queryTupleResult));
 		
-		preparedInsert.release();
+		cn.release(preparedInsert);
 		assertThrown!MYXNotPrepared(cn.exec(preparedInsert));
 		assertNotThrown!MYXNotPrepared(cn.query(preparedSelect).each());
 		assertNotThrown!MYXNotPrepared(cn.queryRowTuple(preparedSelect, queryTupleResult));
 
-		preparedSelect.release();
+		cn.release(preparedSelect);
 		assertThrown!MYXNotPrepared(cn.exec(preparedInsert));
 		assertThrown!MYXNotPrepared(cn.query(preparedSelect).each());
 		assertThrown!MYXNotPrepared(cn.queryRowTuple(preparedSelect, queryTupleResult));
@@ -702,38 +702,6 @@ public:
 		assert(rs[2].isNull(0));
 		assert(rs[1][0].type == typeid(typeof(null)));
 		assert(rs[2][0].type == typeid(typeof(null)));
-	}
-
-	/++
-	Release a prepared statement.
-	
-	This method tells the server that it can dispose of the information it
-	holds about the current prepared statement.
-
-	Notes:
-	
-	In actuality, the server might not immediately be told to release the
-	statement (although this instance of `Prepared` will still behave as though
-	it's been released, regardless).
-	
-	This is because there could be a `mysql.result.ResultRange` with results still pending
-	for retreival, and the protocol doesn't allow sending commands (such as
-	"release a prepared statement") to the server while data is pending.
-	Therefore, this function may instead queue the statement to be released
-	when it is safe to do so: Either the next time a result set is purged or
-	the next time a command (such as `query` or `exec`) is performed (because
-	such commands automatically purge any pending results).
-	+/
-	void release()
-	{
-		if(_conn is null)
-			return;
-
-		auto info = _conn.getPreparedServerInfo(_sql);
-		if(info.isNull || !info.statementId || _conn.closed())
-			return;
-
-		_conn.statementQueue.add(_sql);
 	}
 
 	/// Gets the number of arguments this prepared statement expects to be passed in.

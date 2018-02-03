@@ -1529,6 +1529,47 @@ public:
 		registerPrepared(prepared.sql);
 	}
 
+	/++
+	Manually release a prepared statement on this connection.
+	
+	This method tells the server that it can dispose of the information it
+	holds about the current prepared statement.
+	
+	Calling this is not strictly necessary. The server considers prepared
+	statements to be per-connection, so they'll go away when the connection
+	closes anyway. This is provided in case direct control is actually needed.
+
+	Notes:
+	
+	In actuality, the server might not immediately be told to release the
+	statement (although this instance of `Prepared` will still behave as though
+	it's been released, regardless).
+	
+	This is because there could be a `mysql.result.ResultRange` with results
+	still pending for retrieval, and the protocol doesn't allow sending commands
+	(such as "release a prepared statement") to the server while data is pending.
+	Therefore, this function may instead queue the statement to be released
+	when it is safe to do so: Either the next time a result set is purged or
+	the next time a command (such as `query` or `exec`) is performed (because
+	such commands automatically purge any pending results).
+	+/
+	void release(Prepared prepared)
+	{
+		release(prepared.sql);
+	}
+	
+	///ditto
+	void release(string sql)
+	{
+		auto info = getPreparedServerInfo(sql);
+		if(info.isNull || !info.statementId || this.closed())
+			return;
+
+		//TODO: Don't queue it if nothing is pending. Just do it immediately.
+		//      But need to be certain both situations are unittested.
+		statementQueue.add(sql);
+	}
+	
 	/// Is the given SQL registered on this connection as a prepared statement?
 	bool isRegistered(Prepared prepared)
 	{
