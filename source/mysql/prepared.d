@@ -70,34 +70,6 @@ private:
 	Connection _conn;
 	string _sql;
 
-	/++
-	Constructor. You probably want `mysqln.connection.prepare` instead of this.
- 	
-	Call `mysqln.connection.prepare` instead of this, unless you are creating
-	your own transport bypassing `mysql.connection.Connection` entirely.
-	The prepared statement must be registered on the server BEFORE this is
-	called (which `mysqln.connection.prepare` does).
-
-	Internally, the result of a successful outcome will be a statement handle - an ID -
-	for the prepared statement, a count of the parameters required for
-	excution of the statement, and a count of the columns that will be present
-	in any result set that the command generates.
-
-	The server will then proceed to send prepared statement headers,
-	including parameter descriptions, and result set field descriptions,
-	followed by an EOF packet.
-	+/
-	//TODO: Move this to public section below
-	public this(Connection conn, string sql, PreparedStmtHeaders headers, ushort numParams)
-	{
-		this._conn       = conn;
-		this._sql        = sql;
-		this._headers    = headers;
-		this._numParams  = numParams;
-		_inParams.length = numParams;
-		_psa.length      = numParams;
-	}
-
 package:
 	ushort _numParams; /// Number of parameters this prepared statement takes
 	PreparedStmtHeaders _headers;
@@ -510,23 +482,31 @@ package:
 	}
 	
 public:
-	debug(MYSQLN_TESTS)
-	unittest
+	/++
+	Constructor. You probably want `mysqln.connection.prepare` instead of this.
+ 	
+	Call `mysqln.connection.prepare` instead of this, unless you are creating
+	your own transport bypassing `mysql.connection.Connection` entirely.
+	The prepared statement must be registered on the server BEFORE this is
+	called (which `mysqln.connection.prepare` does).
+
+	Internally, the result of a successful outcome will be a statement handle - an ID -
+	for the prepared statement, a count of the parameters required for
+	excution of the statement, and a count of the columns that will be present
+	in any result set that the command generates.
+
+	The server will then proceed to send prepared statement headers,
+	including parameter descriptions, and result set field descriptions,
+	followed by an EOF packet.
+	+/
+	this(Connection conn, string sql, PreparedStmtHeaders headers, ushort numParams)
 	{
-		mixin(scopedCn);
-		cn.exec("DROP TABLE IF EXISTS `testPreparedLastInsertID`");
-		cn.exec("CREATE TABLE `testPreparedLastInsertID` (
-			`a` INTEGER NOT NULL AUTO_INCREMENT,
-			PRIMARY KEY (a)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-		
-		auto stmt = cn.prepare("INSERT INTO `testPreparedLastInsertID` VALUES()");
-		cn.exec(stmt);
-		assert(stmt.lastInsertID == 1);
-		cn.exec(stmt);
-		assert(stmt.lastInsertID == 2);
-		cn.exec(stmt);
-		assert(stmt.lastInsertID == 3);
+		this._conn       = conn;
+		this._sql        = sql;
+		this._headers    = headers;
+		this._numParams  = numParams;
+		_inParams.length = numParams;
+		_psa.length      = numParams;
 	}
 
 	/++
@@ -766,6 +746,25 @@ public:
 	/// ID column, this method allows you to retrieve the last insert ID generated
 	/// from this prepared statement.
 	@property ulong lastInsertID() pure const nothrow { return _lastInsertID; }
+
+	debug(MYSQLN_TESTS)
+	unittest
+	{
+		mixin(scopedCn);
+		cn.exec("DROP TABLE IF EXISTS `testPreparedLastInsertID`");
+		cn.exec("CREATE TABLE `testPreparedLastInsertID` (
+			`a` INTEGER NOT NULL AUTO_INCREMENT,
+			PRIMARY KEY (a)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+		
+		auto stmt = cn.prepare("INSERT INTO `testPreparedLastInsertID` VALUES()");
+		cn.exec(stmt);
+		assert(stmt.lastInsertID == 1);
+		cn.exec(stmt);
+		assert(stmt.lastInsertID == 2);
+		cn.exec(stmt);
+		assert(stmt.lastInsertID == 3);
+	}
 
 	/// Gets the prepared header's field descriptions.
 	@property FieldDescription[] preparedFieldDescriptions() pure { return _headers.fieldDescriptions; }
