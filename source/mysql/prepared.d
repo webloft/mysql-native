@@ -337,7 +337,7 @@ public:
 	}
 
 	/// Gets the number of arguments this prepared statement expects to be passed in.
-	@property ushort numArgs() pure nothrow
+	@property ushort numArgs() pure const nothrow
 	{
 		return _numParams;
 	}
