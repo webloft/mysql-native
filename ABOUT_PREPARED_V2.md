@@ -1,5 +1,5 @@
 (This document is an updated version of what was originally
-written in Issue [#95](https://github.com/mysql-d/mysql-native/issues/95#issuecomment-362698955).)
+written in Issue [#95](https://github.com/mysql-d/mysql-native/issues/95).)
 
 Redesigning Prepared for v2.0.0
 ===============================
