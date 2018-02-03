@@ -28,23 +28,23 @@ void main(string[] args)
 	assert(range.front[1] == "Bob");
 
 	// Prepared statements
-	BackwardCompatPrepared prepared = prepareBackwardCompat(conn, "SELECT * FROM `tablename` WHERE `name`=? OR `name`=?");
+	Prepared prepared = prepare(conn, "SELECT * FROM `tablename` WHERE `name`=? OR `name`=?");
 	prepared.setArgs("Bob", "Bobby");
-	ResultRange bobs = prepared.query();
+	ResultRange bobs = query(conn, prepared);
 	bobs.close(); // Skip them
 	
 	prepared.setArgs("Bob", "Ann");
-	Row[] rs = prepared.query.array;
+	Row[] rs = query(conn, prepared).array;
 	assert(rs.length == 2);
 	assert(rs[0][0] == 1);
- 	assert(rs[0][1] == "Ann");
+	assert(rs[0][1] == "Ann");
 	assert(rs[1][0] == 2);
 	assert(rs[1][1] == "Bob");
 
 	// Nulls
-	BackwardCompatPrepared insert = prepareBackwardCompat(conn, "INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)");
+	Prepared insert = prepare(conn, "INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)");
 	insert.setArgs(null, "Cam"); // Also takes Nullable!T
-	insert.exec();
+	exec(conn, insert);
 	range = query(conn, "SELECT * FROM `tablename` WHERE `name`='Cam'");
 	assert( range.front[0].type == typeid(typeof(null)) );
 }

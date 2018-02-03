@@ -68,8 +68,8 @@ unittest
 	cn.exec("INSERT INTO `issue24` (`bit`, `date`) VALUES (1, '1970-01-01')");
 	cn.exec("INSERT INTO `issue24` (`bit`, `date`) VALUES (0, '1950-04-24')");
 
-	auto stmt = cn.prepareBackwardCompat("SELECT `bit`, `date` FROM `issue24` ORDER BY `date` DESC");
-	auto results = stmt.query.array;
+	auto stmt = cn.prepare("SELECT `bit`, `date` FROM `issue24` ORDER BY `date` DESC");
+	auto results = cn.query(stmt).array;
 	assert(results.length == 2);
 	assert(results[0][0] == true);
 	assert(results[0][1] == Date(1970, 1, 1));
@@ -92,8 +92,8 @@ unittest
 	
 	cn.exec("INSERT INTO `issue33` (`text`, `blob`) VALUES ('hello', 'world')");
 
-	auto stmt = cn.prepareBackwardCompat("SELECT `text`, `blob` FROM `issue33`");
-	auto results = stmt.query.array;
+	auto stmt = cn.prepare("SELECT `text`, `blob` FROM `issue33`");
+	auto results = cn.query(stmt).array;
 	assert(results.length == 1);
 	auto pText = results[0][0].peek!string();
 	auto pBlob = results[0][1].peek!(ubyte[])();
@@ -133,8 +133,8 @@ unittest
 		,('2015-04-03 00:00:00')
 		,('2015-04-04 00:00:00')");
 
-	auto stmt = cn.prepareBackwardCompat("SELECT a FROM `issue56`");
-	auto res = stmt.query.array;
+	auto stmt = cn.prepare("SELECT a FROM `issue56`");
+	auto res = cn.query(stmt).array;
 	assert(res.length == 10);
 }
 
@@ -191,8 +191,8 @@ unittest
 	cn.exec("CREATE TABLE `issue133` (a BIGINT UNSIGNED NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 	cn.exec("INSERT INTO `issue133` (a) VALUES (NULL)");
 	
-	auto prep = cn.prepareBackwardCompat("SELECT a FROM `issue133`");
-	auto value = prep.queryValue();
+	auto prep = cn.prepare("SELECT a FROM `issue133`");
+	auto value = cn.queryValue(prep);
 
 	assert(!value.isNull);
 	assert(value.get.type == typeid(typeof(null)));
@@ -208,9 +208,9 @@ unittest
 	{
 		ResultRange result;
 
-		auto prep = cn.prepareBackwardCompat("SELECT ?");
+		auto prep = cn.prepare("SELECT ?");
 		prep.setArgs("Hello world");
-		result = prep.query();
+		result = cn.query(prep);
 
 		result.close();
 	}
@@ -219,9 +219,9 @@ unittest
 	{
 		ResultRange result;
 		{
-			auto prep = cn.prepareBackwardCompat("SELECT ?");
+			auto prep = cn.prepare("SELECT ?");
 			prep.setArgs("Hello world");
-			result = prep.query();
+			result = cn.query(prep);
 		}
 
 		result.close();
@@ -238,7 +238,7 @@ unittest
 	cn.exec("DROP TABLE IF EXISTS `issueX`");
 	cn.exec("CREATE TABLE `issueX` (a TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 	
-	auto stmt = cn.prepareBackwardCompat("INSERT INTO `issueX` (`a`) VALUES (?)");
+	auto stmt = cn.prepare("INSERT INTO `issueX` (`a`) VALUES (?)");
 	stmt.setArgs(Timestamp(2011_11_11_12_20_02UL));
-	stmt.exec();
+	cn.exec(stmt);
 }

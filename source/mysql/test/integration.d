@@ -211,8 +211,8 @@ unittest
 	rs[0].toStruct(x);
 	assert(x.a == -128 && x.b == 65535 && x.c == 42 && x.s == "ABC" && to!string(x.d) == "22.4");
 
-	auto stmt = cn.prepareBackwardCompat("select * from basetest limit 1");
-	rs = stmt.query.array;
+	auto stmt = cn.prepare("select * from basetest limit 1");
+	rs = cn.query(stmt).array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == true);
 	assert(rs[0][1] == -128);
@@ -237,7 +237,7 @@ unittest
 	assert(rs[0].isNull(17) == true);
 	assert(rs[0][18] == "11234.4325", rs[0][18].toString());
 
-	stmt = cn.prepareBackwardCompat("insert into basetest (intcol, stringcol) values(?, ?)");
+	stmt = cn.prepare("insert into basetest (intcol, stringcol) values(?, ?)");
 	Variant[] va;
 	va.length = 2;
 	va[0] = 42;
@@ -245,12 +245,12 @@ unittest
 	stmt.setArgs(va);
 	foreach (int i; 0..20)
 	{
-		stmt.exec();
+		cn.exec(stmt);
 		stmt.setArg(0, stmt.getArg(0) + 1);
 		stmt.setArg(1, stmt.getArg(1) ~ "x");
 	}
 
-	stmt = cn.prepareBackwardCompat("insert into basetest (intcol, stringcol) values(?, ?)");
+	stmt = cn.prepare("insert into basetest (intcol, stringcol) values(?, ?)");
 	//Variant[] va;
 	va.length = 2;
 	va[0] = 42;
@@ -258,7 +258,7 @@ unittest
 	stmt.setArgs(va);
 	foreach (int i; 0..20)
 	{
-		stmt.exec();
+		cn.exec(stmt);
 
 		va[0] = stmt.getArg(0).get!int + 1;
 		va[1] = stmt.getArg(1).get!string ~ "x";
@@ -270,23 +270,23 @@ unittest
 	cn.queryRowTuple("select intcol, stringcol from basetest where bytecol=-128 limit 1", a, b);
 	assert(a == 42 && b == "The quick brown fox");
 
-	stmt = cn.prepareBackwardCompat("select intcol, stringcol from basetest where bytecol=? limit 1");
+	stmt = cn.prepare("select intcol, stringcol from basetest where bytecol=? limit 1");
 	Variant[] va2;
 	va2.length = 1;
 	va2[0] = cast(byte) -128;
 	stmt.setArgs(va2);
 	a = 0;
 	b = "";
-	stmt.queryRowTuple(a, b);
+	cn.queryRowTuple(stmt, a, b);
 	assert(a == 42 && b == "The quick brown fox");
 
-	stmt = cn.prepareBackwardCompat("update basetest set intcol=? where bytecol=-128");
+	stmt = cn.prepare("update basetest set intcol=? where bytecol=-128");
 	int referred = 555;
 	stmt.setArgs(referred);
-	stmt.exec();
+	cn.exec(stmt);
 	referred = 666;
 	stmt.setArgs(referred);
-	stmt.exec();
+	cn.exec(stmt);
 	auto referredBack = cn.queryValue("select intcol from basetest where bytecol = -128");
 	assert(!referredBack.isNull);
 	assert(referredBack.get == 666);
@@ -567,7 +567,7 @@ unittest
 	Row[] rs;
 	//Table tbl;
 	Row row;
-	BackwardCompatPrepared stmt;
+	Prepared stmt;
 
 	// Index out of bounds throws
 	/+
@@ -582,26 +582,26 @@ unittest
 	// Select without result
 	cn.truncate("manytypes");
 	cn.exec("INSERT INTO manytypes (i, f) VALUES (1, NULL)");
-	stmt = cn.prepareBackwardCompat("SELECT * FROM manytypes WHERE i = ?");
+	stmt = cn.prepare("SELECT * FROM manytypes WHERE i = ?");
 	{
 		auto val = 2;
 		stmt.setArg(0, val);
 	}
-	//ds = stmt.query_();
+	//ds = cn.query_(stmt);
 	//assert(ds.length == 1);
 	//assert(ds[0].length == 0);
-	rs = stmt.query().array;
+	rs = cn.query(stmt).array;
 	assert(rs.length == 0);
 
 	// Bind single primitive value
 	cn.truncate("manytypes");
 	cn.exec("INSERT INTO manytypes (i, f) VALUES (1, NULL)");
-	stmt = cn.prepareBackwardCompat("SELECT * FROM manytypes WHERE i = ?");
+	stmt = cn.prepare("SELECT * FROM manytypes WHERE i = ?");
 	{
 		auto val = 1;
 		stmt.setArg(0, val);
 	}
-	stmt.queryValue();
+	cn.queryValue(stmt);
 
 	// Bind multiple primitive values
 	cn.truncate("manytypes");
@@ -609,9 +609,9 @@ unittest
 	{
 		auto val1 = 1;
 		auto val2 = 2;
-		stmt = cn.prepareBackwardCompat("SELECT * FROM manytypes WHERE i = ? AND f = ?");
+		stmt = cn.prepare("SELECT * FROM manytypes WHERE i = ? AND f = ?");
 		stmt.setArgs(val1, val2);
-		row = stmt.queryRow();
+		row = cn.queryRow(stmt);
 	}
 	assert(row[0] == 1);
 	assert(row[1] == 2);
@@ -626,11 +626,11 @@ unittest
 	// Insert null
 	cn.truncate("manytypes");
 	{
-		auto prepared = cn.prepareBackwardCompat("INSERT INTO manytypes (i, f) VALUES (1, ?)");
+		auto prepared = cn.prepare("INSERT INTO manytypes (i, f) VALUES (1, ?)");
 		//TODO: Using `prepared.setArgs(null);` results in: Param count supplied does not match prepared statement
 		//      Can anything be done about that?
 		prepared.setArg(0, null);
-		prepared.exec();
+		cn.exec(prepared);
 	}
 	cn.assertScalar!int("SELECT i FROM manytypes WHERE f IS NULL", 1);
 
@@ -638,11 +638,11 @@ unittest
 	cn.truncate("manytypes");
 	cn.exec("INSERT INTO manytypes (i, f) VALUES (1, NULL)");
 	{
-		stmt = cn.prepareBackwardCompat("SELECT i FROM manytypes WHERE f <=> ?");
+		stmt = cn.prepare("SELECT i FROM manytypes WHERE f <=> ?");
 		//TODO: Using `stmt.setArgs(null);` results in: Param count supplied does not match prepared statement
 		//      Can anything be done about that?
 		stmt.setArg(0, null);
-		auto value = stmt.queryValue();
+		auto value = cn.queryValue(stmt);
 		assert(!value.isNull);
 		assert(value.get.get!int == 1);
 	}
@@ -840,7 +840,8 @@ unittest
 		auto okp = cn.exec(insertNullSql);
 		//assert(okp.affectedRows == 1);
 		assert(okp == 1);
-		okp = cn.prepareBackwardCompat(insertNullSql).exec();
+		auto insertNullStmt = cn.prepare(insertNullSql);
+		okp = cn.exec(insertNullStmt);
 		//assert(okp.affectedRows == 1);
 		assert(okp == 1);
 
@@ -850,11 +851,11 @@ unittest
 		assert(x.get.type == typeid(typeof(null)));
 
 		// NULL as bound param
-		auto inscmd = cn.prepareBackwardCompat("INSERT INTO "~tablename~" VALUES (?)");
+		auto inscmd = cn.prepare("INSERT INTO "~tablename~" VALUES (?)");
 		cn.exec("TRUNCATE "~tablename);
 
 		inscmd.setArgs([Variant(null)]);
-		okp = inscmd.exec();
+		okp = cn.exec(inscmd);
 		//assert(okp.affectedRows == 1, "value not inserted");
 		assert(okp == 1, "value not inserted");
 
@@ -869,7 +870,7 @@ unittest
 			cn.exec("TRUNCATE "~tablename);
 
 			inscmd.setArg(0, value);
-			okp = inscmd.exec();
+			okp = cn.exec(inscmd);
 			//assert(okp.affectedRows == 1, "value not inserted");
 			assert(okp == 1, "value not inserted");
 
@@ -923,12 +924,12 @@ unittest
 {
 	import mysql.prepared;
 	mixin(scopedCn);
-	auto stmt = cn.prepareBackwardCompat(
+	auto stmt = cn.prepare(
 			"SELECT * FROM information_schema.character_sets"~
 			" WHERE CHARACTER_SET_NAME=?");
 	auto val = "utf8";
 	stmt.setArg(0, val);
-	auto row = stmt.queryRow();
+	auto row = cn.queryRow(stmt);
 	//assert(row.length == 4);
 	assert(row.length == 4);
 	assert(row[0] == "utf8");
@@ -953,8 +954,8 @@ unittest
 	immutable selectSQL          = "SELECT * FROM `coupleTypes` ORDER BY i ASC";
 	immutable selectBackwardsSQL = "SELECT `s`,`i` FROM `coupleTypes` ORDER BY i DESC";
 	immutable selectNoRowsSQL    = "SELECT * FROM `coupleTypes` WHERE s='no such match'";
-	auto prepared = cn.prepareBackwardCompat(selectSQL);
-	auto preparedSelectNoRows = cn.prepareBackwardCompat(selectNoRowsSQL);
+	auto prepared = cn.prepare(selectSQL);
+	auto preparedSelectNoRows = cn.prepare(selectNoRowsSQL);
 	
 	{
 		// Test query
@@ -979,7 +980,7 @@ unittest
 
 	{
 		// Test prepared query
-		ResultRange rseq = prepared.query();
+		ResultRange rseq = cn.query(prepared);
 		assert(!rseq.empty);
 		assert(rseq.front.length == 2);
 		assert(rseq.front[0] == 11);
@@ -1025,14 +1026,14 @@ unittest
 		assert(nullableRow.isNull);
 
 		// Test prepared queryRow
-		nullableRow = prepared.queryRow();
+		nullableRow = cn.queryRow(prepared);
 		assert(!nullableRow.isNull);
 		assert(nullableRow[0] == 11);
 		assert(nullableRow[1] == "aaa");
 		// Were all results correctly purged? Can I still issue another command?
 		cn.query(selectSQL).array;
 
-		nullableRow = preparedSelectNoRows.queryRow();
+		nullableRow = cn.queryRow(preparedSelectNoRows);
 		assert(nullableRow.isNull);
 	}
 
@@ -1048,7 +1049,7 @@ unittest
 		cn.query(selectSQL).array;
 
 		// Test prepared queryRowTuple
-		prepared.queryRowTuple(resultI, resultS);
+		cn.queryRowTuple(prepared, resultI, resultS);
 		assert(resultI == 11);
 		assert(resultS == "aaa");
 		// Were all results correctly purged? Can I still issue another command?
@@ -1069,13 +1070,13 @@ unittest
 		assert(result.isNull);
 
 		// Test prepared queryValue
-		result = prepared.queryValue();
+		result = cn.queryValue(prepared);
 		assert(!result.isNull);
 		assert(result.get == 11); // Explicit "get" here works around DMD #17482
 		// Were all results correctly purged? Can I still issue another command?
 		cn.query(selectSQL).array;
 
-		result = preparedSelectNoRows.queryValue();
+		result = cn.queryValue(preparedSelectNoRows);
 		assert(result.isNull);
 	}
 

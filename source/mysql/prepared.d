@@ -260,24 +260,24 @@ package:
 
 		immutable insertSQL = "INSERT INTO `enforceNotReleased` VALUES (1), (2)";
 		immutable selectSQL = "SELECT * FROM `enforceNotReleased`";
-		BackwardCompatPrepared preparedInsert;
-		BackwardCompatPrepared preparedSelect;
+		Prepared preparedInsert;
+		Prepared preparedSelect;
 		int queryTupleResult;
-		assertNotThrown!MYXNotPrepared(preparedInsert = cn.prepareBackwardCompat(insertSQL));
-		assertNotThrown!MYXNotPrepared(preparedSelect = cn.prepareBackwardCompat(selectSQL));
-		assertNotThrown!MYXNotPrepared(preparedInsert.exec());
-		assertNotThrown!MYXNotPrepared(preparedSelect.query().each());
-		assertNotThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
+		assertNotThrown!MYXNotPrepared(preparedInsert = cn.prepare(insertSQL));
+		assertNotThrown!MYXNotPrepared(preparedSelect = cn.prepare(selectSQL));
+		assertNotThrown!MYXNotPrepared(cn.exec(preparedInsert));
+		assertNotThrown!MYXNotPrepared(cn.query(preparedSelect).each());
+		assertNotThrown!MYXNotPrepared(cn.queryRowTuple(preparedSelect, queryTupleResult));
 		
 		preparedInsert.release();
-		assertThrown!MYXNotPrepared(preparedInsert.exec());
-		assertNotThrown!MYXNotPrepared(preparedSelect.query().each());
-		assertNotThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
+		assertThrown!MYXNotPrepared(cn.exec(preparedInsert));
+		assertNotThrown!MYXNotPrepared(cn.query(preparedSelect).each());
+		assertNotThrown!MYXNotPrepared(cn.queryRowTuple(preparedSelect, queryTupleResult));
 
 		preparedSelect.release();
-		assertThrown!MYXNotPrepared(preparedInsert.exec());
-		assertThrown!MYXNotPrepared(preparedSelect.query().each());
-		assertThrown!MYXNotPrepared(preparedSelect.queryRowTuple(queryTupleResult));
+		assertThrown!MYXNotPrepared(cn.exec(preparedInsert));
+		assertThrown!MYXNotPrepared(cn.query(preparedSelect).each());
+		assertThrown!MYXNotPrepared(cn.queryRowTuple(preparedSelect, queryTupleResult));
 	}
 
 	static ubyte[] makeBitmap(in Variant[] inParams)
@@ -679,12 +679,12 @@ public:
 			PRIMARY KEY (a)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 		
-		auto stmt = cn.prepareBackwardCompat("INSERT INTO `testPreparedLastInsertID` VALUES()");
-		stmt.exec();
+		auto stmt = cn.prepare("INSERT INTO `testPreparedLastInsertID` VALUES()");
+		cn.exec(stmt);
 		assert(stmt.lastInsertID == 1);
-		stmt.exec();
+		cn.exec(stmt);
 		assert(stmt.lastInsertID == 2);
-		stmt.exec();
+		cn.exec(stmt);
 		assert(stmt.lastInsertID == 3);
 	}
 
@@ -948,7 +948,7 @@ public:
 
 		immutable insertSQL = "INSERT INTO `setNullArg` VALUES (?)";
 		immutable selectSQL = "SELECT * FROM `setNullArg`";
-		auto preparedInsert = cn.prepareBackwardCompat(insertSQL);
+		auto preparedInsert = cn.prepare(insertSQL);
 		assert(preparedInsert.sql == insertSQL);
 		Row[] rs;
 
@@ -970,13 +970,13 @@ public:
 		}
 
 		preparedInsert.setArg(0, 5);
-		preparedInsert.exec();
+		cn.exec(preparedInsert);
 		rs = cn.query(selectSQL).array;
 		assert(rs.length == 1);
 		assert(rs[0][0] == 5);
 
 		preparedInsert.setArg(0, null);
-		preparedInsert.exec();
+		cn.exec(preparedInsert);
 		rs = cn.query(selectSQL).array;
 		assert(rs.length == 2);
 		assert(rs[0][0] == 5);
@@ -984,7 +984,7 @@ public:
 		assert(rs[1][0].type == typeid(typeof(null)));
 
 		preparedInsert.setArg(0, Variant(null));
-		preparedInsert.exec();
+		cn.exec(preparedInsert);
 		rs = cn.query(selectSQL).array;
 		assert(rs.length == 3);
 		assert(rs[0][0] == 5);

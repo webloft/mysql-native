@@ -146,7 +146,6 @@ unittest
 {
 	import std.exception;
 	import mysql.commands;
-	import mysql.connection : BackwardCompatPrepared;
 	import mysql.prepared;
 	import mysql.test.common : scopedCn, createCn;
 	mixin(scopedCn);
@@ -158,22 +157,22 @@ unittest
 
 	immutable insertSQL = "INSERT INTO `wrongFunctionException` VALUES (1), (2)";
 	immutable selectSQL = "SELECT * FROM `wrongFunctionException`";
-	BackwardCompatPrepared preparedInsert;
-	BackwardCompatPrepared preparedSelect;
+	Prepared preparedInsert;
+	Prepared preparedSelect;
 	int queryTupleResult;
 	assertNotThrown!MYXWrongFunction(cn.exec(insertSQL));
 	assertNotThrown!MYXWrongFunction(cn.query(selectSQL).each());
 	assertNotThrown!MYXWrongFunction(cn.queryRowTuple(selectSQL, queryTupleResult));
-	assertNotThrown!MYXWrongFunction(preparedInsert = cn.prepareBackwardCompat(insertSQL));
-	assertNotThrown!MYXWrongFunction(preparedSelect = cn.prepareBackwardCompat(selectSQL));
-	assertNotThrown!MYXWrongFunction(preparedInsert.exec());
-	assertNotThrown!MYXWrongFunction(preparedSelect.query().each());
-	assertNotThrown!MYXWrongFunction(preparedSelect.queryRowTuple(queryTupleResult));
+	assertNotThrown!MYXWrongFunction(preparedInsert = cn.prepare(insertSQL));
+	assertNotThrown!MYXWrongFunction(preparedSelect = cn.prepare(selectSQL));
+	assertNotThrown!MYXWrongFunction(cn.exec(preparedInsert));
+	assertNotThrown!MYXWrongFunction(cn.query(preparedSelect).each());
+	assertNotThrown!MYXWrongFunction(cn.queryRowTuple(preparedSelect, queryTupleResult));
 
 	assertThrown!MYXResultRecieved(cn.exec(selectSQL));
 	assertThrown!MYXNoResultRecieved(cn.query(insertSQL).each());
 	assertThrown!MYXNoResultRecieved(cn.queryRowTuple(insertSQL, queryTupleResult));
-	assertThrown!MYXResultRecieved(preparedSelect.exec());
-	assertThrown!MYXNoResultRecieved(preparedInsert.query().each());
-	assertThrown!MYXNoResultRecieved(preparedInsert.queryRowTuple(queryTupleResult));
+	assertThrown!MYXResultRecieved(cn.exec(preparedSelect));
+	assertThrown!MYXNoResultRecieved(cn.query(preparedInsert).each());
+	assertThrown!MYXNoResultRecieved(cn.queryRowTuple(preparedInsert, queryTupleResult));
 }
