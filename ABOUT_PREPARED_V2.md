@@ -1,4 +1,4 @@
-(This document is an updated version of what was originally written in Issue #95.)
+(This document is an updated version of what was originally written in Issue mysql-d/mysql-native#95.)
 
 Redesigning Prepared for v2.0.0
 ===============================
