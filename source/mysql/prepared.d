@@ -1018,10 +1018,10 @@ public:
 		Connection.immediateRegisterPrepared(_conn, _sql);
 		auto info = _conn.getPreparedServerInfo(_sql);
 		
-		_headers         = info._psh;
-		_numParams       = info._psParams;
-		_inParams.length = info._psParams;
-		_psa.length      = info._psParams;
+		_headers         = info.headers;
+		_numParams       = info.numParams;
+		_inParams.length = info.numParams;
+		_psa.length      = info.numParams;
 	}
 
 	/++
@@ -1050,7 +1050,7 @@ public:
 			return;
 
 		auto info = _conn.getPreparedServerInfo(_sql);
-		if(info.isNull || !info._hStmt || _conn.closed())
+		if(info.isNull || !info.statementId || _conn.closed())
 			return;
 
 		_conn.statementQueue.add(_sql);

@@ -42,21 +42,21 @@ package struct PreparedServerInfo
 {
 	/// Server's identifier for this prepared statement.
 	/// This is never 0 if it's been registered.
-	uint _hStmt;
+	uint statementId;
 
-	ushort _psWarnings;
+	ushort psWarnings;
 
 	/// Number of parameters this statement takes.
 	/// 
 	/// This will be the same on all connections, but it's returned
 	/// by the server upon registration, so it's stored here.
-	ushort _psParams;
+	ushort numParams;
 
 	/// Prepared statement headers
 	///
 	/// This will be the same on all connections, but it's returned
 	/// by the server upon registration, so it's stored here.
-	PreparedStmtHeaders _psh;
+	PreparedStmtHeaders headers;
 	
 	/// Not actually from the server. Connection uses this to keep track
 	/// of statements that should be treated as having been released.
@@ -661,7 +661,7 @@ package:
 	uint getPreparedId(const string sql) pure const nothrow
 	{
 		auto pInfo = sql in preparedLookup;
-		return pInfo? pInfo._hStmt : 0;
+		return pInfo? pInfo.statementId : 0;
 	}
 	
 	void enforceNotReleased(Nullable!PreparedServerInfo info)
@@ -692,16 +692,16 @@ package:
 		if(packet.front == ResultPacketMarker.ok)
 		{
 			packet.popFront();
-			info._hStmt         = packet.consume!int();
+			info.statementId    = packet.consume!int();
 			conn._fieldCount    = packet.consume!short();
-			info._psParams      = packet.consume!short();
+			info.numParams      = packet.consume!short();
 
 			packet.popFront(); // one byte filler
-			info._psWarnings    = packet.consume!short();
+			info.psWarnings     = packet.consume!short();
 
 			// At this point the server also sends field specs for parameters
 			// and columns if there were any of each
-			info._psh = PreparedStmtHeaders(conn, conn._fieldCount, info._psParams);
+			info.headers = PreparedStmtHeaders(conn, conn._fieldCount, info.numParams);
 		}
 		else if(packet.front == ResultPacketMarker.error)
 		{
@@ -1365,7 +1365,7 @@ public:
 	///ditto
 	package bool isPreparedRegistered(Nullable!PreparedServerInfo info)
 	{
-		return !info.isNull && info._hStmt && !info.queuedForRelease;
+		return !info.isNull && info.statementId && !info.queuedForRelease;
 	}
 }
 
