@@ -156,9 +156,7 @@ ulong exec(Connection conn, string sql)
 ///ditto
 ulong exec(Connection conn, ref Prepared prepared)
 {
-	auto preparedInfo = conn.getPreparedServerInfo(prepared.sql);
-	conn.enforceNotReleased(preparedInfo);
-
+	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
 	auto ra = execImpl(conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID;
 	return ra;
@@ -235,9 +233,7 @@ ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null
 ///ditto
 ResultRange query(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
 {
-	auto preparedInfo = conn.getPreparedServerInfo(prepared.sql);
-	conn.enforceNotReleased(preparedInfo);
-
+	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
 	auto result = queryImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
@@ -305,9 +301,7 @@ Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = 
 ///ditto
 Nullable!Row queryRow(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
 {
-	auto preparedInfo = conn.getPreparedServerInfo(prepared.sql);
-	conn.enforceNotReleased(preparedInfo);
-
+	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
 	auto result = queryRowImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
@@ -375,9 +369,7 @@ void queryRowTuple(T...)(Connection conn, string sql, ref T args)
 ///ditto
 void queryRowTuple(T...)(Connection conn, ref Prepared prepared, ref T args)
 {
-	auto preparedInfo = conn.getPreparedServerInfo(prepared.sql);
-	conn.enforceNotReleased(preparedInfo);
-
+	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
 	queryRowTupleImpl(conn, prepared.getExecQueryImplInfo(preparedInfo.statementId), args);
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 }
@@ -476,9 +468,7 @@ Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] 
 ///ditto
 Nullable!Variant queryValue(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
 {
-	auto preparedInfo = conn.getPreparedServerInfo(prepared.sql);
-	conn.enforceNotReleased(preparedInfo);
-
+	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
 	auto result = queryValueImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;

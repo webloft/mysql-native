@@ -59,7 +59,7 @@ Throws: `mysql.exceptions.MYX` if the server has a problem.
 +/
 Prepared prepare(Connection conn, string sql)
 {
-	auto info = conn.registerPrepared(sql);
+	auto info = conn.registerIfNeeded(sql);
 	return Prepared(sql, info.headers, info.numParams);
 }
 
@@ -1195,23 +1195,18 @@ package:
 		return pInfo? pInfo.statementId : 0;
 	}
 	
-	void enforceNotReleased(Nullable!PreparedServerInfo info)
-	{
-		enforceEx!MYXNotPrepared( isRegistered(info) );
-	}
-	
 	/// If already registered, simply returns the cached `PreparedServerInfo`.
-	PreparedServerInfo registerPrepared(string sql)
+	PreparedServerInfo registerIfNeeded(string sql)
 	{
 		if(auto pInfo = sql in preparedLookup)
 			return *pInfo;
 
-		auto info = registerPreparedImpl(sql);
+		auto info = registerIfNeededImpl(sql);
 		preparedLookup[sql] = info;
 		return info;
 	}
 
-	PreparedServerInfo registerPreparedImpl(string sql)
+	PreparedServerInfo registerIfNeededImpl(string sql)
 	{
 		scope(failure) kill();
 
@@ -1901,7 +1896,7 @@ public:
 	+/
 	void register(Prepared prepared)
 	{
-		registerPrepared(prepared.sql);
+		registerIfNeeded(prepared.sql);
 	}
 
 	/++
@@ -1964,6 +1959,86 @@ public:
 	}
 }
 
+// Test register, release, isRegistered, and auto-register for prepared statements
+debug(MYSQLN_TESTS)
+unittest
+{
+	import mysql.connection;
+	import mysql.test.common;
+	
+	Prepared preparedInsert;
+	Prepared preparedSelect;
+	immutable insertSQL = "INSERT INTO `autoRegistration` VALUES (1), (2)";
+	immutable selectSQL = "SELECT `val` FROM `autoRegistration`";
+	int queryTupleResult;
+	
+	{
+		mixin(scopedCn);
+		
+		// Setup
+		cn.exec("DROP TABLE IF EXISTS `autoRegistration`");
+		cn.exec("CREATE TABLE `autoRegistration` (
+			`val` INTEGER
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+
+		preparedInsert = cn.prepare(insertSQL);
+		preparedSelect = cn.prepare(selectSQL);
+		
+		// Test basic register, release, isRegistered
+		assert(cn.isRegistered(preparedInsert));
+		assert(cn.isRegistered(preparedSelect));
+		cn.release(preparedInsert);
+		cn.release(preparedSelect);
+		assert(!cn.isRegistered(preparedInsert));
+		assert(!cn.isRegistered(preparedSelect));
+	}
+
+	// Test auto-register: exec
+	{
+		mixin(scopedCn);
+	
+		assert(!cn.isRegistered(preparedInsert));
+		cn.exec(preparedInsert);
+		assert(cn.isRegistered(preparedInsert));
+	}
+	
+	// Test auto-register: query
+	{
+		mixin(scopedCn);
+	
+		assert(!cn.isRegistered(preparedSelect));
+		cn.query(preparedSelect).each();
+		assert(cn.isRegistered(preparedSelect));
+	}
+	
+	// Test auto-register: queryRow
+	{
+		mixin(scopedCn);
+	
+		assert(!cn.isRegistered(preparedSelect));
+		cn.queryRow(preparedSelect);
+		assert(cn.isRegistered(preparedSelect));
+	}
+	
+	// Test auto-register: queryRowTuple
+	{
+		mixin(scopedCn);
+	
+		assert(!cn.isRegistered(preparedSelect));
+		cn.queryRowTuple(preparedSelect, queryTupleResult);
+		assert(cn.isRegistered(preparedSelect));
+	}
+	
+	// Test auto-register: queryValue
+	{
+		mixin(scopedCn);
+	
+		assert(!cn.isRegistered(preparedSelect));
+		cn.queryValue(preparedSelect);
+		assert(cn.isRegistered(preparedSelect));
+	}
+}
+
 // An attempt to reproduce issue #81: Using mysql-native driver with no default database
 // I'm unable to actually reproduce the error, though.
 debug(MYSQLN_TESTS)
@@ -1982,7 +2057,7 @@ unittest
 	cn2.query("SELECT * FROM `"~mysqlEscape(cn._db).text~"`.`issue81`");
 }
 
-// unittest for issue 154, when the socket is disconnected from the mysql server.
+// Unittest for issue #154, when the socket is disconnected from the mysql server.
 // This simulates a disconnect by closing the socket underneath the Connection
 // object itself.
 debug(MYSQL_INTEGRATION_TESTS)
@@ -2005,4 +2080,3 @@ unittest
 	// this should still work (it should reconnect).
 	cn.exec("DROP TABLE `dropConnection`");
 }
-

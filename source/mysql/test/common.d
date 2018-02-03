@@ -32,7 +32,7 @@ doesn't allow adding version specifiers on the command-line.
 +/
 debug(MYSQLN_TESTS)
 {
-	import std.stdio;
+	public import std.stdio;
 	import std.conv;
 	import std.datetime;
 

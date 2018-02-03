@@ -70,8 +70,8 @@ connections is merely an implementation detail of the communications protocol.
 
 I believe these disconnects are the main cause of the above problems with `Prepared`.
 
-Proposed solution for v2.0.0:
------------------------------
+Solution for v2.0.0:
+--------------------
 
 Originally, I was thinking about (if anything *at all*) *maybe* offering an
 additional abstraction over top `Prepared` which manages prepared statements
@@ -80,7 +80,7 @@ above, not all of them, and I now believe would liklely create additional
 mess and problems due to the original disconnect only being covered up,
 not resoloved.
 
-So I think a re-design is warranted, and here's what I'm currently thinking:
+So I think a re-design is warranted:
 
 - Get rid of `PreparedImpl`. Just have a `Prepared` struct and be done with it.
 In the unlikely case anyone really does need deterministic server-side release
@@ -150,6 +150,8 @@ on `mysql.connection`.
 - Any runtime instance of `Prepare` will be not only be connection-independent,
 but could (in theory) even be applied to completely different types of
 transports having nothing to do with `mysql.connection` at all.
+
+- Deprecate `MYXNotPrepared`: It will no longer need be thrown.
 
 I think that neatly addresses all of the problems above.
 

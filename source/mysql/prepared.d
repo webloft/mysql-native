@@ -75,40 +75,6 @@ package:
 	ParameterSpecialization[] _psa;
 	ulong _lastInsertID;
 
-	debug(MYSQLN_TESTS)
-	unittest
-	{
-		import mysql.connection;
-		import mysql.test.common;
-		mixin(scopedCn);
-
-		cn.exec("DROP TABLE IF EXISTS `enforceNotReleased`");
-		cn.exec("CREATE TABLE `enforceNotReleased` (
-			`val` INTEGER
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-
-		immutable insertSQL = "INSERT INTO `enforceNotReleased` VALUES (1), (2)";
-		immutable selectSQL = "SELECT * FROM `enforceNotReleased`";
-		Prepared preparedInsert;
-		Prepared preparedSelect;
-		int queryTupleResult;
-		assertNotThrown!MYXNotPrepared(preparedInsert = cn.prepare(insertSQL));
-		assertNotThrown!MYXNotPrepared(preparedSelect = cn.prepare(selectSQL));
-		assertNotThrown!MYXNotPrepared(cn.exec(preparedInsert));
-		assertNotThrown!MYXNotPrepared(cn.query(preparedSelect).each());
-		assertNotThrown!MYXNotPrepared(cn.queryRowTuple(preparedSelect, queryTupleResult));
-		
-		cn.release(preparedInsert);
-		assertThrown!MYXNotPrepared(cn.exec(preparedInsert));
-		assertNotThrown!MYXNotPrepared(cn.query(preparedSelect).each());
-		assertNotThrown!MYXNotPrepared(cn.queryRowTuple(preparedSelect, queryTupleResult));
-
-		cn.release(preparedSelect);
-		assertThrown!MYXNotPrepared(cn.exec(preparedInsert));
-		assertThrown!MYXNotPrepared(cn.query(preparedSelect).each());
-		assertThrown!MYXNotPrepared(cn.queryRowTuple(preparedSelect, queryTupleResult));
-	}
-
 	ExecQueryImplInfo getExecQueryImplInfo(uint statementId)
 	{
 		return ExecQueryImplInfo(true, null, statementId, _headers, _inParams, _psa);
