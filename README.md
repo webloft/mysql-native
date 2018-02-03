@@ -25,6 +25,10 @@ In this document:
 * [Additional notes](#additional-notes)
 * [Developers - How to run the test suite](#developers---how-to-run-the-test-suite)
 
+See also:
+* [API Reference](http://semitwist.com/mysql-native)
+* [Migrating to v2.0.0](https://github.com/mysql-d/mysql-native/blob/master/MIGRATING_TO_V2.md)
+
 API
 ---
 
@@ -39,15 +43,9 @@ The primary interfaces:
 - [queryRowTuple()](http://semitwist.com/mysql-native/mysql/commands/queryRowTuple.html): Execute an SQL statement and get the first row into a matching tuple of D variables.
 - [queryValue()](http://semitwist.com/mysql-native/mysql/commands/queryValue.html): Execute an SQL statement and get the first value in the first row.
 - [prepare()](http://semitwist.com/mysql-native/mysql/prepared/prepare.html): Create a prepared statement
-- [Prepared](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.html): A prepared statement, with principal methods:
-	- [exec()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.exec.html)/[query()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.query.html)/etc.: Just like above, but using a prepared statement.
-	- [setArg()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.setArg.html): Set one argument to pass into the prepared statement.
-	- [setArgs()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.setArgs.html): Set all arguments to pass in.
-	- [getArg()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.getArg.html): Get an argument that's been set.
-	- [release()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.release.html): Optional. Prepared is refcounted.
+- [Prepared](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.html): A prepared statement, optionally pass it to the exec/query function in place of an SQL string.
 - [Row](http://semitwist.com/mysql-native/mysql/result/Row.html): One "row" of results, used much like an array of Variant.
-- [ResultRange](http://semitwist.com/mysql-native/mysql/result/ResultRange.html): An input range of rows.
-- [ResultSet](http://semitwist.com/mysql-native/mysql/result/ResultSet.html): A random access range of rows.
+- [ResultRange](http://semitwist.com/mysql-native/mysql/result/ResultRange.html): An input range of rows. Convert to random access with [std.array.array()](https://dlang.org/phobos/std_array.html#.array).
 
 Also note the [MySQL <-> D type mappings tables](https://semitwist.com/mysql-native/mysql.html)
 
