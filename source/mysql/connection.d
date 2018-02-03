@@ -1530,6 +1530,12 @@ public:
 	}
 
 	/// Is the given SQL registered on this connection as a prepared statement?
+	bool isRegistered(Prepared prepared)
+	{
+		return isRegistered( prepared.sql );
+	}
+
+	///ditto
 	bool isRegistered(string sql)
 	{
 		return isRegistered( getPreparedServerInfo(sql) );
