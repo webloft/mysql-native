@@ -40,6 +40,12 @@ immutable SvrCapFlags defaultClientFlags =
 /++
 Submit an SQL command to the server to be compiled into a prepared statement.
 
+This will automatically register the prepared statement on the provided connection.
+The resulting `Prepared` can then be used freely on *any* `Connection`,
+as it will automatically be registered upon its first use on other connections.
+Or, pass it to `Connection.register` or `mysql.pool.ConnectionPool.register`
+if you prefer eager registration.
+
 Internally, the result of a successful outcome will be a statement handle - an ID -
 for the prepared statement, a count of the parameters required for
 excution of the statement, and a count of the columns that will be present
@@ -1507,6 +1513,21 @@ public:
 
 	/// Gets the result header's field descriptions.
 	@property FieldDescription[] resultFieldDescriptions() pure { return _rsh.fieldDescriptions; }
+
+	/++
+	Manually register a prepared statement on this connection.
+	
+	Does nothing if statement is already registered on this connection.
+	
+	Calling this is not strictly necessary, as the prepared statement will
+	automatically be registered upon its first use on any `Connection`.
+	This is provided for those who prefer eager registration over lazy
+	for performance reasons.
+	+/
+	void register(Prepared prepared)
+	{
+		registerPrepared(prepared.sql);
+	}
 
 	/// Is the given SQL registered on this connection as a prepared statement?
 	bool isPreparedRegistered(string sql)
