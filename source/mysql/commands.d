@@ -22,8 +22,6 @@ import mysql.prepared;
 import mysql.protocol.constants;
 import mysql.protocol.extra_types;
 import mysql.protocol.packets;
-import mysql.protocol.packet_helpers;
-import mysql.protocol.sockets;
 import mysql.result;
 
 /++
