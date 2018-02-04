@@ -25,6 +25,10 @@ In this document:
 * [Additional notes](#additional-notes)
 * [Developers - How to run the test suite](#developers---how-to-run-the-test-suite)
 
+See also:
+* [API Reference](http://semitwist.com/mysql-native)
+* [Migrating to v2.0.0](https://github.com/mysql-d/mysql-native/blob/master/MIGRATING_TO_V2.md)
+
 API
 ---
 
@@ -39,15 +43,9 @@ The primary interfaces:
 - [queryRowTuple()](http://semitwist.com/mysql-native/mysql/commands/queryRowTuple.html): Execute an SQL statement and get the first row into a matching tuple of D variables.
 - [queryValue()](http://semitwist.com/mysql-native/mysql/commands/queryValue.html): Execute an SQL statement and get the first value in the first row.
 - [prepare()](http://semitwist.com/mysql-native/mysql/prepared/prepare.html): Create a prepared statement
-- [Prepared](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.html): A prepared statement, with principal methods:
-	- [exec()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.exec.html)/[query()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.query.html)/etc.: Just like above, but using a prepared statement.
-	- [setArg()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.setArg.html): Set one argument to pass into the prepared statement.
-	- [setArgs()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.setArgs.html): Set all arguments to pass in.
-	- [getArg()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.getArg.html): Get an argument that's been set.
-	- [release()](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.release.html): Optional. Prepared is refcounted.
+- [Prepared](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.html): A prepared statement, optionally pass it to the exec/query function in place of an SQL string.
 - [Row](http://semitwist.com/mysql-native/mysql/result/Row.html): One "row" of results, used much like an array of Variant.
-- [ResultRange](http://semitwist.com/mysql-native/mysql/result/ResultRange.html): An input range of rows.
-- [ResultSet](http://semitwist.com/mysql-native/mysql/result/ResultSet.html): A random access range of rows.
+- [ResultRange](http://semitwist.com/mysql-native/mysql/result/ResultRange.html): An input range of rows. Convert to random access with [std.array.array()](https://dlang.org/phobos/std_array.html#.array).
 
 Also note the [MySQL <-> D type mappings tables](https://semitwist.com/mysql-native/mysql.html)
 
@@ -68,11 +66,11 @@ void main(string[] args)
 	scope(exit) conn.close();
 
 	// Insert
-	auto rowsAffected = exec(conn,
+	auto rowsAffected = conn.exec(
 		"INSERT INTO `tablename` (`id`, `name`) VALUES (1, 'Ann'), (2, 'Bob')");
 
 	// Query
-	ResultRange range = query(conn, "SELECT * FROM `tablename`");
+	ResultRange range = conn.query("SELECT * FROM `tablename`");
 	Row row = range.front;
 	Variant id = row[0];
 	Variant name = row[1];
@@ -84,13 +82,13 @@ void main(string[] args)
 	assert(range.front[1] == "Bob");
 
 	// Prepared statements
-	Prepared prepared = prepare(conn, "SELECT * FROM `tablename` WHERE `name`=? OR `name`=?");
+	Prepared prepared = conn.prepare("SELECT * FROM `tablename` WHERE `name`=? OR `name`=?");
 	prepared.setArgs("Bob", "Bobby");
-	ResultRange bobs = prepared.query();
+	ResultRange bobs = conn.query(prepared);
 	bobs.close(); // Skip them
 	
 	prepared.setArgs("Bob", "Ann");
-	Row[] rs = prepared.query.array;
+	Row[] rs = conn.query(prepared).array;
 	assert(rs.length == 2);
 	assert(rs[0][0] == 1);
 	assert(rs[0][1] == "Ann");
@@ -98,10 +96,10 @@ void main(string[] args)
 	assert(rs[1][1] == "Bob");
 
 	// Nulls
-	Prepared insert = prepare(conn, "INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)");
+	Prepared insert = conn.prepare("INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)");
 	insert.setArgs(null, "Cam"); // Also takes Nullable!T
-	insert.exec();
-	range = query(conn, "SELECT * FROM `tablename` WHERE `name`='Cam'");
+	conn.exec(insert);
+	range = conn.query("SELECT * FROM `tablename` WHERE `name`='Cam'");
 	assert( range.front[0].type == typeid(typeof(null)) );
 }
 ```

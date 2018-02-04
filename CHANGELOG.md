@@ -1,18 +1,34 @@
 v2.0.0 - TBD
 =====================
 
-- **Removed:** Re-removed all deprecated symbols that were removed in v1.2.0 (@Abscissa)
-- **Removed:** Removed deprecated symbols: (@Abscissa)
-	- MySQL[whatever]Exception: Use `MYX[whatever]` instead.
-	- querySet/ResultSet: Import std.array and use `query(...).array` to
-		receive `Row[]` instead of a ResultSet.
-	- MYXDataPending: No longer thrown by mysql-native, as of v1.1.4. You can
-		safely remove all MYXDataPending handling from your code.
+Connection-independent redesign of Prepared, plus other new features.
+See the [migration guide](https://github.com/mysql-d/mysql-native/blob/master/MIGRATING_TO_V2.md).
+
+- **Change:** [#95](https://github.com/mysql-d/mysql-native/issues/95),
+	[#97](https://github.com/mysql-d/mysql-native/issues/97),
+	[#157](https://github.com/mysql-d/mysql-native/issues/157):
+	Redesigned Prepared to be connection-independent, support auto-registration
+	and fix a few problems. For details, see
+	[ABOUT_PREPARED_V2.md](https://github.com/mysql-d/mysql-native/blob/master/ABOUT_PREPARED_V2.md)
+	(@Abscissa)
+- **Change:** `prepare`, `prepareFunction` and `prepareProcedure` have moved
+	from `mysql.prepared` to `mysql.connection`. This is because they are
+	specific to `Connection`, and the new `Prepared` design (and thus
+	`mysql.prepared`) is completely non-dependent on `Connection`.
 - **New:** [#115](https://github.com/mysql-d/mysql-native/issues/115):
 	Added Prepared.lastInsertID to retrieve last ID inserted by the given
 	prepared statement. (@Abscissa)
 - **New:** [#147](https://github.com/mysql-d/mysql-native/issues/147):
 	Pools can take optional callback for when new connections are created (@Abscissa)
+- **Removed:** Re-removed all deprecated symbols that were removed in v1.2.0 (@Abscissa)
+- **Removed:** Removed additional deprecated symbols: (@Abscissa)
+	- MySQL[whatever]Exception: Use `MYX[whatever]` instead.
+	- querySet/ResultSet: Import std.array and use `query(...).array` to
+		receive `Row[]` instead of a ResultSet.
+	- MYXDataPending: No longer thrown by mysql-native, as of v1.1.4. You can
+		safely remove all MYXDataPending handling from your code.
+- **Deprecated:** `MYXNotPrepared`: The new prepared statement design
+	eliminates the need for this exception which is no longer thrown. (@Abscissa)
 - **Docs:** [#146](https://github.com/mysql-d/mysql-native/issues/146):
 	Make sure all ddox cross-linking is fixed. (@Abscissa)
 - **Internal:**

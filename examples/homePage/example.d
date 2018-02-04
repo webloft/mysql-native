@@ -12,11 +12,11 @@ void main(string[] args)
 	scope(exit) conn.close();
 
 	// Insert
-	auto rowsAffected = exec(conn,
+	auto rowsAffected = conn.exec(
 		"INSERT INTO `tablename` (`id`, `name`) VALUES (1, 'Ann'), (2, 'Bob')");
 
 	// Query
-	ResultRange range = query(conn, "SELECT * FROM `tablename`");
+	ResultRange range = conn.query("SELECT * FROM `tablename`");
 	Row row = range.front;
 	Variant id = row[0];
 	Variant name = row[1];
@@ -28,23 +28,23 @@ void main(string[] args)
 	assert(range.front[1] == "Bob");
 
 	// Prepared statements
-	Prepared prepared = prepare(conn, "SELECT * FROM `tablename` WHERE `name`=? OR `name`=?");
+	Prepared prepared = conn.prepare("SELECT * FROM `tablename` WHERE `name`=? OR `name`=?");
 	prepared.setArgs("Bob", "Bobby");
-	ResultRange bobs = prepared.query();
+	ResultRange bobs = conn.query(prepared);
 	bobs.close(); // Skip them
 	
 	prepared.setArgs("Bob", "Ann");
-	Row[] rs = prepared.query.array;
+	Row[] rs = conn.query(prepared).array;
 	assert(rs.length == 2);
 	assert(rs[0][0] == 1);
- 	assert(rs[0][1] == "Ann");
+	assert(rs[0][1] == "Ann");
 	assert(rs[1][0] == 2);
 	assert(rs[1][1] == "Bob");
 
 	// Nulls
-	Prepared insert = prepare(conn, "INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)");
+	Prepared insert = conn.prepare("INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)");
 	insert.setArgs(null, "Cam"); // Also takes Nullable!T
-	insert.exec();
-	range = query(conn, "SELECT * FROM `tablename` WHERE `name`='Cam'");
+	conn.exec(insert);
+	range = conn.query("SELECT * FROM `tablename` WHERE `name`='Cam'");
 	assert( range.front[0].type == typeid(typeof(null)) );
 }

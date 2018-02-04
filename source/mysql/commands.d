@@ -22,8 +22,6 @@ import mysql.prepared;
 import mysql.protocol.constants;
 import mysql.protocol.extra_types;
 import mysql.protocol.packets;
-import mysql.protocol.packet_helpers;
-import mysql.protocol.sockets;
 import mysql.result;
 
 /++
@@ -83,7 +81,7 @@ package bool execQueryImpl(Connection conn, ExecQueryImplInfo info, out ulong ra
 
 	// Send data
 	if(info.isPrepared)
-		Prepared.sendCommand(conn, info.hStmt, info.psh, info.inParams, info.psa);
+		ProtocolPrepared.sendCommand(conn, info.hStmt, info.psh, info.inParams, info.psa);
 	else
 	{
 		conn.sendCmd(CommandType.QUERY, info.sql);
@@ -135,15 +133,16 @@ This method is intended for commands such as which do not produce a result set
 produces a result set (such as SELECT), `mysql.exceptions.MYXResultRecieved`
 will be thrown.
 
-Use this method when you are not going to be using the same command
-repeatedly and you are CERTAIN all the data you're sending is properly
-escaped. Otherwise consider using `mysql.prepared.Prepared`.
+Only use the `string sql` overload when you are not going to be using the same
+command repeatedly and you are CERTAIN all the data you're sending is properly
+escaped. Otherwise, consider using overload that takes a `Prepared`.
 
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
+prepared = The prepared statement to be run.
 
 Returns: The number of rows affected.
 +/
@@ -152,7 +151,29 @@ ulong exec(Connection conn, string sql)
 	return execImpl(conn, ExecQueryImplInfo(false, sql));
 }
 
-/// Common implementation for mysql.commands.exec and Prepared.exec
+///ditto
+ulong exec(Connection conn, ref Prepared prepared)
+{
+	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
+	auto ra = execImpl(conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	prepared._lastInsertID = conn.lastInsertID;
+	return ra;
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+ulong exec(Connection conn, ref BackwardCompatPrepared prepared)
+{
+	auto p = prepared.prepared;
+	auto result = exec(conn, p);
+	prepared._prepared = p;
+	return result;
+}
+
+/// Common implementation for `exec` overloads
 package ulong execImpl(Connection conn, ExecQueryImplInfo info)
 {
 	ulong rowsAffected;
@@ -178,9 +199,9 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Use this method when you are not going to be using the same command
-repeatedly and you are CERTAIN all the data you're sending is properly
-escaped. Otherwise consider using `mysql.prepared.Prepared`.
+Only use the `string sql` overload when you are not going to be using the same
+command repeatedly and you are CERTAIN all the data you're sending is properly
+escaped. Otherwise, consider using overload that takes a `Prepared`.
 
 If there are long data items among the expected result columns you can use
 the `csa` param to specify that they are to be subject to chunked transfer via a
@@ -191,6 +212,7 @@ Type_Mappings: $(TYPE_MAPPINGS)
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
+prepared = The prepared statement to be run.
 csa = An optional array of `ColumnSpecialization` structs.
 
 Returns: A (possibly empty) `mysql.result.ResultRange`.
@@ -206,7 +228,29 @@ ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null
 	return queryImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 
-/// Common implementation for mysql.commands.query and Prepared.query
+///ditto
+ResultRange query(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+{
+	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
+	auto result = queryImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+	return result;
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+ResultRange query(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+{
+	auto p = prepared.prepared;
+	auto result = query(conn, p, csa);
+	prepared._prepared = p;
+	return result;
+}
+
+/// Common implementation for `query` overloads
 package ResultRange queryImpl(ColumnSpecialization[] csa,
 	Connection conn, ExecQueryImplInfo info)
 {
@@ -228,9 +272,9 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Use this method when you are not going to be using the same command
-repeatedly and you are CERTAIN all the data you're sending is properly
-escaped. Otherwise consider using `mysql.prepared.Prepared`.
+Only use the `string sql` overload when you are not going to be using the same
+command repeatedly and you are CERTAIN all the data you're sending is properly
+escaped. Otherwise, consider using overload that takes a `Prepared`.
 
 If there are long data items among the expected result columns you can use
 the `csa` param to specify that they are to be subject to chunked transfer via a
@@ -241,6 +285,7 @@ Type_Mappings: $(TYPE_MAPPINGS)
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
+prepared = The prepared statement to be run.
 csa = An optional array of `ColumnSpecialization` structs.
 
 Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
@@ -251,7 +296,29 @@ Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = 
 	return queryRowImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 
-/// Common implementation for mysql.commands.querySet and Prepared.querySet
+///ditto
+Nullable!Row queryRow(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+{
+	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
+	auto result = queryRowImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+	return result;
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+Nullable!Row queryRow(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+{
+	auto p = prepared.prepared;
+	auto result = queryRow(conn, p, csa);
+	prepared._prepared = p;
+	return result;
+}
+
+/// Common implementation for `querySet` overloads.
 package Nullable!Row queryRowImpl(ColumnSpecialization[] csa, Connection conn,
 	ExecQueryImplInfo info)
 {
@@ -280,15 +347,16 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Use this method when you are not going to be using the same command
-repeatedly and you are CERTAIN all the data you're sending is properly
-escaped. Otherwise consider using `mysql.prepared.Prepared`.
+Only use the `string sql` overload when you are not going to be using the same
+command repeatedly and you are CERTAIN all the data you're sending is properly
+escaped. Otherwise, consider using overload that takes a `Prepared`.
 
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
+prepared = The prepared statement to be run.
 args = The variables, taken by reference, to receive the values.
 +/
 void queryRowTuple(T...)(Connection conn, string sql, ref T args)
@@ -296,7 +364,27 @@ void queryRowTuple(T...)(Connection conn, string sql, ref T args)
 	return queryRowTupleImpl(conn, ExecQueryImplInfo(false, sql), args);
 }
 
-/// Common implementation for mysql.commands.queryRowTuple and Prepared.queryRowTuple
+///ditto
+void queryRowTuple(T...)(Connection conn, ref Prepared prepared, ref T args)
+{
+	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
+	queryRowTupleImpl(conn, prepared.getExecQueryImplInfo(preparedInfo.statementId), args);
+	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+void queryRowTuple(T...)(Connection conn, ref BackwardCompatPrepared prepared, ref T args)
+{
+	auto p = prepared.prepared;
+	queryRowTuple(conn, p, args);
+	prepared._prepared = p;
+}
+
+/// Common implementation for `queryRowTuple` overloads.
 package void queryRowTupleImpl(T...)(Connection conn, ExecQueryImplInfo info, ref T args)
 {
 	ulong ra;
@@ -351,9 +439,9 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Use this method when you are not going to be using the same command
-repeatedly and you are CERTAIN all the data you're sending is properly
-escaped. Otherwise consider using `mysql.prepared.Prepared`.
+Only use the `string sql` overload when you are not going to be using the same
+command repeatedly and you are CERTAIN all the data you're sending is properly
+escaped. Otherwise, consider using overload that takes a `Prepared`.
 
 If there are long data items among the expected result columns you can use
 the `csa` param to specify that they are to be subject to chunked transfer via a
@@ -364,6 +452,7 @@ Type_Mappings: $(TYPE_MAPPINGS)
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
+prepared = The prepared statement to be run.
 csa = An optional array of `ColumnSpecialization` structs.
 
 Returns: `Nullable!Variant`: This will be null (check via `Nullable.isNull`) if the
@@ -374,7 +463,29 @@ Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] 
 	return queryValueImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 
-/// Common implementation for `mysql.commands.querySet` and `Prepared.querySet`
+///ditto
+Nullable!Variant queryValue(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+{
+	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
+	auto result = queryValueImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
+	return result;
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+Nullable!Variant queryValue(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+{
+	auto p = prepared.prepared;
+	auto result = queryValue(conn, p, csa);
+	prepared._prepared = p;
+	return result;
+}
+
+/// Common implementation for `queryValue` overloads.
 package Nullable!Variant queryValueImpl(ColumnSpecialization[] csa, Connection conn,
 	ExecQueryImplInfo info)
 {

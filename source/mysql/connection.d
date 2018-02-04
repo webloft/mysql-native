@@ -5,8 +5,10 @@ import std.algorithm;
 import std.conv;
 import std.digest.sha;
 import std.exception;
+import std.range;
 import std.socket;
 import std.string;
+import std.typecons;
 
 import mysql.commands;
 import mysql.exceptions;
@@ -34,6 +36,667 @@ immutable SvrCapFlags defaultClientFlags =
 		SvrCapFlags.WITH_DB | SvrCapFlags.PROTOCOL41 |
 		SvrCapFlags.SECURE_CONNECTION;// | SvrCapFlags.MULTI_STATEMENTS |
 		//SvrCapFlags.MULTI_RESULTS;
+
+/++
+Submit an SQL command to the server to be compiled into a prepared statement.
+
+This will automatically register the prepared statement on the provided connection.
+The resulting `Prepared` can then be used freely on ANY `Connection`,
+as it will automatically be registered upon its first use on other connections.
+Or, pass it to `Connection.register` if you prefer eager registration.
+
+Internally, the result of a successful outcome will be a statement handle - an ID -
+for the prepared statement, a count of the parameters required for
+execution of the statement, and a count of the columns that will be present
+in any result set that the command generates.
+
+The server will then proceed to send prepared statement headers,
+including parameter descriptions, and result set field descriptions,
+followed by an EOF packet.
+
+Throws: `mysql.exceptions.MYX` if the server has a problem.
++/
+Prepared prepare(Connection conn, string sql)
+{
+	auto info = conn.registerIfNeeded(sql);
+	return Prepared(sql, info.headers, info.numParams);
+}
+
+/++
+This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+
+See `BackwardCompatPrepared` for more info.
++/
+deprecated("This is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0. You should migrate from this to the Prepared-compatible exec/query overloads in 'mysql.commands'.")
+BackwardCompatPrepared prepareBackwardCompat(Connection conn, string sql)
+{
+	return BackwardCompatPrepared(conn, prepare(conn, sql));
+}
+
+/++
+Convenience function to create a prepared statement which calls a stored function.
+
+Be careful that your numArgs is correct. If it isn't, you may get a
+`mysql.exceptions.MYX` with a very unclear error message.
+
+Throws: `mysql.exceptions.MYX` if the server has a problem.
+
+Params:
+	name = The name of the stored function.
+	numArgs = The number of arguments the stored procedure takes.
++/
+Prepared prepareFunction(Connection conn, string name, int numArgs)
+{
+	auto sql = "select " ~ name ~ preparedPlaceholderArgs(numArgs);
+	return prepare(conn, sql);
+}
+
+///
+unittest
+{
+	debug(MYSQLN_TESTS)
+	{
+		import mysql.test.common;
+		mixin(scopedCn);
+
+		exec(cn, `DROP FUNCTION IF EXISTS hello`);
+		exec(cn, `
+			CREATE FUNCTION hello (s CHAR(20))
+			RETURNS CHAR(50) DETERMINISTIC
+			RETURN CONCAT('Hello ',s,'!')
+		`);
+
+		auto preparedHello = prepareFunction(cn, "hello", 1);
+		preparedHello.setArgs("World");
+		auto rs = cn.query(preparedHello).array;
+		assert(rs.length == 1);
+		assert(rs[0][0] == "Hello World!");
+	}
+}
+
+/++
+Convenience function to create a prepared statement which calls a stored procedure.
+
+OUT parameters are currently not supported. It should generally be
+possible with MySQL to present them as a result set.
+
+Be careful that your numArgs is correct. If it isn't, you may get a
+`mysql.exceptions.MYX` with a very unclear error message.
+
+Throws: `mysql.exceptions.MYX` if the server has a problem.
+
+Params:
+	name = The name of the stored procedure.
+	numArgs = The number of arguments the stored procedure takes.
+
++/
+Prepared prepareProcedure(Connection conn, string name, int numArgs)
+{
+	auto sql = "call " ~ name ~ preparedPlaceholderArgs(numArgs);
+	return prepare(conn, sql);
+}
+
+///
+unittest
+{
+	debug(MYSQLN_TESTS)
+	{
+		import mysql.test.common;
+		import mysql.test.integration;
+		mixin(scopedCn);
+		initBaseTestTables(cn);
+
+		exec(cn, `DROP PROCEDURE IF EXISTS insert2`);
+		exec(cn, `
+			CREATE PROCEDURE insert2 (IN p1 INT, IN p2 CHAR(50))
+			BEGIN
+				INSERT INTO basetest (intcol, stringcol) VALUES(p1, p2);
+			END
+		`);
+
+		auto preparedInsert2 = prepareProcedure(cn, "insert2", 2);
+		preparedInsert2.setArgs(2001, "inserted string 1");
+		cn.exec(preparedInsert2);
+
+		auto rs = query(cn, "SELECT stringcol FROM basetest WHERE intcol=2001").array;
+		assert(rs.length == 1);
+		assert(rs[0][0] == "inserted string 1");
+	}
+}
+
+private string preparedPlaceholderArgs(int numArgs)
+{
+	auto sql = "(";
+	bool comma = false;
+	foreach(i; 0..numArgs)
+	{
+		if (comma)
+			sql ~= ",?";
+		else
+		{
+			sql ~= "?";
+			comma = true;
+		}
+	}
+	sql ~= ")";
+
+	return sql;
+}
+
+debug(MYSQLN_TESTS)
+unittest
+{
+	assert(preparedPlaceholderArgs(3) == "(?,?,?)");
+	assert(preparedPlaceholderArgs(2) == "(?,?)");
+	assert(preparedPlaceholderArgs(1) == "(?)");
+	assert(preparedPlaceholderArgs(0) == "()");
+}
+
+/// Per-connection info from the server about a registered prepared statement.
+package struct PreparedServerInfo
+{
+	/// Server's identifier for this prepared statement.
+	/// Apperently, this is never 0 if it's been registered,
+	/// although mysql-native no longer relies on that.
+	uint statementId;
+
+	ushort psWarnings;
+
+	/// Number of parameters this statement takes.
+	/// 
+	/// This will be the same on all connections, but it's returned
+	/// by the server upon registration, so it's stored here.
+	ushort numParams;
+
+	/// Prepared statement headers
+	///
+	/// This will be the same on all connections, but it's returned
+	/// by the server upon registration, so it's stored here.
+	PreparedStmtHeaders headers;
+	
+	/// Not actually from the server. Connection uses this to keep track
+	/// of statements that should be treated as having been released.
+	bool queuedForRelease = false;
+}
+
+/++
+This is a wrapper over `Prepared` which is provided ONLY as a
+temporary aid in upgrading to mysql-native v2.0.0 and its
+new connection-independent model of prepared statements.
+
+In most cases, this layer shouldn't even be needed. But if you have many
+lines of code making calls to exec/query the same prepared statement,
+then this may be helpful.
+
+To use this temporary compatability layer, change instances of:
+
+---
+auto stmt = conn.prepare(...);
+---
+
+to:
+
+---
+auto stmt = conn.prepareBackwardCompat(...);
+---
+
+And then your prepared statement should work as before.
+
+BUT DO NOT LEAVE IT LIKE THIS! Ultimately, you should update
+your prepared statement code to the mysql-native v2.0.0 API, by changing
+instances of:
+
+---
+stmt.exec()
+stmt.query()
+stmt.queryRow()
+stmt.queryRowTuple(outputArgs...)
+stmt.queryValue()
+---
+
+to:
+
+---
+conn.exec(stmt)
+conn.query(stmt)
+conn.queryRow(stmt)
+conn.queryRowTuple(stmt, outputArgs...)
+conn.queryValue(stmt)
+---
+
+Both of the above syntaxes can be used with a `BackwardCompatPrepared`
+(the `Connection` passed directly to `exec`/`query` will override the
+one embedded associated with your `BackwardCompatPrepared`).
+
+Once all of your code is updated, you can change `prepareBackwardCompat`
+back to `prepare` again, and your upgrade will be complete.
++/
+struct BackwardCompatPrepared
+{
+	import std.variant;
+	
+	private Connection _conn;
+	Prepared _prepared;
+
+	/// Access underlying `Prepared`
+	@property Prepared prepared() { return _prepared; }
+
+	alias _prepared this;
+
+	/++
+	This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
+	
+	See `BackwardCompatPrepared` for more info.
+	+/
+	deprecated("Change 'preparedStmt.exec()' to 'conn.exec(preparedStmt)'")
+	ulong exec()
+	{
+		return .exec(_conn, _prepared);
+	}
+
+	///ditto
+	deprecated("Change 'preparedStmt.query()' to 'conn.query(preparedStmt)'")
+	ResultRange query(ColumnSpecialization[] csa = null)
+	{
+		return .query(_conn, _prepared, csa);
+	}
+
+	///ditto
+	deprecated("Change 'preparedStmt.queryRow()' to 'conn.queryRow(preparedStmt)'")
+	Nullable!Row queryRow(ColumnSpecialization[] csa = null)
+	{
+		return .queryRow(_conn, _prepared, csa);
+	}
+
+	///ditto
+	deprecated("Change 'preparedStmt.queryRowTuple(outArgs...)' to 'conn.queryRowTuple(preparedStmt, outArgs...)'")
+	void queryRowTuple(T...)(ref T args) if(T.length == 0 || !is(T[0] : Connection))
+	{
+		return .queryRowTuple(_conn, _prepared, args);
+	}
+
+	///ditto
+	deprecated("Change 'preparedStmt.queryValue()' to 'conn.queryValue(preparedStmt)'")
+	Nullable!Variant queryValue(ColumnSpecialization[] csa = null)
+	{
+		return .queryValue(_conn, _prepared, csa);
+	}
+}
+
+//TODO: All low-level commms should be moved into the mysql.protocol package.
+/// Low-level comms code relating to prepared statements.
+package struct ProtocolPrepared
+{
+	import std.conv;
+	import std.datetime;
+	import std.variant;
+	import mysql.types;
+	
+	static ubyte[] makeBitmap(in Variant[] inParams)
+	{
+		size_t bml = (inParams.length+7)/8;
+		ubyte[] bma;
+		bma.length = bml;
+		foreach (i; 0..inParams.length)
+		{
+			if(inParams[i].type != typeid(typeof(null)))
+				continue;
+			size_t bn = i/8;
+			size_t bb = i%8;
+			ubyte sr = 1;
+			sr <<= bb;
+			bma[bn] |= sr;
+		}
+		return bma;
+	}
+
+	static ubyte[] makePSPrefix(uint hStmt, ubyte flags = 0) pure nothrow
+	{
+		ubyte[] prefix;
+		prefix.length = 14;
+
+		prefix[4] = CommandType.STMT_EXECUTE;
+		hStmt.packInto(prefix[5..9]);
+		prefix[9] = flags;   // flags, no cursor
+		prefix[10] = 1; // iteration count - currently always 1
+		prefix[11] = 0;
+		prefix[12] = 0;
+		prefix[13] = 0;
+
+		return prefix;
+	}
+
+	//TODO: All low-level commms should be moved into the mysql.protocol package.
+	static ubyte[] analyseParams(Variant[] inParams, ParameterSpecialization[] psa,
+		out ubyte[] vals, out bool longData)
+	{
+		size_t pc = inParams.length;
+		ubyte[] types;
+		types.length = pc*2;
+		size_t alloc = pc*20;
+		vals.length = alloc;
+		uint vcl = 0, len;
+		int ct = 0;
+
+		void reAlloc(size_t n)
+		{
+			if (vcl+n < alloc)
+				return;
+			size_t inc = (alloc*3)/2;
+			if (inc <  n)
+				inc = n;
+			alloc += inc;
+			vals.length = alloc;
+		}
+
+		foreach (size_t i; 0..pc)
+		{
+			enum UNSIGNED  = 0x80;
+			enum SIGNED    = 0;
+			if (psa[i].chunkSize)
+				longData= true;
+			if (inParams[i].type == typeid(typeof(null)))
+			{
+				types[ct++] = SQLType.NULL;
+				types[ct++] = SIGNED;
+				continue;
+			}
+			Variant v = inParams[i];
+			SQLType ext = psa[i].type;
+			string ts = v.type.toString();
+			bool isRef;
+			if (ts[$-1] == '*')
+			{
+				ts.length = ts.length-1;
+				isRef= true;
+			}
+
+			switch (ts)
+			{
+				case "bool":
+					if (ext == SQLType.INFER_FROM_D_TYPE)
+						types[ct++] = SQLType.BIT;
+					else
+						types[ct++] = cast(ubyte) ext;
+					types[ct++] = SIGNED;
+					reAlloc(2);
+					bool bv = isRef? *(v.get!(bool*)): v.get!(bool);
+					vals[vcl++] = 1;
+					vals[vcl++] = bv? 0x31: 0x30;
+					break;
+				case "byte":
+					types[ct++] = SQLType.TINY;
+					types[ct++] = SIGNED;
+					reAlloc(1);
+					vals[vcl++] = isRef? *(v.get!(byte*)): v.get!(byte);
+					break;
+				case "ubyte":
+					types[ct++] = SQLType.TINY;
+					types[ct++] = UNSIGNED;
+					reAlloc(1);
+					vals[vcl++] = isRef? *(v.get!(ubyte*)): v.get!(ubyte);
+					break;
+				case "short":
+					types[ct++] = SQLType.SHORT;
+					types[ct++] = SIGNED;
+					reAlloc(2);
+					short si = isRef? *(v.get!(short*)): v.get!(short);
+					vals[vcl++] = cast(ubyte) (si & 0xff);
+					vals[vcl++] = cast(ubyte) ((si >> 8) & 0xff);
+					break;
+				case "ushort":
+					types[ct++] = SQLType.SHORT;
+					types[ct++] = UNSIGNED;
+					reAlloc(2);
+					ushort us = isRef? *(v.get!(ushort*)): v.get!(ushort);
+					vals[vcl++] = cast(ubyte) (us & 0xff);
+					vals[vcl++] = cast(ubyte) ((us >> 8) & 0xff);
+					break;
+				case "int":
+					types[ct++] = SQLType.INT;
+					types[ct++] = SIGNED;
+					reAlloc(4);
+					int ii = isRef? *(v.get!(int*)): v.get!(int);
+					vals[vcl++] = cast(ubyte) (ii & 0xff);
+					vals[vcl++] = cast(ubyte) ((ii >> 8) & 0xff);
+					vals[vcl++] = cast(ubyte) ((ii >> 16) & 0xff);
+					vals[vcl++] = cast(ubyte) ((ii >> 24) & 0xff);
+					break;
+				case "uint":
+					types[ct++] = SQLType.INT;
+					types[ct++] = UNSIGNED;
+					reAlloc(4);
+					uint ui = isRef? *(v.get!(uint*)): v.get!(uint);
+					vals[vcl++] = cast(ubyte) (ui & 0xff);
+					vals[vcl++] = cast(ubyte) ((ui >> 8) & 0xff);
+					vals[vcl++] = cast(ubyte) ((ui >> 16) & 0xff);
+					vals[vcl++] = cast(ubyte) ((ui >> 24) & 0xff);
+					break;
+				case "long":
+					types[ct++] = SQLType.LONGLONG;
+					types[ct++] = SIGNED;
+					reAlloc(8);
+					long li = isRef? *(v.get!(long*)): v.get!(long);
+					vals[vcl++] = cast(ubyte) (li & 0xff);
+					vals[vcl++] = cast(ubyte) ((li >> 8) & 0xff);
+					vals[vcl++] = cast(ubyte) ((li >> 16) & 0xff);
+					vals[vcl++] = cast(ubyte) ((li >> 24) & 0xff);
+					vals[vcl++] = cast(ubyte) ((li >> 32) & 0xff);
+					vals[vcl++] = cast(ubyte) ((li >> 40) & 0xff);
+					vals[vcl++] = cast(ubyte) ((li >> 48) & 0xff);
+					vals[vcl++] = cast(ubyte) ((li >> 56) & 0xff);
+					break;
+				case "ulong":
+					types[ct++] = SQLType.LONGLONG;
+					types[ct++] = UNSIGNED;
+					reAlloc(8);
+					ulong ul = isRef? *(v.get!(ulong*)): v.get!(ulong);
+					vals[vcl++] = cast(ubyte) (ul & 0xff);
+					vals[vcl++] = cast(ubyte) ((ul >> 8) & 0xff);
+					vals[vcl++] = cast(ubyte) ((ul >> 16) & 0xff);
+					vals[vcl++] = cast(ubyte) ((ul >> 24) & 0xff);
+					vals[vcl++] = cast(ubyte) ((ul >> 32) & 0xff);
+					vals[vcl++] = cast(ubyte) ((ul >> 40) & 0xff);
+					vals[vcl++] = cast(ubyte) ((ul >> 48) & 0xff);
+					vals[vcl++] = cast(ubyte) ((ul >> 56) & 0xff);
+					break;
+				case "float":
+					types[ct++] = SQLType.FLOAT;
+					types[ct++] = SIGNED;
+					reAlloc(4);
+					float f = isRef? *(v.get!(float*)): v.get!(float);
+					ubyte* ubp = cast(ubyte*) &f;
+					vals[vcl++] = *ubp++;
+					vals[vcl++] = *ubp++;
+					vals[vcl++] = *ubp++;
+					vals[vcl++] = *ubp;
+					break;
+				case "double":
+					types[ct++] = SQLType.DOUBLE;
+					types[ct++] = SIGNED;
+					reAlloc(8);
+					double d = isRef? *(v.get!(double*)): v.get!(double);
+					ubyte* ubp = cast(ubyte*) &d;
+					vals[vcl++] = *ubp++;
+					vals[vcl++] = *ubp++;
+					vals[vcl++] = *ubp++;
+					vals[vcl++] = *ubp++;
+					vals[vcl++] = *ubp++;
+					vals[vcl++] = *ubp++;
+					vals[vcl++] = *ubp++;
+					vals[vcl++] = *ubp;
+					break;
+				case "std.datetime.date.Date":
+				case "std.datetime.Date":
+					types[ct++] = SQLType.DATE;
+					types[ct++] = SIGNED;
+					Date date = isRef? *(v.get!(Date*)): v.get!(Date);
+					ubyte[] da = pack(date);
+					size_t l = da.length;
+					reAlloc(l);
+					vals[vcl..vcl+l] = da[];
+					vcl += l;
+					break;
+				case "std.datetime.TimeOfDay":
+				case "std.datetime.Time":
+					types[ct++] = SQLType.TIME;
+					types[ct++] = SIGNED;
+					TimeOfDay time = isRef? *(v.get!(TimeOfDay*)): v.get!(TimeOfDay);
+					ubyte[] ta = pack(time);
+					size_t l = ta.length;
+					reAlloc(l);
+					vals[vcl..vcl+l] = ta[];
+					vcl += l;
+					break;
+				case "std.datetime.date.DateTime":
+				case "std.datetime.DateTime":
+					types[ct++] = SQLType.DATETIME;
+					types[ct++] = SIGNED;
+					DateTime dt = isRef? *(v.get!(DateTime*)): v.get!(DateTime);
+					ubyte[] da = pack(dt);
+					size_t l = da.length;
+					reAlloc(l);
+					vals[vcl..vcl+l] = da[];
+					vcl += l;
+					break;
+				case "mysql.types.Timestamp":
+					types[ct++] = SQLType.TIMESTAMP;
+					types[ct++] = SIGNED;
+					Timestamp tms = isRef? *(v.get!(Timestamp*)): v.get!(Timestamp);
+					DateTime dt = mysql.protocol.packet_helpers.toDateTime(tms.rep);
+					ubyte[] da = pack(dt);
+					size_t l = da.length;
+					reAlloc(l);
+					vals[vcl..vcl+l] = da[];
+					vcl += l;
+					break;
+				case "immutable(char)[]":
+					if (ext == SQLType.INFER_FROM_D_TYPE)
+						types[ct++] = SQLType.VARCHAR;
+					else
+						types[ct++] = cast(ubyte) ext;
+					types[ct++] = SIGNED;
+					string s = isRef? *(v.get!(string*)): v.get!(string);
+					ubyte[] packed = packLCS(cast(void[]) s);
+					reAlloc(packed.length);
+					vals[vcl..vcl+packed.length] = packed[];
+					vcl += packed.length;
+					break;
+				case "char[]":
+					if (ext == SQLType.INFER_FROM_D_TYPE)
+						types[ct++] = SQLType.VARCHAR;
+					else
+						types[ct++] = cast(ubyte) ext;
+					types[ct++] = SIGNED;
+					char[] ca = isRef? *(v.get!(char[]*)): v.get!(char[]);
+					ubyte[] packed = packLCS(cast(void[]) ca);
+					reAlloc(packed.length);
+					vals[vcl..vcl+packed.length] = packed[];
+					vcl += packed.length;
+					break;
+				case "byte[]":
+					if (ext == SQLType.INFER_FROM_D_TYPE)
+						types[ct++] = SQLType.TINYBLOB;
+					else
+						types[ct++] = cast(ubyte) ext;
+					types[ct++] = SIGNED;
+					byte[] ba = isRef? *(v.get!(byte[]*)): v.get!(byte[]);
+					ubyte[] packed = packLCS(cast(void[]) ba);
+					reAlloc(packed.length);
+					vals[vcl..vcl+packed.length] = packed[];
+					vcl += packed.length;
+					break;
+				case "ubyte[]":
+					if (ext == SQLType.INFER_FROM_D_TYPE)
+						types[ct++] = SQLType.TINYBLOB;
+					else
+						types[ct++] = cast(ubyte) ext;
+					types[ct++] = SIGNED;
+					ubyte[] uba = isRef? *(v.get!(ubyte[]*)): v.get!(ubyte[]);
+					ubyte[] packed = packLCS(cast(void[]) uba);
+					reAlloc(packed.length);
+					vals[vcl..vcl+packed.length] = packed[];
+					vcl += packed.length;
+					break;
+				case "void":
+					throw new MYX("Unbound parameter " ~ to!string(i), __FILE__, __LINE__);
+				default:
+					throw new MYX("Unsupported parameter type " ~ ts, __FILE__, __LINE__);
+			}
+		}
+		vals.length = vcl;
+		return types;
+	}
+
+	static void sendLongData(Connection conn, uint hStmt, ParameterSpecialization[] psa)
+	{
+		assert(psa.length <= ushort.max); // parameter number is sent as short
+		foreach (ushort i, PSN psn; psa)
+		{
+			if (!psn.chunkSize) continue;
+			uint cs = psn.chunkSize;
+			uint delegate(ubyte[]) dg = psn.chunkDelegate;
+
+			//TODO: All low-level commms should be moved into the mysql.protocol package.
+			ubyte[] chunk;
+			chunk.length = cs+11;
+			chunk.setPacketHeader(0 /*each chunk is separate cmd*/);
+			chunk[4] = CommandType.STMT_SEND_LONG_DATA;
+			hStmt.packInto(chunk[5..9]); // statement handle
+			packInto(i, chunk[9..11]); // parameter number
+
+			// byte 11 on is payload
+			for (;;)
+			{
+				uint sent = dg(chunk[11..cs+11]);
+				if (sent < cs)
+				{
+					if (sent == 0)    // data was exact multiple of chunk size - all sent
+						break;
+					sent += 7;        // adjust for non-payload bytes
+					chunk.length = chunk.length - (cs-sent);     // trim the chunk
+					packInto!(uint, true)(cast(uint)sent, chunk[0..3]);
+					conn.send(chunk);
+					break;
+				}
+				conn.send(chunk);
+			}
+		}
+	}
+
+	static void sendCommand(Connection conn, uint hStmt, PreparedStmtHeaders psh,
+		Variant[] inParams, ParameterSpecialization[] psa)
+	{
+		conn.autoPurge();
+		
+		//TODO: All low-level commms should be moved into the mysql.protocol package.
+		ubyte[] packet;
+		conn.resetPacket();
+
+		ubyte[] prefix = makePSPrefix(hStmt, 0);
+		size_t len = prefix.length;
+		bool longData;
+
+		if (psh.paramCount)
+		{
+			ubyte[] one = [ 1 ];
+			ubyte[] vals;
+			ubyte[] types = analyseParams(inParams, psa, vals, longData);
+			ubyte[] nbm = makeBitmap(inParams);
+			packet = prefix ~ nbm ~ one ~ types ~ vals;
+		}
+		else
+			packet = prefix;
+
+		if (longData)
+			sendLongData(conn, hStmt, psa);
+
+		assert(packet.length <= uint.max);
+		packet.setPacketHeader(conn.pktNumber);
+		conn.bumpPacket();
+		conn.send(packet);
+	}
+}
 
 /++
 A class representing a database connection.
@@ -119,9 +782,11 @@ package:
 	bool _rowsPending, _headersPending, _binaryPending;
 
 	// Field count of last performed command.
+	//TODO: Does Connection need to store this?
 	ushort _fieldCount;
 
 	// ResultSetHeaders of last performed command.
+	//TODO: Does Connection need to store this? Is this even used?
 	ResultSetHeaders _rsh;
 
 	// This tiny thing here is pretty critical. Pay great attention to it's maintenance, otherwise
@@ -471,7 +1136,11 @@ package:
 		// any pending data is gone. Any statements to release will be released
 		// on the server automatically.
 		_headersPending = _rowsPending = _binaryPending = false;
-		statementsToRelease.clear();
+		
+		static if(__traits(compiles, (){ int[int] aa; aa.clear(); }))
+			preparedLookup.clear();
+		else
+			preparedLookup = null;
 	}
 	
 	/// Called whenever mysql-native needs to send a command to the server
@@ -492,7 +1161,7 @@ package:
 		try
 		{
 			purgeResult();
-			statementsToRelease.releaseAll();
+			releaseQueued();
 		}
 		catch(Exception e)
 		{
@@ -503,99 +1172,140 @@ package:
 		}
 	}
 
-	/++
-	Keeps track of prepared statements queued to be released from the server.
-
-	Prepared statements aren't released immediately, because that
-	involves sending a command to the server even though there might be
-	results pending. (Can't send a command while results are pending.)
-	+/
-	static struct StatementsToRelease(alias doRelease)
+	/// Lookup per-connection prepared statement info by SQL
+	PreparedServerInfo[string] preparedLookup;
+	
+	/// Set `queuedForRelease` flag for a statement in `preparedLookup`.
+	/// Does nothing if statement not in `preparedLookup`.
+	private void setQueuedForRelease(string sql, bool value)
 	{
-		private Connection conn;
-		
-		/// Ids of prepared statements to be released.
-		/// This uses assumeSafeAppend. Do not save copies of it.
-		uint[] ids;
-		
-		void add(uint statementId)
+		if(sql in preparedLookup)
 		{
-			ids ~= statementId;
-		}
-
-		/// Removes a prepared statement from the list of statements
-		/// to be released from the server.
-		/// Does nothing if the statement isn't on the list.
-		void remove(uint statementId)
-		{
-			foreach(ref id; ids)
-			if(id == statementId)
-				id = 0;
-		}
-
-		/// Releases the prepared statements queued for release.
-		void releaseAll()
-		{
-			foreach(id; ids)
-			if(id != 0)
-				doRelease(conn, id);
-
-			clear();
-		}
-
-		// clear all statements, and reset for using again.
-		private void clear()
-		{
-			if(ids.length)
-			{
-				ids.length = 0;
-				assumeSafeAppend(ids);
-			}
+			auto info = preparedLookup[sql];
+			info.queuedForRelease = value;
+			preparedLookup[sql] = info;
 		}
 	}
-	StatementsToRelease!(PreparedImpl.immediateRelease) statementsToRelease;
-	
-	debug(MYSQLN_TESTS) uint[] fakeRelease_released;
-	unittest
+
+	/// Queue a prepared statement for release.
+	void queueForRelease(string sql)
 	{
-		debug(MYSQLN_TESTS)
+		// If connection's closed, then it IS released.
+		if(closed)
+			return;
+
+		setQueuedForRelease(sql, true);
+	}
+
+	/// Remove a statement from the queue to be released.
+	void unqueueForRelease(string sql)
+	{
+		setQueuedForRelease(sql, false);
+	}
+
+	/// Releases all prepared statements that are queued for release.
+	void releaseQueued()
+	{
+		foreach(sql, info; preparedLookup)
+		if(info.queuedForRelease)
 		{
-			static void fakeRelease(Connection conn, uint id)
-			{
-				conn.fakeRelease_released ~= id;
-			}
-			
-			mixin(scopedCn);
-			
-			StatementsToRelease!fakeRelease list;
-			list.conn = cn;
-			assert(list.ids == []);
-			assert(cn.fakeRelease_released == []);
-
-			list.add(1);
-			assert(list.ids == [1]);
-			assert(cn.fakeRelease_released == []);
-
-			list.add(7);
-			assert(list.ids == [1, 7]);
-			assert(cn.fakeRelease_released == []);
-
-			list.add(9);
-			assert(list.ids == [1, 7, 9]);
-			assert(cn.fakeRelease_released == []);
-
-			list.remove(5);
-			assert(list.ids == [1, 7, 9]);
-			assert(cn.fakeRelease_released == []);
-			
-			list.remove(7);
-			assert(list.ids == [1, 0, 9]);
-			assert(cn.fakeRelease_released == []);
-			
-			list.releaseAll();
-			assert(list.ids == []);
-			assert(cn.fakeRelease_released == [1, 9]);
+			immediateReleasePrepared(info.statementId);
+			preparedLookup.remove(sql);
 		}
+	}
+
+	/// Returns null if not found
+	Nullable!PreparedServerInfo getPreparedServerInfo(const string sql) pure nothrow
+	{
+		Nullable!PreparedServerInfo result;
+		
+		auto pInfo = sql in preparedLookup;
+		if(pInfo)
+			result = *pInfo;
+		
+		return result;
+	}
+	
+	/// If already registered, simply returns the cached `PreparedServerInfo`.
+	PreparedServerInfo registerIfNeeded(string sql)
+	out(info)
+	{
+		// I'm confident this can't currently happen, but
+		// let's make sure that doesn't change.
+		assert(!info.queuedForRelease);
+	}
+	body
+	{
+		if(auto pInfo = sql in preparedLookup)
+		{
+			// The statement is registered. It may, or may not, be queued
+			// for release. Either way, all we need to do is make sure it's
+			// un-queued and then return.
+			pInfo.queuedForRelease = false;
+			return *pInfo;
+		}
+
+		auto info = registerIfNeededImpl(sql);
+		preparedLookup[sql] = info;
+
+		return info;
+	}
+
+	PreparedServerInfo registerIfNeededImpl(string sql)
+	{
+		scope(failure) kill();
+
+		PreparedServerInfo info;
+		
+		sendCmd(CommandType.STMT_PREPARE, sql);
+		_fieldCount = 0;
+
+		//TODO: All packet handling should be moved into the mysql.protocol package.
+		ubyte[] packet = getPacket();
+		if(packet.front == ResultPacketMarker.ok)
+		{
+			packet.popFront();
+			info.statementId    = packet.consume!int();
+			_fieldCount         = packet.consume!short();
+			info.numParams      = packet.consume!short();
+
+			packet.popFront(); // one byte filler
+			info.psWarnings     = packet.consume!short();
+
+			// At this point the server also sends field specs for parameters
+			// and columns if there were any of each
+			info.headers = PreparedStmtHeaders(this, _fieldCount, info.numParams);
+		}
+		else if(packet.front == ResultPacketMarker.error)
+		{
+			auto error = OKErrorPacket(packet);
+			enforcePacketOK(error);
+			assert(0); // FIXME: what now?
+		}
+		else
+			assert(0); // FIXME: what now?
+
+		return info;
+	}
+
+	private void immediateReleasePrepared(uint statementId)
+	{
+		scope(failure) kill();
+
+		if(closed())
+			return;
+
+		//TODO: All low-level commms should be moved into the mysql.protocol package.
+		ubyte[9] packet_buf;
+		ubyte[] packet = packet_buf;
+		packet.setPacketHeader(0/*packet number*/);
+		bumpPacket();
+		packet[4] = CommandType.STMT_CLOSE;
+		statementId.packInto(packet[5..9]);
+		purgeResult();
+		send(packet);
+		// It seems that the server does not find it necessary to send a response
+		// for this command.
 	}
 
 public:
@@ -692,8 +1402,6 @@ public:
 		enforceEx!MYX(capFlags & SvrCapFlags.SECURE_CONNECTION, "This client only supports protocol v4.1 connection");
 		version(Have_vibe_d_core) {} else
 			enforceEx!MYX(socketType != MySQLSocketType.vibed, "Cannot use Vibe.d sockets without -version=Have_vibe_d_core");
-
-		statementsToRelease.conn = this;
 
 		_socketType = socketType;
 		_host = host;
@@ -1035,6 +1743,8 @@ public:
 	
 	This can be used later if this feature was not requested in the client capability flags.
 	
+	Warning: This functionality is currently untested.
+	
 	Params: on = Boolean value to turn the capability on or off.
 	+/
 	void enableMultiStatements(bool on)
@@ -1090,6 +1800,194 @@ public:
 
 	/// Gets the result header's field descriptions.
 	@property FieldDescription[] resultFieldDescriptions() pure { return _rsh.fieldDescriptions; }
+
+	/++
+	Manually register a prepared statement on this connection.
+	
+	Does nothing if statement is already registered on this connection.
+	
+	Calling this is not strictly necessary, as the prepared statement will
+	automatically be registered upon its first use on any `Connection`.
+	This is provided for those who prefer eager registration over lazy
+	for performance reasons.
+	+/
+	void register(Prepared prepared)
+	{
+		registerIfNeeded(prepared.sql);
+	}
+
+	/++
+	Manually release a prepared statement on this connection.
+	
+	This method tells the server that it can dispose of the information it
+	holds about the current prepared statement.
+	
+	Calling this is not strictly necessary. The server considers prepared
+	statements to be per-connection, so they'll go away when the connection
+	closes anyway. This is provided in case direct control is actually needed.
+
+	Due to the internal "queued for release" system, this MAY CAUSE ALLOCATIONS,
+	and therefore CANNOT BE CALLED SAFELY FROM A DESTRUCTOR in case the
+	destructor gets triggered during a GC cycle. See issue
+	$(LINK2 https://github.com/mysql-d/mysql-native/issues/159, #159)
+	for details of this problem.
+	
+	Notes:
+	
+	In actuality, the server might not immediately be told to release the
+	statement (although `isRegistered` will still report `false`).
+	
+	This is because there could be a `mysql.result.ResultRange` with results
+	still pending for retrieval, and the protocol doesn't allow sending commands
+	(such as "release a prepared statement") to the server while data is pending.
+	Therefore, this function may instead queue the statement to be released
+	when it is safe to do so: Either the next time a result set is purged or
+	the next time a command (such as `mysql.commands.query` or
+	`mysql.commands.exec`) is performed (because such commands automatically
+	purge any pending results).
+	
+	This function does NOT auto-purge because, if this is ever called from
+	automatic resource management cleanup (refcounting, RAII, etc), that
+	would create ugly situations where hidden, implicit behavior triggers
+	an unexpected auto-purge.
+	+/
+	void release(Prepared prepared)
+	{
+		release(prepared.sql);
+	}
+	
+	///ditto
+	void release(string sql)
+	{
+		//TODO: Don't queue it if nothing is pending. Just do it immediately.
+		//      But need to be certain both situations are unittested.
+		queueForRelease(sql);
+	}
+	
+	/// Is the given SQL registered on this connection as a prepared statement?
+	bool isRegistered(Prepared prepared)
+	{
+		return isRegistered( prepared.sql );
+	}
+
+	///ditto
+	bool isRegistered(string sql)
+	{
+		return isRegistered( getPreparedServerInfo(sql) );
+	}
+
+	///ditto
+	package bool isRegistered(Nullable!PreparedServerInfo info)
+	{
+		return !info.isNull && !info.queuedForRelease;
+	}
+}
+
+// Test register, release, isRegistered, and auto-register for prepared statements
+debug(MYSQLN_TESTS)
+unittest
+{
+	import mysql.connection;
+	import mysql.test.common;
+	
+	Prepared preparedInsert;
+	Prepared preparedSelect;
+	immutable insertSQL = "INSERT INTO `autoRegistration` VALUES (1), (2)";
+	immutable selectSQL = "SELECT `val` FROM `autoRegistration`";
+	int queryTupleResult;
+	
+	{
+		mixin(scopedCn);
+		
+		// Setup
+		cn.exec("DROP TABLE IF EXISTS `autoRegistration`");
+		cn.exec("CREATE TABLE `autoRegistration` (
+			`val` INTEGER
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+
+		// Initial register
+		preparedInsert = cn.prepare(insertSQL);
+		preparedSelect = cn.prepare(selectSQL);
+		
+		// Test basic register, release, isRegistered
+		assert(cn.isRegistered(preparedInsert));
+		assert(cn.isRegistered(preparedSelect));
+		cn.release(preparedInsert);
+		cn.release(preparedSelect);
+		assert(!cn.isRegistered(preparedInsert));
+		assert(!cn.isRegistered(preparedSelect));
+		
+		// Test manual re-register
+		cn.register(preparedInsert);
+		cn.register(preparedSelect);
+		assert(cn.isRegistered(preparedInsert));
+		assert(cn.isRegistered(preparedSelect));
+		
+		// Test double register
+		cn.register(preparedInsert);
+		cn.register(preparedSelect);
+		assert(cn.isRegistered(preparedInsert));
+		assert(cn.isRegistered(preparedSelect));
+
+		// Test double release
+		cn.release(preparedInsert);
+		cn.release(preparedSelect);
+		assert(!cn.isRegistered(preparedInsert));
+		assert(!cn.isRegistered(preparedSelect));
+		cn.release(preparedInsert);
+		cn.release(preparedSelect);
+		assert(!cn.isRegistered(preparedInsert));
+		assert(!cn.isRegistered(preparedSelect));
+	}
+
+	// Note that at this point, both prepared statements still exist,
+	// but are no longer registered on any connection. In fact, there
+	// are no open connections anymore.
+	
+	// Test auto-register: exec
+	{
+		mixin(scopedCn);
+	
+		assert(!cn.isRegistered(preparedInsert));
+		cn.exec(preparedInsert);
+		assert(cn.isRegistered(preparedInsert));
+	}
+	
+	// Test auto-register: query
+	{
+		mixin(scopedCn);
+	
+		assert(!cn.isRegistered(preparedSelect));
+		cn.query(preparedSelect).each();
+		assert(cn.isRegistered(preparedSelect));
+	}
+	
+	// Test auto-register: queryRow
+	{
+		mixin(scopedCn);
+	
+		assert(!cn.isRegistered(preparedSelect));
+		cn.queryRow(preparedSelect);
+		assert(cn.isRegistered(preparedSelect));
+	}
+	
+	// Test auto-register: queryRowTuple
+	{
+		mixin(scopedCn);
+	
+		assert(!cn.isRegistered(preparedSelect));
+		cn.queryRowTuple(preparedSelect, queryTupleResult);
+		assert(cn.isRegistered(preparedSelect));
+	}
+	
+	// Test auto-register: queryValue
+	{
+		mixin(scopedCn);
+	
+		assert(!cn.isRegistered(preparedSelect));
+		cn.queryValue(preparedSelect);
+		assert(cn.isRegistered(preparedSelect));
+	}
 }
 
 // An attempt to reproduce issue #81: Using mysql-native driver with no default database
@@ -1110,10 +2008,12 @@ unittest
 	cn2.query("SELECT * FROM `"~mysqlEscape(cn._db).text~"`.`issue81`");
 }
 
-// unittest for issue 154, when the socket is disconnected from the mysql server.
+// Regression test for Issue #154:
+// autoPurge can throw an exception if the socket was closed without purging
+//
 // This simulates a disconnect by closing the socket underneath the Connection
 // object itself.
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -1126,7 +2026,7 @@ unittest
 	import mysql.prepared;
 	{
 		auto prep = cn.prepare("SELECT * FROM `dropConnection`");
-		prep.query();
+		cn.query(prep);
 	}
 	// close the socket forcibly
 	cn._socket.close();
@@ -1134,3 +2034,106 @@ unittest
 	cn.exec("DROP TABLE `dropConnection`");
 }
 
+/+
+Test Prepared's ability to be safely refcount-released during a GC cycle
+(ie, `Connection.release` must not allocate GC memory).
+
+While this test does succeed for me, it is currently disabled because it's
+not guaranteed to always work:
+
+Queuing a prepared statement for release currently involves indexing an
+associative array (to access `Connection.preparedLookup[xx].queuedForRelease`).
+Attempts at @nogc-ing `Connection.release` revealed that, according to DMD:
+"indexing an associative array...may cause GC allocation".
+
+Ultimately, to fix this, `Connection.release` must become @nogc, and the
+only ways I see to do that involve algorithmic time complexity that's
+just not worth the questionable benefit of releasing prepared statements
+within a connection's lifetime.
+
+For more info, see issue #159: https://github.com/mysql-d/mysql-native/issues/159
++/
+version(none)
+debug(MYSQLN_TESTS)
+{
+	/// Proof-of-concept ref-counted Prepared wrapper, just for testing,
+	/// not really intended for actual use.
+	private struct RCPreparedPayload
+	{
+		Prepared prepared;
+		Connection conn; // Connection to be released from
+
+		alias prepared this;
+
+		@disable this(this); // not copyable
+		~this()
+		{
+			// There are a couple calls to this dtor where `conn` happens to be null.
+			if(conn is null)
+				return;
+
+			assert(conn.isRegistered(prepared));
+			conn.release(prepared);
+		}
+	}
+	///ditto
+	alias RCPrepared = RefCounted!(RCPreparedPayload, RefCountedAutoInitialize.no);
+	///ditto
+	private RCPrepared rcPrepare(Connection conn, string sql)
+	{
+		import std.algorithm.mutation : move;
+
+		auto prepared = conn.prepare(sql);
+		auto payload = RCPreparedPayload(prepared, conn);
+		return refCounted(move(payload));
+	}
+
+	unittest
+	{
+		import core.memory;
+		mixin(scopedCn);
+		
+		cn.exec("DROP TABLE IF EXISTS `rcPrepared`");
+		cn.exec("CREATE TABLE `rcPrepared` (
+			`val` INTEGER
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+		cn.exec("INSERT INTO `rcPrepared` VALUES (1), (2), (3)");
+
+		// Define this in outer scope to guarantee data is left pending when
+		// RCPrepared's payload is collected. This will guarantee
+		// that Connection will need to queue the release.
+		ResultRange rows;
+
+		void bar()
+		{
+			class Foo { RCPrepared p; }
+			auto foo = new Foo();
+
+			auto rcStmt = cn.rcPrepare("SELECT * FROM `rcPrepared`");
+			foo.p = rcStmt;
+			rows = cn.query(rcStmt);
+
+			/+
+			At this point, there are two references to the prepared statement:
+			One in a `Foo` object (currently bound to `foo`), and one on the stack.
+
+			Returning from this function will destroy the one on the stack,
+			and deterministically reduce the refcount to 1.
+
+			So, right here we set `foo` to null to *keep* the Foo object's
+			reference to the prepared statement, but set adrift the Foo object
+			itself, ready to be destroyed (along with the only remaining
+			prepared statement reference it contains) by the next GC cycle.
+
+			Thus, `RCPreparedPayload.~this` and `Connection.release(Prepared)`
+			will be executed during a GC cycle...and had better not perform
+			any allocations, or else...boom!
+			+/
+			foo = null;
+		}
+
+		bar();
+		assert(cn.hasPending); // Ensure Connection is forced to queue the release.
+		GC.collect(); // `Connection.release(Prepared)` better not be allocating, or boom!
+	}
+}

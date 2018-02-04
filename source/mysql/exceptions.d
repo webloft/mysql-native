@@ -54,8 +54,16 @@ class MYXProtocol: MYX
 }
 
 /++
-Thrown when attempting to use a prepared statement which has already been released.
+Deprecated: No longer thrown by mysql-native.
+
+In previous versions, this had been thrown when attempting to use a
+prepared statement which had already been released.
+
+But as of v2.0.0, prepared statements are connection-independant and
+automatically registered on connections as needed, so this exception
+is no longer used.
 +/
+deprecated("No longer thrown by mysql-native. You can safely remove all handling of this Exception from your code.")
 class MYXNotPrepared: MYX
 {
 	this(string file = __FILE__, size_t line = __LINE__) pure
@@ -69,11 +77,11 @@ Common base class of `MYXResultRecieved` and `MYXNoResultRecieved`.
 
 Thrown when making the wrong choice between `mysql.commands.exec` versus `mysql.commands.query`.
 
-The query functions (`mysql.commands.query`, `mysql.prepared.PreparedImpl.query`,
-`mysql.commands.queryRow`, etc.) are for SQL statements such as SELECT that
+The query functions (`mysql.commands.query`, `mysql.commands.queryRow`, etc.)
+are for SQL statements such as SELECT that
 return results (even if the result set has zero elements.)
 
-The exec functions (`mysql.commands.exec` and `mysql.prepared.PreparedImpl.exec`)
+The `mysql.commands.exec` functions
 are for SQL statements, such as INSERT, that never return result sets,
 but may return `rowsAffected`.
 
@@ -91,9 +99,8 @@ class MYXWrongFunction: MYX
 /++
 Thrown when a result set was returned unexpectedly.
 
-Use the query functions (`mysql.commands.query`,
-`mysql.prepared.PreparedImpl.query`, `mysql.commands.queryRow`, etc.),
-not `mysql.commands.exec` or `mysql.prepared.PreparedImpl.exec` for commands
+Use the query functions (`mysql.commands.query`, `mysql.commands.queryRow`, etc.),
+not `mysql.commands.exec` for commands
 that return result sets (such as SELECT), even if the result set has zero elements.
 +/
 class MYXResultRecieved: MYXWrongFunction
@@ -111,8 +118,8 @@ class MYXResultRecieved: MYXWrongFunction
 /++
 Thrown when the executed query, unexpectedly, did not produce a result set.
 
-Use the `mysql.commands.exec` and `mysql.prepared.PreparedImpl.exec` functions,
-not `mysql.commands.query` (`mysql.commands.query`, `mysql.prepared.PreparedImpl.query`, `mysql.commands.queryRow`, etc.),
+Use the `mysql.commands.exec` functions,
+not `mysql.commands.query`/`mysql.commands.queryRow`/etc.
 for commands that don't produce result sets (such as INSERT).
 +/
 class MYXNoResultRecieved: MYXWrongFunction
@@ -146,6 +153,7 @@ unittest
 {
 	import std.exception;
 	import mysql.commands;
+	import mysql.connection;
 	import mysql.prepared;
 	import mysql.test.common : scopedCn, createCn;
 	mixin(scopedCn);
@@ -165,14 +173,14 @@ unittest
 	assertNotThrown!MYXWrongFunction(cn.queryRowTuple(selectSQL, queryTupleResult));
 	assertNotThrown!MYXWrongFunction(preparedInsert = cn.prepare(insertSQL));
 	assertNotThrown!MYXWrongFunction(preparedSelect = cn.prepare(selectSQL));
-	assertNotThrown!MYXWrongFunction(preparedInsert.exec());
-	assertNotThrown!MYXWrongFunction(preparedSelect.query().each());
-	assertNotThrown!MYXWrongFunction(preparedSelect.queryRowTuple(queryTupleResult));
+	assertNotThrown!MYXWrongFunction(cn.exec(preparedInsert));
+	assertNotThrown!MYXWrongFunction(cn.query(preparedSelect).each());
+	assertNotThrown!MYXWrongFunction(cn.queryRowTuple(preparedSelect, queryTupleResult));
 
 	assertThrown!MYXResultRecieved(cn.exec(selectSQL));
 	assertThrown!MYXNoResultRecieved(cn.query(insertSQL).each());
 	assertThrown!MYXNoResultRecieved(cn.queryRowTuple(insertSQL, queryTupleResult));
-	assertThrown!MYXResultRecieved(preparedSelect.exec());
-	assertThrown!MYXNoResultRecieved(preparedInsert.query().each());
-	assertThrown!MYXNoResultRecieved(preparedInsert.queryRowTuple(queryTupleResult));
+	assertThrown!MYXResultRecieved(cn.exec(preparedSelect));
+	assertThrown!MYXNoResultRecieved(cn.query(preparedInsert).each());
+	assertThrown!MYXNoResultRecieved(cn.queryRowTuple(preparedInsert, queryTupleResult));
 }

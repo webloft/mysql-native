@@ -212,7 +212,7 @@ unittest
 	assert(x.a == -128 && x.b == 65535 && x.c == 42 && x.s == "ABC" && to!string(x.d) == "22.4");
 
 	auto stmt = cn.prepare("select * from basetest limit 1");
-	rs = stmt.query.array;
+	rs = cn.query(stmt).array;
 	assert(rs.length == 1);
 	assert(rs[0][0] == true);
 	assert(rs[0][1] == -128);
@@ -245,7 +245,7 @@ unittest
 	stmt.setArgs(va);
 	foreach (int i; 0..20)
 	{
-		stmt.exec();
+		cn.exec(stmt);
 		stmt.setArg(0, stmt.getArg(0) + 1);
 		stmt.setArg(1, stmt.getArg(1) ~ "x");
 	}
@@ -258,7 +258,7 @@ unittest
 	stmt.setArgs(va);
 	foreach (int i; 0..20)
 	{
-		stmt.exec();
+		cn.exec(stmt);
 
 		va[0] = stmt.getArg(0).get!int + 1;
 		va[1] = stmt.getArg(1).get!string ~ "x";
@@ -277,16 +277,16 @@ unittest
 	stmt.setArgs(va2);
 	a = 0;
 	b = "";
-	stmt.queryRowTuple(a, b);
+	cn.queryRowTuple(stmt, a, b);
 	assert(a == 42 && b == "The quick brown fox");
 
 	stmt = cn.prepare("update basetest set intcol=? where bytecol=-128");
 	int referred = 555;
 	stmt.setArgs(referred);
-	stmt.exec();
+	cn.exec(stmt);
 	referred = 666;
 	stmt.setArgs(referred);
-	stmt.exec();
+	cn.exec(stmt);
 	auto referredBack = cn.queryValue("select intcol from basetest where bytecol = -128");
 	assert(!referredBack.isNull);
 	assert(referredBack.get == 666);
@@ -308,11 +308,11 @@ unittest
 
 	auto func = cn.prepareFunction("hello", 1);
 	func.setArgs(g);
-	auto funcResult = func.queryValue();
+	auto funcResult = cn.queryValue(func);
 	assert(!funcResult.isNull && funcResult.get == "Hello Gorgeous!");
 	g = "Hotlips";
 	func.setArgs(g);
-	funcResult = func.queryValue();
+	funcResult = cn.queryValue(func);
 	assert(!funcResult.isNull && funcResult.get == "Hello Hotlips!");
 
 	// Test execProcedure()
@@ -327,7 +327,7 @@ unittest
 	int m = 2001;
 	auto proc = cn.prepareProcedure("insert2", 2);
 	proc.setArgs(m, g);
-	proc.exec();
+	cn.exec(proc);
 
 	cn.queryRowTuple("select stringcol from basetest where intcol=2001", reply);
 	assert(reply == g);
@@ -335,7 +335,7 @@ unittest
 	g = "inserted string 2";
 	m = 2002;
 	proc.setArgs(m, g);
-	proc.exec();
+	cn.exec(proc);
 
 	cn.queryRowTuple("select stringcol from basetest where intcol=2002", reply);
 	assert(reply == g);
@@ -587,10 +587,10 @@ unittest
 		auto val = 2;
 		stmt.setArg(0, val);
 	}
-	//ds = stmt.query_();
+	//ds = cn.query_(stmt);
 	//assert(ds.length == 1);
 	//assert(ds[0].length == 0);
-	rs = stmt.query().array;
+	rs = cn.query(stmt).array;
 	assert(rs.length == 0);
 
 	// Bind single primitive value
@@ -601,7 +601,7 @@ unittest
 		auto val = 1;
 		stmt.setArg(0, val);
 	}
-	stmt.queryValue();
+	cn.queryValue(stmt);
 
 	// Bind multiple primitive values
 	cn.truncate("manytypes");
@@ -611,16 +611,22 @@ unittest
 		auto val2 = 2;
 		stmt = cn.prepare("SELECT * FROM manytypes WHERE i = ? AND f = ?");
 		stmt.setArgs(val1, val2);
-		row = stmt.queryRow();
+		row = cn.queryRow(stmt);
 	}
 	assert(row[0] == 1);
 	assert(row[1] == 2);
 
 	/+
+	// Commented out because leaving args unspecified is currently unsupported,
+	// and I'm not convinced it should be allowed.
+	
 	// Insert null - params defaults to null
-	cn.truncate("manytypes");
-	cn.prepareCmd("INSERT INTO manytypes (i, f) VALUES (1, ?)" ).exec();
-	cn.assertScalar!int("SELECT i FROM manytypes WHERE f IS NULL", 1);
+	{
+		cn.truncate("manytypes");
+		auto prep = cn.prepare("INSERT INTO manytypes (i, f) VALUES (1, ?)");
+		cn.exec(prep);
+		cn.assertScalar!int("SELECT i FROM manytypes WHERE f IS NULL", 1);
+	}
 	+/
 
 	// Insert null
@@ -630,7 +636,7 @@ unittest
 		//TODO: Using `prepared.setArgs(null);` results in: Param count supplied does not match prepared statement
 		//      Can anything be done about that?
 		prepared.setArg(0, null);
-		prepared.exec();
+		cn.exec(prepared);
 	}
 	cn.assertScalar!int("SELECT i FROM manytypes WHERE f IS NULL", 1);
 
@@ -642,22 +648,20 @@ unittest
 		//TODO: Using `stmt.setArgs(null);` results in: Param count supplied does not match prepared statement
 		//      Can anything be done about that?
 		stmt.setArg(0, null);
-		auto value = stmt.queryValue();
+		auto value = cn.queryValue(stmt);
 		assert(!value.isNull);
 		assert(value.get.get!int == 1);
 	}
 
 	// rebind parameter
-	/+
 	cn.truncate("manytypes");
 	cn.exec("INSERT INTO manytypes (i, f) VALUES (1, NULL)");
-	cmd = cn.prepareCmd("SELECT i FROM manytypes WHERE f <=> ?");
-	cmd.bind(0, 1);
-	tbl = cmd.query_()[0];
+	auto cmd = cn.prepare("SELECT i FROM manytypes WHERE f <=> ?");
+	cmd.setArg(0, 1);
+	auto tbl = cn.query(cmd).array();
 	assert(tbl.length == 0);
-	cmd.bind(0, null);
-	assert(cmd.queryScalar().get!int == 1);
-	+/
+	cmd.setArg(0, null);
+	assert(cn.queryValue(cmd).get.get!int == 1);
 }
 
 
@@ -840,7 +844,8 @@ unittest
 		auto okp = cn.exec(insertNullSql);
 		//assert(okp.affectedRows == 1);
 		assert(okp == 1);
-		okp = cn.prepare(insertNullSql).exec();
+		auto insertNullStmt = cn.prepare(insertNullSql);
+		okp = cn.exec(insertNullStmt);
 		//assert(okp.affectedRows == 1);
 		assert(okp == 1);
 
@@ -854,7 +859,7 @@ unittest
 		cn.exec("TRUNCATE "~tablename);
 
 		inscmd.setArgs([Variant(null)]);
-		okp = inscmd.exec();
+		okp = cn.exec(inscmd);
 		//assert(okp.affectedRows == 1, "value not inserted");
 		assert(okp == 1, "value not inserted");
 
@@ -869,7 +874,7 @@ unittest
 			cn.exec("TRUNCATE "~tablename);
 
 			inscmd.setArg(0, value);
-			okp = inscmd.exec();
+			okp = cn.exec(inscmd);
 			//assert(okp.affectedRows == 1, "value not inserted");
 			assert(okp == 1, "value not inserted");
 
@@ -928,7 +933,7 @@ unittest
 			" WHERE CHARACTER_SET_NAME=?");
 	auto val = "utf8";
 	stmt.setArg(0, val);
-	auto row = stmt.queryRow();
+	auto row = cn.queryRow(stmt);
 	//assert(row.length == 4);
 	assert(row.length == 4);
 	assert(row[0] == "utf8");
@@ -979,7 +984,7 @@ unittest
 
 	{
 		// Test prepared query
-		ResultRange rseq = prepared.query();
+		ResultRange rseq = cn.query(prepared);
 		assert(!rseq.empty);
 		assert(rseq.front.length == 2);
 		assert(rseq.front[0] == 11);
@@ -1025,14 +1030,14 @@ unittest
 		assert(nullableRow.isNull);
 
 		// Test prepared queryRow
-		nullableRow = prepared.queryRow();
+		nullableRow = cn.queryRow(prepared);
 		assert(!nullableRow.isNull);
 		assert(nullableRow[0] == 11);
 		assert(nullableRow[1] == "aaa");
 		// Were all results correctly purged? Can I still issue another command?
 		cn.query(selectSQL).array;
 
-		nullableRow = preparedSelectNoRows.queryRow();
+		nullableRow = cn.queryRow(preparedSelectNoRows);
 		assert(nullableRow.isNull);
 	}
 
@@ -1048,7 +1053,7 @@ unittest
 		cn.query(selectSQL).array;
 
 		// Test prepared queryRowTuple
-		prepared.queryRowTuple(resultI, resultS);
+		cn.queryRowTuple(prepared, resultI, resultS);
 		assert(resultI == 11);
 		assert(resultS == "aaa");
 		// Were all results correctly purged? Can I still issue another command?
@@ -1069,13 +1074,13 @@ unittest
 		assert(result.isNull);
 
 		// Test prepared queryValue
-		result = prepared.queryValue();
+		result = cn.queryValue(prepared);
 		assert(!result.isNull);
 		assert(result.get == 11); // Explicit "get" here works around DMD #17482
 		// Were all results correctly purged? Can I still issue another command?
 		cn.query(selectSQL).array;
 
-		result = preparedSelectNoRows.queryValue();
+		result = cn.queryValue(preparedSelectNoRows);
 		assert(result.isNull);
 	}
 
