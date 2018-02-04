@@ -1456,29 +1456,6 @@ public:
 		return _open == OpenState.notConnected || !_socket.connected;
 	}
 
-	version(Have_vibe_d_core)
-	{
-		/// Used by Vibe.d's ConnectionPool, ignore this.
-		void acquire() { if( _socket ) _socket.acquire(); }
-		///ditto
-		void release() { if( _socket ) _socket.release(); }
-		///ditto
-		bool isOwner() { return _socket ? _socket.isOwner() : false; }
-		///ditto
-		bool amOwner() { return _socket ? _socket.isOwner() : false; }
-	}
-	else
-	{
-		/// Used by Vibe.d's ConnectionPool, ignore this.
-		void acquire() { /+ Do nothing +/ }
-		///ditto
-		void release() { /+ Do nothing +/ }
-		///ditto
-		bool isOwner() { return !!_socket; }
-		///ditto
-		bool amOwner() { return !!_socket; }
-	}
-
 	/++
 	Explicitly close the connection.
 	

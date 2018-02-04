@@ -1,7 +1,7 @@
 v2.0.0 - TBD
 =====================
 
-Connection-independent redesign of Prepared, plus other new features.
+Connection-independent redesign of Prepared, plus other new features and housekeeping.
 See the [migration guide](https://github.com/mysql-d/mysql-native/blob/master/MIGRATING_TO_V2.md).
 
 - **Change:** [#95](https://github.com/mysql-d/mysql-native/issues/95),
@@ -27,6 +27,8 @@ See the [migration guide](https://github.com/mysql-d/mysql-native/blob/master/MI
 		receive `Row[]` instead of a ResultSet.
 	- MYXDataPending: No longer thrown by mysql-native, as of v1.1.4. You can
 		safely remove all MYXDataPending handling from your code.
+- **Removed:** Removed long-outdated Vibe.d `EventedObject` interface from `Connection`.
+	That is: `acquire()`, `release()`, `isOwner()` and `amOwner()` (@Abscissa)
 - **Deprecated:** `MYXNotPrepared`: The new prepared statement design
 	eliminates the need for this exception which is no longer thrown. (@Abscissa)
 - **Docs:** [#146](https://github.com/mysql-d/mysql-native/issues/146):
