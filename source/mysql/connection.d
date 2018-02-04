@@ -1995,12 +1995,25 @@ unittest
 }
 
 /+
-This is disabled because it does not currently work. To fix,
-`Connection.release` must become @nogc.
+Test Prepared's ability to be safely refcount-released during a GC cycle
+(ie, `Connection.release` must not allocate GC memory).
 
-See issue #159: https://github.com/mysql-d/mysql-native/issues/159
+While this test does succeed for me, it is currently disabled because it's
+not guaranteed to always work:
+
+Queuing a prepared statement for release currently involves indexing an
+associative array (to access `Connection.preparedLookup[xx].queuedForRelease`).
+Attempts at @nogc-ing `Connection.release` revealed that, according to DMD:
+"indexing an associative array...may cause GC allocation".
+
+Ultimately, to fix this, `Connection.release` must become @nogc, and the
+only ways I see to do that involve algorithmic time complexity that's
+just not worth the questionable benefit of releasing prepared statements
+within a connection's lifetime.
+
+For more info, see issue #159: https://github.com/mysql-d/mysql-native/issues/159
 +/
-// Test Prepared's ability to be safely refcount-released during a GC cycle.
+version(none)
 debug(MYSQLN_TESTS)
 {
 	/// Proof-of-concept ref-counted Prepared wrapper, just for testing,
