@@ -1229,16 +1229,25 @@ package:
 	
 	/// If already registered, simply returns the cached `PreparedServerInfo`.
 	PreparedServerInfo registerIfNeeded(string sql)
+	out(info)
 	{
-		if(auto pInfo = sql in preparedLookup)
-			return *pInfo;
-
-		auto info = registerIfNeededImpl(sql);
-		preparedLookup[sql] = info;
-		
 		// I'm confident this can't currently happen, but
 		// let's make sure that doesn't change.
 		assert(!info.queuedForRelease);
+	}
+	body
+	{
+		if(auto pInfo = sql in preparedLookup)
+		{
+			// The statement is registered. It may, or may not, be queued
+			// for release. Either way, all we need to do is make sure it's
+			// un-queued and then return.
+			pInfo.queuedForRelease = false;
+			return *pInfo;
+		}
+
+		auto info = registerIfNeededImpl(sql);
+		preparedLookup[sql] = info;
 
 		return info;
 	}
@@ -1394,8 +1403,6 @@ public:
 		enforceEx!MYX(capFlags & SvrCapFlags.SECURE_CONNECTION, "This client only supports protocol v4.1 connection");
 		version(Have_vibe_d_core) {} else
 			enforceEx!MYX(socketType != MySQLSocketType.vibed, "Cannot use Vibe.d sockets without -version=Have_vibe_d_core");
-
-		//statementQueue.conn = this;
 
 		_socketType = socketType;
 		_host = host;
@@ -1897,6 +1904,7 @@ unittest
 			`val` INTEGER
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 
+		// Initial register
 		preparedInsert = cn.prepare(insertSQL);
 		preparedSelect = cn.prepare(selectSQL);
 		
@@ -1907,8 +1915,34 @@ unittest
 		cn.release(preparedSelect);
 		assert(!cn.isRegistered(preparedInsert));
 		assert(!cn.isRegistered(preparedSelect));
+		
+		// Test manual re-register
+		cn.register(preparedInsert);
+		cn.register(preparedSelect);
+		assert(cn.isRegistered(preparedInsert));
+		assert(cn.isRegistered(preparedSelect));
+		
+		// Test double register
+		cn.register(preparedInsert);
+		cn.register(preparedSelect);
+		assert(cn.isRegistered(preparedInsert));
+		assert(cn.isRegistered(preparedSelect));
+
+		// Test double release
+		cn.release(preparedInsert);
+		cn.release(preparedSelect);
+		assert(!cn.isRegistered(preparedInsert));
+		assert(!cn.isRegistered(preparedSelect));
+		cn.release(preparedInsert);
+		cn.release(preparedSelect);
+		assert(!cn.isRegistered(preparedInsert));
+		assert(!cn.isRegistered(preparedSelect));
 	}
 
+	// Note that at this point, both prepared statements still exist,
+	// but are no longer registered on any connection. In fact, there
+	// are no open connections anymore.
+	
 	// Test auto-register: exec
 	{
 		mixin(scopedCn);
