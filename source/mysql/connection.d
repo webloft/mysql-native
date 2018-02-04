@@ -1136,7 +1136,6 @@ package:
 		// any pending data is gone. Any statements to release will be released
 		// on the server automatically.
 		_headersPending = _rowsPending = _binaryPending = false;
-		statementQueue.clear();
 		
 		static if(__traits(compiles, (){ int[int] aa; aa.clear(); }))
 			preparedLookup.clear();
@@ -1162,7 +1161,7 @@ package:
 		try
 		{
 			purgeResult();
-			statementQueue.releaseAll();
+			releaseQueued();
 		}
 		catch(Exception e)
 		{
@@ -1176,6 +1175,45 @@ package:
 	/// Lookup per-connection prepared statement info by SQL
 	PreparedServerInfo[string] preparedLookup;
 	
+	/// Set `queuedForRelease` flag for a statement in `preparedLookup`.
+	/// Does nothing if statement not in `preparedLookup`.
+	private void setQueuedForRelease(string sql, bool value)
+	{
+		if(sql in preparedLookup)
+		{
+			auto info = preparedLookup[sql];
+			info.queuedForRelease = value;
+			preparedLookup[sql] = info;
+		}
+	}
+
+	/// Queue a prepared statement for release.
+	void queueForRelease(string sql)
+	{
+		// If connection's closed, then it IS released.
+		if(closed)
+			return;
+
+		setQueuedForRelease(sql, true);
+	}
+
+	/// Remove a statement from the queue to be released.
+	void unqueueForRelease(string sql)
+	{
+		setQueuedForRelease(sql, false);
+	}
+
+	/// Releases all prepared statements that are queued for release.
+	void releaseQueued()
+	{
+		foreach(sql, info; preparedLookup)
+		if(info.queuedForRelease)
+		{
+			immediateReleasePrepared(info.statementId);
+			preparedLookup.remove(sql);
+		}
+	}
+
 	/// Returns null if not found
 	Nullable!PreparedServerInfo getPreparedServerInfo(const string sql) pure nothrow
 	{
@@ -1239,156 +1277,31 @@ package:
 		}
 		else
 			assert(0); // FIXME: what now?
-		
-		
+
 		return info;
 	}
 
-	private static void immediateReleasePrepared(Connection conn, string sql)
-	{
-		auto statementId = conn.getPreparedId(sql);
-		if(statementId)
-		{
-			immediateReleasePreparedImpl(conn, statementId);
-			conn.preparedLookup.remove(sql);
-		}
-	}
-
-	package static void immediateReleasePreparedImpl(Connection conn, uint statementId)
+	private void immediateReleasePrepared(uint statementId)
 	{
 		if(!statementId)
 			return;
 
-		scope(failure) conn.kill();
+		scope(failure) kill();
 
-		if(conn.closed())
+		if(closed())
 			return;
 
 		//TODO: All low-level commms should be moved into the mysql.protocol package.
 		ubyte[9] packet_buf;
 		ubyte[] packet = packet_buf;
 		packet.setPacketHeader(0/*packet number*/);
-		conn.bumpPacket();
+		bumpPacket();
 		packet[4] = CommandType.STMT_CLOSE;
 		statementId.packInto(packet[5..9]);
-		conn.purgeResult();
-		conn.send(packet);
+		purgeResult();
+		send(packet);
 		// It seems that the server does not find it necessary to send a response
 		// for this command.
-	}
-
-	/++
-	Keeps track of prepared statements queued to be released on the server.
-
-	Prepared statements aren't released immediately, because that
-	involves sending a command to the server even though there might be
-	results pending. (Can't send a command while results are pending.)
-	+/
-	static struct StatementReleaseQueue(alias release)
-	{
-		private Connection conn;
-
-		/// List of sql statements to be released.
-		/// This uses assumeSafeAppend. Do not save copies of it.
-		string[] sqlList;
-		
-		void add(string sql)
-		{
-			setQueuedForRelease(sql, true);
-			sqlList ~= sql;
-		}
-
-		/// Removes a task from the list of statements
-		/// to be released from the server.
-		/// Does nothing if the task isn't on the list.
-		void remove(string sql)
-		{
-			foreach(ref currSql; sqlList)
-			if(sql == currSql)
-			{
-				currSql = null;
-				setQueuedForRelease(sql, false);
-			}
-		}
-
-		/// Releases all queued statemnts, and clears the queue.
-		void releaseAll()
-		{
-			foreach(sql; sqlList)
-			if(sql !is null)
-				release(conn, sql);
-
-			clear();
-		}
-
-		/// Clear all queued statements, and reset for using again.
-		private void clear()
-		{
-			foreach(sql; sqlList)
-				setQueuedForRelease(sql, false);
-
-			if(sqlList.length)
-			{
-				sqlList.length = 0;
-				assumeSafeAppend(sqlList);
-			}
-		}
-
-		/// Set `queuedForRelease` flag for a statement in `preparedLookup`.
-		/// Does nothing if statement not in `preparedLookup`.
-		private void setQueuedForRelease(string sql, bool value)
-		{
-			if(sql in conn.preparedLookup)
-			{
-				auto info = conn.preparedLookup[sql];
-				info.queuedForRelease = value;
-				conn.preparedLookup[sql] = info;
-			}
-		}
-	}
-	StatementReleaseQueue!(immediateReleasePrepared) statementQueue;
-	
-	debug(MYSQLN_TESTS) string[] fakeRelease_result;
-	unittest
-	{
-		debug(MYSQLN_TESTS)
-		{
-			static void fakeRelease(Connection conn, string sql)
-			{
-				conn.fakeRelease_result ~= sql;
-			}
-			
-			mixin(scopedCn);
-			
-			StatementReleaseQueue!(fakeRelease) list;
-			list.conn = cn;
-			assert(list.sqlList == []);
-			assert(cn.fakeRelease_result == []);
-
-			list.add("1");
-			assert(list.sqlList == ["1"]);
-			assert(cn.fakeRelease_result == []);
-
-			list.add("7");
-			assert(list.sqlList == ["1", "7"]);
-			assert(cn.fakeRelease_result == []);
-
-			list.add("9");
-			assert(list.sqlList == ["1", "7", "9"]);
-			assert(cn.fakeRelease_result == []);
-
-			list.remove("5");
-			assert(list.sqlList == ["1", "7", "9"]);
-			assert(cn.fakeRelease_result == []);
-			
-			list.remove("7");
-			assert(list.sqlList == ["1", null, "9"]);
-			assert(cn.fakeRelease_result == []);
-
-			list.releaseAll();
-			assert(list.sqlList == []);
-			assert(cn.fakeRelease_result == ["1", "9"]);
-		}
 	}
 
 public:
@@ -1486,7 +1399,7 @@ public:
 		version(Have_vibe_d_core) {} else
 			enforceEx!MYX(socketType != MySQLSocketType.vibed, "Cannot use Vibe.d sockets without -version=Have_vibe_d_core");
 
-		statementQueue.conn = this;
+		//statementQueue.conn = this;
 
 		_socketType = socketType;
 		_host = host;
@@ -1942,13 +1855,9 @@ public:
 	///ditto
 	void release(string sql)
 	{
-		auto info = getPreparedServerInfo(sql);
-		if(info.isNull || !info.statementId || this.closed())
-			return;
-
 		//TODO: Don't queue it if nothing is pending. Just do it immediately.
 		//      But need to be certain both situations are unittested.
-		statementQueue.add(sql);
+		queueForRelease(sql);
 	}
 	
 	/// Is the given SQL registered on this connection as a prepared statement?
@@ -2101,7 +2010,6 @@ This is disabled because it does not currently work. To fix,
 See issue #159: https://github.com/mysql-d/mysql-native/issues/159
 +/
 // Test Prepared's ability to be safely refcount-released during a GC cycle.
-version(none)
 debug(MYSQLN_TESTS)
 {
 	/// Proof-of-concept ref-counted Prepared wrapper, just for testing,
