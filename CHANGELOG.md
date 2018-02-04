@@ -29,6 +29,9 @@ See the [migration guide](https://github.com/mysql-d/mysql-native/blob/master/MI
 		safely remove all MYXDataPending handling from your code.
 - **Removed:** Removed long-outdated Vibe.d `EventedObject` interface from `Connection`.
 	That is: `acquire()`, `release()`, `isOwner()` and `amOwner()` (@Abscissa)
+- **Removed:** [#96](https://github.com/mysql-d/mysql-native/issues/96):
+	Removed public access to `Connection.getNextRow`, which was
+	intended as internal, and has been documented as such for awhile now. (@Abscissa)
 - **Deprecated:** `MYXNotPrepared`: The new prepared statement design
 	eliminates the need for this exception which is no longer thrown. (@Abscissa)
 - **Docs:** [#146](https://github.com/mysql-d/mysql-native/issues/146):

@@ -902,6 +902,32 @@ package:
 		return okp;
 	}
 
+	/// Get the next `mysql.result.Row` of a pending result set.
+	Row getNextRow()
+	{
+		scope(failure) kill();
+
+		if (_headersPending)
+		{
+			_rsh = ResultSetHeaders(this, _fieldCount);
+			_headersPending = false;
+		}
+		ubyte[] packet;
+		Row rr;
+		packet = getPacket();
+		if (packet.isEOFPacket())
+		{
+			_rowsPending = _binaryPending = false;
+			return rr;
+		}
+		if (_binaryPending)
+			rr = Row(this, packet, _rsh, true);
+		else
+			rr = Row(this, packet, _rsh, false);
+		//rr._valid = true;
+		return rr;
+	}
+
 	ubyte[] buildAuthPacket(ubyte[] token)
 	in
 	{
@@ -1621,39 +1647,6 @@ public:
 	{
 		sendCmd(CommandType.REFRESH, [flags]);
 		return getCmdResponse();
-	}
-
-	/++
-	Internal - Get the next `mysql.result.Row` of a pending result set.
-	
-	This is intended to be internal, you should not use it directly.
-	It will not likely remain public in the future.
-	
-	Returns: A `mysql.result.Row` object.
-	+/
-	Row getNextRow()
-	{
-		scope(failure) kill();
-
-		if (_headersPending)
-		{
-			_rsh = ResultSetHeaders(this, _fieldCount);
-			_headersPending = false;
-		}
-		ubyte[] packet;
-		Row rr;
-		packet = getPacket();
-		if (packet.isEOFPacket())
-		{
-			_rowsPending = _binaryPending = false;
-			return rr;
-		}
-		if (_binaryPending)
-			rr = Row(this, packet, _rsh, true);
-		else
-			rr = Row(this, packet, _rsh, false);
-		//rr._valid = true;
-		return rr;
 	}
 
 	/++
