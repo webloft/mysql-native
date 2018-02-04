@@ -2093,3 +2093,95 @@ unittest
 	// this should still work (it should reconnect).
 	cn.exec("DROP TABLE `dropConnection`");
 }
+
+/+
+This is disabled because it does not currently work. To fix,
+`Connection.release` must become @nogc.
+
+See issue #159: https://github.com/mysql-d/mysql-native/issues/159
++/
+// Test Prepared's ability to be safely refcount-released during a GC cycle.
+version(none)
+debug(MYSQLN_TESTS)
+{
+	/// Proof-of-concept ref-counted Prepared wrapper, just for testing,
+	/// not really intended for actual use.
+	private struct RCPreparedPayload
+	{
+		Prepared prepared;
+		Connection conn; // Connection to be released from
+
+		alias prepared this;
+
+		@disable this(this); // not copyable
+		~this()
+		{
+			// There are a couple calls to this dtor where `conn` happens to be null.
+			if(conn is null)
+				return;
+
+			assert(conn.isRegistered(prepared));
+			conn.release(prepared);
+		}
+	}
+	///ditto
+	alias RCPrepared = RefCounted!(RCPreparedPayload, RefCountedAutoInitialize.no);
+	///ditto
+	private RCPrepared rcPrepare(Connection conn, string sql)
+	{
+		import std.algorithm.mutation : move;
+
+		auto prepared = conn.prepare(sql);
+		auto payload = RCPreparedPayload(prepared, conn);
+		return refCounted(move(payload));
+	}
+
+	unittest
+	{
+		import core.memory;
+		mixin(scopedCn);
+		
+		cn.exec("DROP TABLE IF EXISTS `rcPrepared`");
+		cn.exec("CREATE TABLE `rcPrepared` (
+			`val` INTEGER
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+		cn.exec("INSERT INTO `rcPrepared` VALUES (1), (2), (3)");
+
+		// Define this in outer scope to guarantee data is left pending when
+		// RCPrepared's payload is collected. This will guarantee
+		// that Connection will need to queue the release.
+		ResultRange rows;
+
+		void bar()
+		{
+			class Foo { RCPrepared p; }
+			auto foo = new Foo();
+
+			auto rcStmt = cn.rcPrepare("SELECT * FROM `rcPrepared`");
+			foo.p = rcStmt;
+			rows = cn.query(rcStmt);
+
+			/+
+			At this point, there are two references to the prepared statement:
+			One in a `Foo` object (currently bound to `foo`), and one on the stack.
+
+			Returning from this function will destroy the one on the stack,
+			and deterministically reduce the refcount to 1.
+
+			So, right here we set `foo` to null to *keep* the Foo object's
+			reference to the prepared statement, but set adrift the Foo object
+			itself, ready to be destroyed (along with the only remaining
+			prepared statement reference it contains) by the next GC cycle.
+
+			Thus, `RCPreparedPayload.~this` and `Connection.release(Prepared)`
+			will be executed during a GC cycle...and had better not perform
+			any allocations, or else...boom!
+			+/
+			foo = null;
+		}
+
+		bar();
+		assert(cn.hasPending); // Ensure Connection is forced to queue the release.
+		GC.collect(); // `Connection.release(Prepared)` better not be allocating, or boom!
+	}
+}
