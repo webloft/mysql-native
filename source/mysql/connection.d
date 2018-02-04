@@ -1235,6 +1235,11 @@ package:
 
 		auto info = registerIfNeededImpl(sql);
 		preparedLookup[sql] = info;
+		
+		// I'm confident this can't currently happen, but
+		// let's make sure that doesn't change.
+		assert(!info.queuedForRelease);
+
 		return info;
 	}
 
