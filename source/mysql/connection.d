@@ -1909,6 +1909,12 @@ public:
 	statements to be per-connection, so they'll go away when the connection
 	closes anyway. This is provided in case direct control is actually needed.
 
+	Due to the internal "queued for release" system, this MAY CAUSE ALLOCATIONS,
+	and therefore CANNOT BE CALLED SAFELY FROM A DESTRUCTOR in case the
+	destructor gets triggered during a GC cycle. See issue
+	[#159](https://github.com/mysql-d/mysql-native/issues/159)
+	for details of this problem.
+	
 	Notes:
 	
 	In actuality, the server might not immediately be told to release the
@@ -1922,6 +1928,11 @@ public:
 	when it is safe to do so: Either the next time a result set is purged or
 	the next time a command (such as `query` or `exec`) is performed (because
 	such commands automatically purge any pending results).
+	
+	This function does NOT auto-purge because, if this is ever called from
+	automatic resource management cleanup (refcounting, RAII, etc), that
+	would create ugly situations where hidden, implicit behavior triggers
+	an unexpected auto-purge.
 	+/
 	void release(Prepared prepared)
 	{
@@ -2057,10 +2068,12 @@ unittest
 	cn2.query("SELECT * FROM `"~mysqlEscape(cn._db).text~"`.`issue81`");
 }
 
-// Unittest for issue #154, when the socket is disconnected from the mysql server.
+// Regression test for Issue #154:
+// autoPurge can throw an exception if the socket was closed without purging
+//
 // This simulates a disconnect by closing the socket underneath the Connection
 // object itself.
-debug(MYSQL_INTEGRATION_TESTS)
+debug(MYSQLN_TESTS)
 unittest
 {
 	mixin(scopedCn);
@@ -2073,7 +2086,7 @@ unittest
 	import mysql.prepared;
 	{
 		auto prep = cn.prepare("SELECT * FROM `dropConnection`");
-		prep.query();
+		cn.query(prep);
 	}
 	// close the socket forcibly
 	cn._socket.close();
