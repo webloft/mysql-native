@@ -197,7 +197,8 @@ unittest
 package struct PreparedServerInfo
 {
 	/// Server's identifier for this prepared statement.
-	/// This is never 0 if it's been registered.
+	/// Apperently, this is never 0 if it's been registered,
+	/// although mysql-native no longer relies on that.
 	uint statementId;
 
 	ushort psWarnings;
@@ -1226,13 +1227,6 @@ package:
 		return result;
 	}
 	
-	/// Returns 0 if not found
-	uint getPreparedId(const string sql) pure const nothrow
-	{
-		auto pInfo = sql in preparedLookup;
-		return pInfo? pInfo.statementId : 0;
-	}
-	
 	/// If already registered, simply returns the cached `PreparedServerInfo`.
 	PreparedServerInfo registerIfNeeded(string sql)
 	{
@@ -1283,9 +1277,6 @@ package:
 
 	private void immediateReleasePrepared(uint statementId)
 	{
-		if(!statementId)
-			return;
-
 		scope(failure) kill();
 
 		if(closed())
@@ -1875,7 +1866,7 @@ public:
 	///ditto
 	package bool isRegistered(Nullable!PreparedServerInfo info)
 	{
-		return !info.isNull && info.statementId && !info.queuedForRelease;
+		return !info.isNull && !info.queuedForRelease;
 	}
 }
 
