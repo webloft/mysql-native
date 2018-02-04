@@ -54,8 +54,16 @@ class MYXProtocol: MYX
 }
 
 /++
-Thrown when attempting to use a prepared statement which has already been released.
+Deprecated: No longer thrown by mysql-native.
+
+In previous versions, this had been thrown when attempting to use a
+prepared statement which had already been released.
+
+But as of v2.0.0, prepared statements are connection-independant and
+automatically registered on connections as needed, so this exception
+is no longer used.
 +/
+deprecated("No longer thrown by mysql-native. You can safely remove all handling of this Exception from your code.")
 class MYXNotPrepared: MYX
 {
 	this(string file = __FILE__, size_t line = __LINE__) pure

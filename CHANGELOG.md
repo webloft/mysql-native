@@ -23,6 +23,8 @@ See the [migration guide](https://github.com/mysql-d/mysql-native/blob/master/MI
 		receive `Row[]` instead of a ResultSet.
 	- MYXDataPending: No longer thrown by mysql-native, as of v1.1.4. You can
 		safely remove all MYXDataPending handling from your code.
+- **Deprecated:** `MYXNotPrepared`: The new prepared statement design
+	eliminates the need for this exception which is no longer thrown. (@Abscissa)
 - **Docs:** [#146](https://github.com/mysql-d/mysql-native/issues/146):
 	Make sure all ddox cross-linking is fixed. (@Abscissa)
 - **Internal:**
