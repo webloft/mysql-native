@@ -41,10 +41,9 @@ immutable SvrCapFlags defaultClientFlags =
 Submit an SQL command to the server to be compiled into a prepared statement.
 
 This will automatically register the prepared statement on the provided connection.
-The resulting `Prepared` can then be used freely on *any* `Connection`,
+The resulting `Prepared` can then be used freely on ANY `Connection`,
 as it will automatically be registered upon its first use on other connections.
-Or, pass it to `Connection.register` or `mysql.pool.ConnectionPool.register`
-if you prefer eager registration.
+Or, pass it to `Connection.register` if you prefer eager registration.
 
 Internally, the result of a successful outcome will be a statement handle - an ID -
 for the prepared statement, a count of the parameters required for
@@ -1744,6 +1743,8 @@ public:
 	
 	This can be used later if this feature was not requested in the client capability flags.
 	
+	Warning: This functionality is currently untested.
+	
 	Params: on = Boolean value to turn the capability on or off.
 	+/
 	void enableMultiStatements(bool on)
@@ -1828,22 +1829,22 @@ public:
 	Due to the internal "queued for release" system, this MAY CAUSE ALLOCATIONS,
 	and therefore CANNOT BE CALLED SAFELY FROM A DESTRUCTOR in case the
 	destructor gets triggered during a GC cycle. See issue
-	[#159](https://github.com/mysql-d/mysql-native/issues/159)
+	$(LINK2 https://github.com/mysql-d/mysql-native/issues/159, #159)
 	for details of this problem.
 	
 	Notes:
 	
 	In actuality, the server might not immediately be told to release the
-	statement (although this instance of `Prepared` will still behave as though
-	it's been released, regardless).
+	statement (although `isRegistered` will still report `false`).
 	
 	This is because there could be a `mysql.result.ResultRange` with results
 	still pending for retrieval, and the protocol doesn't allow sending commands
 	(such as "release a prepared statement") to the server while data is pending.
 	Therefore, this function may instead queue the statement to be released
 	when it is safe to do so: Either the next time a result set is purged or
-	the next time a command (such as `query` or `exec`) is performed (because
-	such commands automatically purge any pending results).
+	the next time a command (such as `mysql.commands.query` or
+	`mysql.commands.exec`) is performed (because such commands automatically
+	purge any pending results).
 	
 	This function does NOT auto-purge because, if this is ever called from
 	automatic resource management cleanup (refcounting, RAII, etc), that

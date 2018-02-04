@@ -11,6 +11,10 @@ See the [migration guide](https://github.com/mysql-d/mysql-native/blob/master/MI
 	and fix a few problems. For details, see
 	[ABOUT_PREPARED_V2.md](https://github.com/mysql-d/mysql-native/blob/master/ABOUT_PREPARED_V2.md)
 	(@Abscissa)
+- **Change:** `prepare`, `prepareFunction` and `prepareProcedure` have moved
+	from `mysql.prepared` to `mysql.connection`. This is because they are
+	specific to `Connection`, and the new `Prepared` design (and thus
+	`mysql.prepared`) is completely non-dependent on `Connection`.
 - **New:** [#115](https://github.com/mysql-d/mysql-native/issues/115):
 	Added Prepared.lastInsertID to retrieve last ID inserted by the given
 	prepared statement. (@Abscissa)

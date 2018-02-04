@@ -77,11 +77,11 @@ Common base class of `MYXResultRecieved` and `MYXNoResultRecieved`.
 
 Thrown when making the wrong choice between `mysql.commands.exec` versus `mysql.commands.query`.
 
-The query functions (`mysql.commands.query`, `mysql.prepared.PreparedImpl.query`,
-`mysql.commands.queryRow`, etc.) are for SQL statements such as SELECT that
+The query functions (`mysql.commands.query`, `mysql.commands.queryRow`, etc.)
+are for SQL statements such as SELECT that
 return results (even if the result set has zero elements.)
 
-The exec functions (`mysql.commands.exec` and `mysql.prepared.PreparedImpl.exec`)
+The `mysql.commands.exec` functions
 are for SQL statements, such as INSERT, that never return result sets,
 but may return `rowsAffected`.
 
@@ -99,9 +99,8 @@ class MYXWrongFunction: MYX
 /++
 Thrown when a result set was returned unexpectedly.
 
-Use the query functions (`mysql.commands.query`,
-`mysql.prepared.PreparedImpl.query`, `mysql.commands.queryRow`, etc.),
-not `mysql.commands.exec` or `mysql.prepared.PreparedImpl.exec` for commands
+Use the query functions (`mysql.commands.query`, `mysql.commands.queryRow`, etc.),
+not `mysql.commands.exec` for commands
 that return result sets (such as SELECT), even if the result set has zero elements.
 +/
 class MYXResultRecieved: MYXWrongFunction
@@ -119,8 +118,8 @@ class MYXResultRecieved: MYXWrongFunction
 /++
 Thrown when the executed query, unexpectedly, did not produce a result set.
 
-Use the `mysql.commands.exec` and `mysql.prepared.PreparedImpl.exec` functions,
-not `mysql.commands.query` (`mysql.commands.query`, `mysql.prepared.PreparedImpl.query`, `mysql.commands.queryRow`, etc.),
+Use the `mysql.commands.exec` functions,
+not `mysql.commands.query`/`mysql.commands.queryRow`/etc.
 for commands that don't produce result sets (such as INSERT).
 +/
 class MYXNoResultRecieved: MYXWrongFunction

@@ -40,21 +40,15 @@ alias PSN = ParameterSpecialization;
 /++
 Encapsulation of a prepared statement.
 
-Create this via the function `prepare`. Set your arguments (if any) via
+Create this via the function `mysql.connection.prepare`. Set your arguments (if any) via
 the functions provided, and then run the statement by passing it to
-`exec`/`query`/etc in place of the sql string parameter.
+`mysql.commands.exec`/`mysql.commands.query`/etc in place of the sql string parameter.
 
 Commands that are expected to return a result set - queries - have distinctive
 methods that are enforced. That is it will be an error to call such a method
 with an SQL command that does not produce a result set. So for commands like
-SELECT, use the `PreparedImpl.query` functions. For other commands, like
-INSERT/UPDATE/CREATE/etc, use `PreparedImpl.exec`.
-
-Internally, `Prepared` simply wraps a `PreparedImpl` with
-$(LINK2 https://dlang.org/phobos/std_typecons.html#.RefCounted, `RefCounted`),
-and offers access to the `PreparedImpl` members via "alias this".
-
-See the `PreparedImpl` documentation for the bulk of the `Prepared` interface.
+SELECT, use the `mysql.commands.query` functions. For other commands, like
+INSERT/UPDATE/CREATE/etc, use `mysql.commands.exec`.
 +/
 struct Prepared
 {

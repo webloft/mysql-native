@@ -112,24 +112,24 @@ the statement hasn't been registered on the connection, or has already been
 released (as defined by the statement's SQL string).
 
 - Any functionality to manually release a Prepared from ALL connections
-should be in `ConnectionPool`. I'm undecided whether this would be essential
+should be in `MySQLPool`. I'm undecided whether this would be essential
 for v2.0.0 or could be deferred until v2.1.0 or so.
 
-- Connection and ConnectionPool should also have `.register(Prepared)`
+- Connection and MySQLPool should also have `.register(Prepared)`
 (or is there a better name?) to manually create a prepared statement on a
 connection, for when the user prefers an eager setup of Prepared over lazy
 as-needed setup. If register is NOT called manually, then a prepared statement
 will be still be automatically registered when its actually used.
 
-- When a statement is manually registered on a ConnectionPool (as opposed to
-a Connection), The ConnectionPool will manually register it on all
+- When a statement is manually registered on a MySQLPool (as opposed to
+a Connection), The MySQLPool will manually register it on all
 currenty-open connections. After this point, the statement will automatically
 be registered on all new connections, immediately upon each new connection's
-creation, until `ConnectionPool.release` is called on the statement.
+creation, until `MySQLPool.release` is called on the statement.
 
 - In the future, other functionality could be added:
-`Connection[Pool].releaseAllPrepared`, `Connection[Pool].releaseStalePrepared`,
-`bool Connection[Pool].autoReleaseStalePrepared`, etc.
+`Connection/MySQLPool.releaseAllPrepared`, `Connection/MySQLPool.releaseStalePrepared`,
+`bool Connection/MySQLPool.autoReleaseStalePrepared`, etc.
 
 - To clarify: From the perspective of a Connection, the uniqueness or identity
 of a prepared statement is to be defined by the statement's SQL string,

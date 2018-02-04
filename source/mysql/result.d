@@ -253,8 +253,7 @@ public:
 An $(LINK2 http://dlang.org/phobos/std_range_primitives.html#isInputRange, input range)
 of Row.
 
-This is returned by the `mysql.commands.query` and
-`mysql.prepared.PreparedImpl.query` functions.
+This is returned by the `mysql.commands.query` functions.
 
 The rows are downloaded one-at-a-time, as you iterate the range. This allows
 for low memory usage, and quick access to the results as they are downloaded.
