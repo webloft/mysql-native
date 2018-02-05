@@ -41,7 +41,7 @@ immutable SvrCapFlags defaultClientFlags =
 Submit an SQL command to the server to be compiled into a prepared statement.
 
 This will automatically register the prepared statement on the provided connection.
-The resulting `Prepared` can then be used freely on ANY `Connection`,
+The resulting `mysql.prepared.Prepared` can then be used freely on ANY `Connection`,
 as it will automatically be registered upon its first use on other connections.
 Or, pass it to `Connection.register` if you prefer eager registration.
 
@@ -76,7 +76,7 @@ BackwardCompatPrepared prepareBackwardCompat(Connection conn, string sql)
 /++
 Convenience function to create a prepared statement which calls a stored function.
 
-Be careful that your numArgs is correct. If it isn't, you may get a
+Be careful that your `numArgs` is correct. If it isn't, you may get a
 `mysql.exceptions.MYX` with a very unclear error message.
 
 Throws: `mysql.exceptions.MYX` if the server has a problem.
@@ -120,7 +120,7 @@ Convenience function to create a prepared statement which calls a stored procedu
 OUT parameters are currently not supported. It should generally be
 possible with MySQL to present them as a result set.
 
-Be careful that your numArgs is correct. If it isn't, you may get a
+Be careful that your `numArgs` is correct. If it isn't, you may get a
 `mysql.exceptions.MYX` with a very unclear error message.
 
 Throws: `mysql.exceptions.MYX` if the server has a problem.
@@ -220,7 +220,7 @@ package struct PreparedServerInfo
 }
 
 /++
-This is a wrapper over `Prepared` which is provided ONLY as a
+This is a wrapper over `mysql.prepared.Prepared` which is provided ONLY as a
 temporary aid in upgrading to mysql-native v2.0.0 and its
 new connection-independent model of prepared statements.
 
@@ -234,7 +234,7 @@ To use this temporary compatability layer, change instances of:
 auto stmt = conn.prepare(...);
 ---
 
-to:
+to this:
 
 ---
 auto stmt = conn.prepareBackwardCompat(...);
@@ -254,7 +254,7 @@ stmt.queryRowTuple(outputArgs...)
 stmt.queryValue()
 ---
 
-to:
+to this:
 
 ---
 conn.exec(stmt)
@@ -265,8 +265,8 @@ conn.queryValue(stmt)
 ---
 
 Both of the above syntaxes can be used with a `BackwardCompatPrepared`
-(the `Connection` passed directly to `exec`/`query` will override the
-one embedded associated with your `BackwardCompatPrepared`).
+(the `Connection` passed directly to `mysql.commands.exec`/`mysql.commands.query`
+will override the one embedded associated with your `BackwardCompatPrepared`).
 
 Once all of your code is updated, you can change `prepareBackwardCompat`
 back to `prepare` again, and your upgrade will be complete.
@@ -1485,9 +1485,6 @@ public:
 	/++
 	Explicitly close the connection.
 	
-	This is a two-stage process. First tell the server we are quitting this
-	connection, and then close the socket.
-	
 	Idiomatic use as follows is suggested:
 	------------------
 	{
@@ -1500,6 +1497,9 @@ public:
 	+/
 	void close()
 	{
+		// This is a two-stage process. First tell the server we are quitting this
+		// connection, and then close the socket.
+
 		if (_open == OpenState.authenticated && _socket.connected)
 			quit();
 
@@ -1520,6 +1520,7 @@ public:
 	then was originally used to create the `Connection`, the connection will
 	be closed and then reconnected using the new `mysql.protocol.constants.SvrCapFlags`.
 	+/
+	//TODO: This needs unittested.
 	void reconnect()
 	{
 		reconnect(_clientCapabilities);
@@ -1717,6 +1718,7 @@ public:
 	
 	Params: on = Boolean value to turn the capability on or off.
 	+/
+	//TODO: Need to test this
 	void enableMultiStatements(bool on)
 	{
 		scope(failure) kill();
@@ -1761,7 +1763,7 @@ public:
 	@property bool rowsPending() pure const nothrow { return _rowsPending; }
 
 	/// Gets whether anything (rows, headers or binary) is pending.
-	/// New commands cannot be sent on a conncection while anything is pending
+	/// New commands cannot be sent on a connection while anything is pending
 	/// (the pending data will automatically be purged.)
 	@property bool hasPending() pure const nothrow
 	{
@@ -1796,11 +1798,15 @@ public:
 	statements to be per-connection, so they'll go away when the connection
 	closes anyway. This is provided in case direct control is actually needed.
 
-	Due to the internal "queued for release" system, this MAY CAUSE ALLOCATIONS,
-	and therefore CANNOT BE CALLED SAFELY FROM A DESTRUCTOR in case the
-	destructor gets triggered during a GC cycle. See issue
+	If you choose to use a reference counted struct to call this automatically,
+	be aware that embedding reference counted structs inside garbage collectible
+	heap objects is dangerous and should be avoided, as it can lead to various
+	hidden problems, from crashes to race conditions. (See the discussion at issue
 	$(LINK2 https://github.com/mysql-d/mysql-native/issues/159, #159)
-	for details of this problem.
+	for details.) Instead, it may be better to simply avoid trying to manage
+	their release at all, as it's not usually necessary. Or to periodically
+	release all prepared statements, and simply allow mysql-native to
+	automatically re-register them upon their next use.
 	
 	Notes:
 	
@@ -2008,20 +2014,10 @@ unittest
 Test Prepared's ability to be safely refcount-released during a GC cycle
 (ie, `Connection.release` must not allocate GC memory).
 
-While this test does succeed for me, it is currently disabled because it's
-not guaranteed to always work:
-
-Queuing a prepared statement for release currently involves indexing an
-associative array (to access `Connection.preparedLookup[xx].queuedForRelease`).
-Attempts at @nogc-ing `Connection.release` revealed that, according to DMD:
-"indexing an associative array...may cause GC allocation".
-
-Ultimately, to fix this, `Connection.release` must become @nogc, and the
-only ways I see to do that involve algorithmic time complexity that's
-just not worth the questionable benefit of releasing prepared statements
-within a connection's lifetime.
-
-For more info, see issue #159: https://github.com/mysql-d/mysql-native/issues/159
+Currently disabled because it's not guaranteed to always work
+(and apparently, cannot be made to work?)
+For relevant discussion, see issue #159:
+https://github.com/mysql-d/mysql-native/issues/159
 +/
 version(none)
 debug(MYSQLN_TESTS)

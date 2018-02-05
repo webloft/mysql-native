@@ -69,7 +69,7 @@ package:
 	
 public:
 	/++
-	Constructor. You probably want `mysqln.connection.prepare` instead of this.
+	Constructor. You probably want `mysql.connection.prepare` instead of this.
  	
 	Call `mysqln.connection.prepare` instead of this, unless you are creating
 	your own transport bypassing `mysql.connection.Connection` entirely.
@@ -78,7 +78,7 @@ public:
 
 	Internally, the result of a successful outcome will be a statement handle - an ID -
 	for the prepared statement, a count of the parameters required for
-	excution of the statement, and a count of the columns that will be present
+	execution of the statement, and a count of the columns that will be present
 	in any result set that the command generates.
 
 	The server will then proceed to send prepared statement headers,

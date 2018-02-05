@@ -12,7 +12,7 @@ of the change in
 Unfortunately, these improvements have necessitated some breaking
 changes to the API for the
 [Prepared](http://semitwist.com/mysql-native/mysql/prepared/Prepared.html)
-struct. Any code which uses prepared statements will need a small update.
+struct. Any code which uses prepared statements will need some small updates.
 
 The changes needed in your code are simple syntactical changes. Before,
 in v1.x.x, you would call the exec/query functions on your Prepared
@@ -50,7 +50,7 @@ handles all the details necessary to make this work. If you wish to know
 exactly how this is done, see
 [ABOUT_PREPARED_V2.md](https://github.com/mysql-d/mysql-native/blob/master/ABOUT_PREPARED_V2.md).
 
-Also, note that `prepare()` function has moved from `mysql.prepared` to
+Also, note that the `prepare()` function has moved from `mysql.prepared` to
 `mysql.connection` as it is specific to `mysql.connection.Connection`, and
 this helps keep `mysql.prepared` completely non-dependent on `mysql.connection`.
 

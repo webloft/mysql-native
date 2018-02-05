@@ -126,10 +126,10 @@ package bool execQueryImpl(Connection conn, ExecQueryImplInfo info)
 }
 
 /++
-Execute a one-off SQL command, such as INSERT/UPDATE/CREATE/etc.
+Execute an SQL command or prepared statement, such as INSERT/UPDATE/CREATE/etc.
 
 This method is intended for commands such as which do not produce a result set
-(otherwise, use one of the query functions instead.) If the SQL command does
+(otherwise, use one of the `query` functions instead.) If the SQL command does
 produces a result set (such as SELECT), `mysql.exceptions.MYXResultRecieved`
 will be thrown.
 
@@ -163,13 +163,13 @@ ulong exec(Connection conn, ref Prepared prepared)
 /++
 This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
 
-See `BackwardCompatPrepared` for more info.
+See `mysql.connection.BackwardCompatPrepared` for more info.
 +/
-ulong exec(Connection conn, ref BackwardCompatPrepared prepared)
+ulong exec(Connection conn, ref BackwardCompatPrepared bcp)
 {
-	auto p = prepared.prepared;
+	auto p = bcp.prepared;
 	auto result = exec(conn, p);
-	prepared._prepared = p;
+	bcp._prepared = p;
 	return result;
 }
 
@@ -188,11 +188,11 @@ package ulong execImpl(Connection conn, ExecQueryImplInfo info)
 }
 
 /++
-Execute a one-off SQL SELECT command where you want to deal with the
-result set one row at a time.
+Execute an SQL SELECT command or prepared statement.
 
-If you need random access to the resulting `mysql.result.Row` elements,
-simply call $(LINK2 https://dlang.org/phobos/std_array.html#array, `std.array.array()`)
+This returns an input range of `mysql.result.Row`, so if you need random access
+to the `mysql.result.Row` elements, simply call
+$(LINK2 https://dlang.org/phobos/std_array.html#array, `std.array.array()`)
 on the result.
 
 If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
@@ -240,13 +240,13 @@ ResultRange query(Connection conn, ref Prepared prepared, ColumnSpecialization[]
 /++
 This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
 
-See `BackwardCompatPrepared` for more info.
+See `mysql.connection.BackwardCompatPrepared` for more info.
 +/
-ResultRange query(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+ResultRange query(Connection conn, ref BackwardCompatPrepared bcp, ColumnSpecialization[] csa = null)
 {
-	auto p = prepared.prepared;
+	auto p = bcp.prepared;
 	auto result = query(conn, p, csa);
-	prepared._prepared = p;
+	bcp._prepared = p;
 	return result;
 }
 
@@ -266,7 +266,8 @@ package ResultRange queryImpl(ColumnSpecialization[] csa,
 }
 
 /++
-Execute a one-off SQL SELECT command where you only want the first `mysql.result.Row` (if any).
+Execute an SQL SELECT command or prepared statement where you only want the
+first `mysql.result.Row`, if any.
 
 If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
@@ -308,13 +309,13 @@ Nullable!Row queryRow(Connection conn, ref Prepared prepared, ColumnSpecializati
 /++
 This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
 
-See `BackwardCompatPrepared` for more info.
+See `mysql.connection.BackwardCompatPrepared` for more info.
 +/
-Nullable!Row queryRow(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+Nullable!Row queryRow(Connection conn, ref BackwardCompatPrepared bcp, ColumnSpecialization[] csa = null)
 {
-	auto p = prepared.prepared;
+	auto p = bcp.prepared;
 	auto result = queryRow(conn, p, csa);
-	prepared._prepared = p;
+	bcp._prepared = p;
 	return result;
 }
 
@@ -334,8 +335,8 @@ package Nullable!Row queryRowImpl(ColumnSpecialization[] csa, Connection conn,
 }
 
 /++
-Execute a one-off SQL SELECT command where you only want the first `mysql.result.Row`,
-and place result values into a set of D variables.
+Execute an SQL SELECT command or prepared statement where you only want the
+first `mysql.result.Row`, and place result values into a set of D variables.
 
 This method will throw if any column type is incompatible with the corresponding D variable.
 
@@ -375,13 +376,13 @@ void queryRowTuple(T...)(Connection conn, ref Prepared prepared, ref T args)
 /++
 This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
 
-See `BackwardCompatPrepared` for more info.
+See `mysql.connection.BackwardCompatPrepared` for more info.
 +/
-void queryRowTuple(T...)(Connection conn, ref BackwardCompatPrepared prepared, ref T args)
+void queryRowTuple(T...)(Connection conn, ref BackwardCompatPrepared bcp, ref T args)
 {
-	auto p = prepared.prepared;
+	auto p = bcp.prepared;
 	queryRowTuple(conn, p, args);
-	prepared._prepared = p;
+	bcp._prepared = p;
 }
 
 /// Common implementation for `queryRowTuple` overloads.
@@ -425,7 +426,7 @@ unittest
 }
 
 /++
-Execute a one-off SQL SELECT command and returns a single value,
+Execute an SQL SELECT command or prepared statement and return a single value:
 the first column of the first row received.
 
 If the query did not produce any rows, or the rows it produced have zero columns,
@@ -475,13 +476,13 @@ Nullable!Variant queryValue(Connection conn, ref Prepared prepared, ColumnSpecia
 /++
 This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
 
-See `BackwardCompatPrepared` for more info.
+See `mysql.connection.BackwardCompatPrepared` for more info.
 +/
-Nullable!Variant queryValue(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+Nullable!Variant queryValue(Connection conn, ref BackwardCompatPrepared bcp, ColumnSpecialization[] csa = null)
 {
-	auto p = prepared.prepared;
+	auto p = bcp.prepared;
 	auto result = queryValue(conn, p, csa);
-	prepared._prepared = p;
+	bcp._prepared = p;
 	return result;
 }
 

@@ -5,7 +5,7 @@ client driver for MySQL and MariaDB.
 
 This package attempts to provide composite objects and methods that will
 allow a wide range of common database operations, but be relatively easy to
-use. It has no dependecies on GPL header files or libraries, instead communicating
+use. It has no dependencies on GPL header files or libraries, instead communicating
 directly with the server via the
 [published client/server protocol](http://dev.mysql.com/doc/internals/en/client-server-protocol.html).
 
@@ -40,7 +40,6 @@ The primary interfaces:
 - [exec()](http://semitwist.com/mysql-native/mysql/commands/exec.html): Plain old SQL statement that does NOT return rows (like INSERT/UPDATE/CREATE/etc), returns number of rows affected
 - [query()](http://semitwist.com/mysql-native/mysql/commands/query.html): Execute an SQL statement that DOES return rows (ie, SELECT) and handle the rows one at a time, as an input range.
 - [queryRow()](http://semitwist.com/mysql-native/mysql/commands/queryRow.html): Execute an SQL statement and get the first row.
-- [queryRowTuple()](http://semitwist.com/mysql-native/mysql/commands/queryRowTuple.html): Execute an SQL statement and get the first row into a matching tuple of D variables.
 - [queryValue()](http://semitwist.com/mysql-native/mysql/commands/queryValue.html): Execute an SQL statement and get the first value in the first row.
 - [prepare()](http://semitwist.com/mysql-native/mysql/prepared/prepare.html): Create a prepared statement
 - [Prepared](http://semitwist.com/mysql-native/mysql/prepared/PreparedImpl.html): A prepared statement, optionally pass it to the exec/query function in place of an SQL string.

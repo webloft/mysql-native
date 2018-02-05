@@ -35,10 +35,10 @@ implementation *and* API of prepared statements is in `PreparedImpl`.
 ddox-generated documentation, AND no longer accomplishes anything *anyway*
 now that `PreparedImpl` no longer has any dtor (for various complicated
 reasons relating to struct dtors, the auto-purge feature from v1.1.4 and
-recognizing that manual release of statements from the server isn't stictly
+recognizing that manual release of statements from the server isn't strictly
 necessary, being per-connection after all).
 
-6. Mysql-native is not currently tempated on connection type, it uses a literal
+6. Mysql-native is not currently templated on connection type, it uses a literal
 `Connection` throughout. Unfortunately, this means the `LockedConnection!Connection`
 returned by Vibe.d's connection pools (which `MySQLPool` is based on) gets
 downgraded to a mere `Connection`. Ordinarily this would be fine if it was only
@@ -51,7 +51,7 @@ to correct this just to still compile anyway.
 Why these problems?
 -------------------
 
-I believe, for the most part, these issues are ultimately symptomatic of the
+I think, for the most part, these issues are ultimately symptomatic of the
 Prepared abstraction not accurately matching the reality. Thus, it needs
 high-level rethinking:
 
@@ -59,8 +59,8 @@ Currently, `Prepared` (just like the original functionality in the old
 pre-v1.0.0 `Command` struct) is designed around the low-level reality that
 MySQL ties prepared statements to individual connections. But then, instead
 of treating prepared statements as something owned by a connection (as they
-realistically are), `Prepared` flips this around and *has a* connection,
-instead of the reality that a connection *has a* prepared statement.
+realistically are), `Prepared` flips this around and *has a* connection
+instead.
 
 It's also wrong on a higher level: Conceptually, to a database's human user,
 a prepared statement is...an SQL statement...that just has special "slots"
@@ -68,7 +68,7 @@ for parameters and provides certain benefits. To a user, that's it, nothing
 more. That these particular statements happen to be tied to individual
 connections is merely an implementation detail of the communications protocol. 
 
-I believe these disconnects are the main cause of the above problems with `Prepared`.
+I believe these disconnects are the major cause of the above problems with `Prepared`.
 
 Solution for v2.0.0:
 --------------------
@@ -76,11 +76,11 @@ Solution for v2.0.0:
 Originally, I was thinking about (if anything *at all*) *maybe* offering an
 additional abstraction over top `Prepared` which manages prepared statements
 across multiple connections. But that would only address the first problem
-above, not all of them, and I now believe would liklely create additional
+above, not all of them, and I now believe would likely create additional
 mess and problems due to the original disconnect only being covered up,
-not resoloved.
+not resolved.
 
-So I think a re-design is warranted:
+So I think a redesign is warranted:
 
 - Get rid of `PreparedImpl`. Just have a `Prepared` struct and be done with it.
 In the unlikely case anyone really does need deterministic server-side release
@@ -103,7 +103,7 @@ automatically creates it.
 
 - `struct Prepared` itself shouldn't have any "release" or "register"
 functionality of its own, at all. That should be fully considered a
-charactaristic of the communications channel, not a charactaristic of
+charactaristic of the communications channel, not a characteristic of
 statements.
 
 - `Connection` should have a `.release(Prepared)` to manually release a
@@ -112,8 +112,8 @@ the statement hasn't been registered on the connection, or has already been
 released (as defined by the statement's SQL string).
 
 - Any functionality to manually release a Prepared from ALL connections
-should be in `MySQLPool`. I'm undecided whether this would be essential
-for v2.0.0 or could be deferred until v2.1.0 or so.
+should be in `MySQLPool`. This will not be in v2.0.0 though,
+it is delayed until v2.1.0 or so.
 
 - Connection and MySQLPool should also have `.register(Prepared)`
 (or is there a better name?) to manually create a prepared statement on a
@@ -123,9 +123,10 @@ will be still be automatically registered when its actually used.
 
 - When a statement is manually registered on a MySQLPool (as opposed to
 a Connection), The MySQLPool will manually register it on all
-currenty-open connections. After this point, the statement will automatically
+currently-open connections. After this point, the statement will automatically
 be registered on all new connections, immediately upon each new connection's
-creation, until `MySQLPool.release` is called on the statement.
+creation, until `MySQLPool.release` is called on the statement. This will also
+not be in v2.0.0 though, it is delayed until v2.1.0 or so.
 
 - In the future, other functionality could be added:
 `Connection/MySQLPool.releaseAllPrepared`, `Connection/MySQLPool.releaseStalePrepared`,
@@ -164,7 +165,7 @@ value in that.
 
 It could be argued that mysql-native is, in some ways, higher level than
 that original charter, and the same could be said for some of these changes.
-However, I don't beleive these changes make it too high-level for the vast
+However, I don't think these changes make it too high-level for the vast
 majority of use-cases, and I do believe these higher-level interfaces are
 more than worthwhile and moving in a very good direction for the average D
 database user.
@@ -172,14 +173,14 @@ database user.
 So what of the need for a stripped-down low-level API?
 ------------------------------------------------------
 
-First off all, there's nothing stopping other high-level DB libs from basing
+First of all, there's nothing stopping other high-level DB libs from basing
 their MySQL/MariaDB support on top of mysql-native's higher-level interfaces.
 That's entirely viable, and may even make things easier for the lib developers.
 And mysql-native *does* intend to reduce any overhead it does have and keep
 that to a minimum, even for high-level functionality (IMO, that's part of D's
 own charter, after all).
 
-But aside from that: For the sake of sensible code hygeine and maintainability,
+But aside from that: For the sake of sensible code hygiene and maintainability,
 my intention for the near-term future of this library is to clean up the
 internal design and separate all the low-level communications code out of the
 higher-level interfaces. This will have the additional benefit of opening the

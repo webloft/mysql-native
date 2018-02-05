@@ -22,7 +22,7 @@ It is assumed that insertion of TIMESTAMP values will not be common, since in ge
 such columns are used for recording the time of a row insertion, and are filled in
 automatically by the server. If you want to force a timestamp value in a prepared insert,
 set it into a timestamp struct as an unsigned long in the format YYYYMMDDHHMMSS
-and use that for the approriate parameter. When TIMESTAMPs are retrieved as part of
+and use that for the appropriate parameter. When TIMESTAMPs are retrieved as part of
 a result set it will be as DateTime structs.
 +/
 struct Timestamp
