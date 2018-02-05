@@ -21,7 +21,7 @@ th { text-align: left; font-weight: normal; font-style: italic;}
 tr { border-bottom: 1px dashed #ddd; vertical-align: top; }
 col.caption { min-width: 150pt; }
 
-p.faint { color: #ccc; }
+p.faint { color: #aaa; }
 span.decoration { color: #888; }
 
 #main-nav, #main-contents, #symbolSearchResults, #symbolSearch {
