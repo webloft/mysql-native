@@ -1,4 +1,4 @@
-v2.0.0 - 2018-02-04
+v2.0.0 - TBD
 =====================
 
 Connection-independent redesign of Prepared, plus other new features and housekeeping.

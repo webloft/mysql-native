@@ -220,9 +220,11 @@ package struct PreparedServerInfo
 }
 
 /++
-This is a wrapper over `mysql.prepared.Prepared` which is provided ONLY as a
+This is a wrapper over `mysql.prepared.Prepared`, provided ONLY as a
 temporary aid in upgrading to mysql-native v2.0.0 and its
-new connection-independent model of prepared statements.
+new connection-independent model of prepared statements. See the
+$(LINK2 https://github.com/mysql-d/mysql-native/blob/master/MIGRATING_TO_V2.md, migration guide)
+for more info.
 
 In most cases, this layer shouldn't even be needed. But if you have many
 lines of code making calls to exec/query the same prepared statement,

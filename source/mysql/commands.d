@@ -160,16 +160,12 @@ ulong exec(Connection conn, ref Prepared prepared)
 	return ra;
 }
 
-/++
-This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
-
-See `mysql.connection.BackwardCompatPrepared` for more info.
-+/
-ulong exec(Connection conn, ref BackwardCompatPrepared bcp)
+///ditto
+ulong exec(Connection conn, ref BackwardCompatPrepared prepared)
 {
-	auto p = bcp.prepared;
+	auto p = prepared.prepared;
 	auto result = exec(conn, p);
-	bcp._prepared = p;
+	prepared._prepared = p;
 	return result;
 }
 
@@ -237,16 +233,12 @@ ResultRange query(Connection conn, ref Prepared prepared, ColumnSpecialization[]
 	return result;
 }
 
-/++
-This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
-
-See `mysql.connection.BackwardCompatPrepared` for more info.
-+/
-ResultRange query(Connection conn, ref BackwardCompatPrepared bcp, ColumnSpecialization[] csa = null)
+///ditto
+ResultRange query(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
 {
-	auto p = bcp.prepared;
+	auto p = prepared.prepared;
 	auto result = query(conn, p, csa);
-	bcp._prepared = p;
+	prepared._prepared = p;
 	return result;
 }
 
@@ -306,16 +298,12 @@ Nullable!Row queryRow(Connection conn, ref Prepared prepared, ColumnSpecializati
 	return result;
 }
 
-/++
-This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
-
-See `mysql.connection.BackwardCompatPrepared` for more info.
-+/
-Nullable!Row queryRow(Connection conn, ref BackwardCompatPrepared bcp, ColumnSpecialization[] csa = null)
+///ditto
+Nullable!Row queryRow(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
 {
-	auto p = bcp.prepared;
+	auto p = prepared.prepared;
 	auto result = queryRow(conn, p, csa);
-	bcp._prepared = p;
+	prepared._prepared = p;
 	return result;
 }
 
@@ -373,16 +361,12 @@ void queryRowTuple(T...)(Connection conn, ref Prepared prepared, ref T args)
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 }
 
-/++
-This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
-
-See `mysql.connection.BackwardCompatPrepared` for more info.
-+/
-void queryRowTuple(T...)(Connection conn, ref BackwardCompatPrepared bcp, ref T args)
+///ditto
+void queryRowTuple(T...)(Connection conn, ref BackwardCompatPrepared prepared, ref T args)
 {
-	auto p = bcp.prepared;
+	auto p = prepared.prepared;
 	queryRowTuple(conn, p, args);
-	bcp._prepared = p;
+	prepared._prepared = p;
 }
 
 /// Common implementation for `queryRowTuple` overloads.
@@ -473,16 +457,12 @@ Nullable!Variant queryValue(Connection conn, ref Prepared prepared, ColumnSpecia
 	return result;
 }
 
-/++
-This function is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0.
-
-See `mysql.connection.BackwardCompatPrepared` for more info.
-+/
-Nullable!Variant queryValue(Connection conn, ref BackwardCompatPrepared bcp, ColumnSpecialization[] csa = null)
+///ditto
+Nullable!Variant queryValue(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
 {
-	auto p = bcp.prepared;
+	auto p = prepared.prepared;
 	auto result = queryValue(conn, p, csa);
-	bcp._prepared = p;
+	prepared._prepared = p;
 	return result;
 }
 
