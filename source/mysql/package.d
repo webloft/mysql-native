@@ -88,5 +88,8 @@ debug(MYSQLN_TESTS)
 	public import mysql.test.integration;
 	public import mysql.test.regression;
 
-	void main() {}
+	version(MYSQLN_TESTS_NO_MAIN) {} else
+	{
+		void main() {}
+	}
 }

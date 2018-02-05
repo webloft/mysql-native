@@ -39,3 +39,22 @@ configuration "unittest-vibe" {
 	mainSourceFile "source/mysql/package.d"
 	debugVersions "MYSQLN_TESTS"
 }
+
+// Run with: dub run -c unittest-vibe-ut -- -t
+configuration "unittest-vibe-ut" {
+	targetType "executable"
+	targetPath "bin/"
+	targetName "mysqln-tests-vibe"
+	excludedSourceFiles "source/app.d"
+	sourceFiles "bin/ut.d"
+	importPaths "bin/"
+	buildOptions "unittests"
+
+	dependency "vibe-d:core" version=">=0.7.32 <0.9.0-0" optional=false
+	dependency "unit-threaded" version="~>0.7.38"
+
+	debugVersions "MYSQLN_TESTS"
+	versions "MYSQLN_TESTS_NO_MAIN"
+
+	preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"
+}
