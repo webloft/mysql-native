@@ -1,4 +1,4 @@
-v2.0.0 - TBD
+v2.0.0 - 2018-02-04
 =====================
 
 Connection-independent redesign of Prepared, plus other new features and housekeeping.
@@ -36,11 +36,13 @@ See the [migration guide](https://github.com/mysql-d/mysql-native/blob/master/MI
 	eliminates the need for this exception which is no longer thrown. (@Abscissa)
 - **Docs:** [#146](https://github.com/mysql-d/mysql-native/issues/146):
 	Make sure all ddox cross-linking is fixed. (@Abscissa)
+- **Docs:** [#158](https://github.com/mysql-d/mysql-native/issues/158):
+	Fixed images missing in sidebar, and updated DDOX styles/scripts (@Abscissa)
 - **Internal:**
 	Renamed debug symbol `MYSQL_INTEGRATION_TESTS` to the more accurate
 	`MYSQLN_TESTS`. (@Abscissa)
 
-v1.2.2 - 2017-01-27
+v1.2.2 - 2018-01-27
 =====================
 
 Bugfix
@@ -49,7 +51,7 @@ Bugfix
 	[#155](https://github.com/mysql-d/mysql-native/issues/155):
 	Connection becomes unusable when mysql server closes socket. (@schveiguy)
 
-v1.2.1 - 2017-01-13
+v1.2.1 - 2018-01-13
 =====================
 
 Fix semver mistake by re-adding deleted symbols.
