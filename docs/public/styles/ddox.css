@@ -2,7 +2,7 @@ body {
 	margin: 0;
 	padding: 0;
 	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", "Segoe UI", "Roboto Sans", "Open Sans", sans-serif;
-	font-size: 9.5pt;
+	font-size: 10pt;
 	display: flex;
 }
 
@@ -21,7 +21,8 @@ th { text-align: left; font-weight: normal; font-style: italic;}
 tr { border-bottom: 1px dashed #ddd; vertical-align: top; }
 col.caption { min-width: 150pt; }
 
-p.faint { color: #aaa; }
+p { max-width: 40em; }
+p.faint { color: #999; }
 span.decoration { color: #888; }
 
 #main-nav, #main-contents, #symbolSearchResults, #symbolSearch {
@@ -32,7 +33,7 @@ span.decoration { color: #888; }
 
 #main-nav {
 	vertical-align: top;
-	font-size: 9.5pt;
+	font-size: 10pt;
 	padding: 2em 1.5em;
 	min-width: 16em;
 	background: linear-gradient(#ddd, #fff), linear-gradient(90deg, rgba(255,255,255,1), rgba(255,255,255,0)), linear-gradient(#eee, #fff);
@@ -43,9 +44,15 @@ span.decoration { color: #888; }
 
 #main-contents {
 	vertical-align: top;
-	font-size: 9.5pt;
+	font-size: 10pt;
 	padding: 2em;
 	flex-grow: 1;
+	padding-top: 0em;
+}
+
+#main-contents > h2:first-of-type
+{
+	margin-top: 1em;
 }
 
 #symbolSearchPane form { margin-bottom: 1.5em; }
