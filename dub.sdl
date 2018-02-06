@@ -51,7 +51,7 @@ configuration "unittest-vibe-ut" {
 	buildOptions "unittests"
 
 	dependency "vibe-d:core" version=">=0.7.32 <0.9.0-0" optional=false
-	dependency "unit-threaded" version="~>0.7.38"
+	dependency "unit-threaded" version="==0.7.37"
 
 	debugVersions "MYSQLN_TESTS"
 	versions "MYSQLN_TESTS_NO_MAIN"
