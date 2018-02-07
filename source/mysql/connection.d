@@ -298,16 +298,16 @@ struct BackwardCompatPrepared
 
 	///ditto
 	deprecated("Change 'preparedStmt.query()' to 'conn.query(preparedStmt)'")
-	ResultRange query(ColumnSpecialization[] csa = null)
+	ResultRange query()
 	{
-		return .query(_conn, _prepared, csa);
+		return .query(_conn, _prepared);
 	}
 
 	///ditto
 	deprecated("Change 'preparedStmt.queryRow()' to 'conn.queryRow(preparedStmt)'")
-	Nullable!Row queryRow(ColumnSpecialization[] csa = null)
+	Nullable!Row queryRow()
 	{
-		return .queryRow(_conn, _prepared, csa);
+		return .queryRow(_conn, _prepared);
 	}
 
 	///ditto
@@ -319,9 +319,9 @@ struct BackwardCompatPrepared
 
 	///ditto
 	deprecated("Change 'preparedStmt.queryValue()' to 'conn.queryValue(preparedStmt)'")
-	Nullable!Variant queryValue(ColumnSpecialization[] csa = null)
+	Nullable!Variant queryValue()
 	{
-		return .queryValue(_conn, _prepared, csa);
+		return .queryValue(_conn, _prepared);
 	}
 }
 

@@ -4,6 +4,11 @@ v2.0.0 - TBD
 Connection-independent redesign of Prepared, plus other new features and housekeeping.
 See the [migration guide](https://github.com/mysql-d/mysql-native/blob/master/MIGRATING_TO_V2.md).
 
+Since v2.0.0-rc1:
+- **Change:** The query overloads which take prepared statements no longer
+	support `ColumnSpecialization`.
+
+Since v1.2.2:
 - **Change:** [#95](https://github.com/mysql-d/mysql-native/issues/95),
 	[#97](https://github.com/mysql-d/mysql-native/issues/97),
 	[#157](https://github.com/mysql-d/mysql-native/issues/157):

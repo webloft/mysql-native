@@ -225,19 +225,19 @@ ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null
 }
 
 ///ditto
-ResultRange query(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+ResultRange query(Connection conn, ref Prepared prepared)
 {
 	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
-	auto result = queryImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	auto result = queryImpl(null, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
 }
 
 ///ditto
-ResultRange query(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+ResultRange query(Connection conn, ref BackwardCompatPrepared prepared)
 {
 	auto p = prepared.prepared;
-	auto result = query(conn, p, csa);
+	auto result = query(conn, p);
 	prepared._prepared = p;
 	return result;
 }
@@ -290,19 +290,19 @@ Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = 
 }
 
 ///ditto
-Nullable!Row queryRow(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+Nullable!Row queryRow(Connection conn, ref Prepared prepared)
 {
 	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
-	auto result = queryRowImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	auto result = queryRowImpl(null, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
 }
 
 ///ditto
-Nullable!Row queryRow(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+Nullable!Row queryRow(Connection conn, ref BackwardCompatPrepared prepared)
 {
 	auto p = prepared.prepared;
-	auto result = queryRow(conn, p, csa);
+	auto result = queryRow(conn, p);
 	prepared._prepared = p;
 	return result;
 }
@@ -449,19 +449,19 @@ Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] 
 }
 
 ///ditto
-Nullable!Variant queryValue(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+Nullable!Variant queryValue(Connection conn, ref Prepared prepared)
 {
 	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
-	auto result = queryValueImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	auto result = queryValueImpl(null, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
 }
 
 ///ditto
-Nullable!Variant queryValue(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+Nullable!Variant queryValue(Connection conn, ref BackwardCompatPrepared prepared)
 {
 	auto p = prepared.prepared;
-	auto result = queryValue(conn, p, csa);
+	auto result = queryValue(conn, p);
 	prepared._prepared = p;
 	return result;
 }
