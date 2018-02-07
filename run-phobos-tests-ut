@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# LDC/GDC don't include rdmd, so allow user to specify path to it in $RDMD.
+# Otherwise, use "rdmd".
+#
+# For travis, if "rdmd" doesn't work (ie, LDC/GDC is being tested), then use
+# the copy of rdmd that was downloaded by the 'travis-install-deps.sh' script.
+if [ -z "$RDMD" ]; then
+	RDMD=rdmd
+	if [ "${TRAVIS_OS_NAME}" = 'osx' ]; then
+	    command -v $RDMD >/dev/null 2>&1 || RDMD=local-dmd/dmd2/${TRAVIS_OS_NAME}/bin/rdmd
+	else
+	    command -v $RDMD >/dev/null 2>&1 || RDMD=local-dmd/dmd2/${TRAVIS_OS_NAME}/bin64/rdmd
+	fi
+fi
+
+if [ -z "$DMD" ]; then
+	DMD=dmd
+fi
+
+echo Using:
+echo "  RDMD=$RDMD"
+echo "  DMD=$DMD"
+
+# GDC doesn't autocreate the dir (and git doesn't beleive in empty dirs)
+mkdir -p bin
+
+# Setup unit-threaded
+dub fetch unit-threaded --version=0.7.37 --cache=local
+cd unit-threaded-0.7.37/unit-threaded
+dub build -c gen_ut_main
+dub build -c library
+cd ../..
+unit-threaded-0.7.37/unit-threaded/gen_ut_main -f bin/ut.d
+
+echo Compiling Phobos-socket tests...
+$RDMD --compiler=$DMD --build-only -g -unittest -debug=MYSQLN_TESTS -version=MYSQLN_TESTS_NO_MAIN -version=Have_unit_threaded -ofbin/mysqln-tests-phobos-ut -Isource -Iunit-threaded-0.7.37/unit-threaded/source/ --extra-file=unit-threaded-0.7.37/unit-threaded/libunit-threaded.a --exclude=unit_threaded bin/ut.d && echo Running Phobos-socket tests... && bin/mysqln-tests-phobos-ut -t "$@"
