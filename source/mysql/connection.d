@@ -70,6 +70,12 @@ See `BackwardCompatPrepared` for more info.
 deprecated("This is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0. You should migrate from this to the Prepared-compatible exec/query overloads in 'mysql.commands'.")
 BackwardCompatPrepared prepareBackwardCompat(Connection conn, string sql)
 {
+	return prepareBackwardCompatImpl(conn, sql);
+}
+
+/// Allow mysql-native tests to get around the deprecation message
+package BackwardCompatPrepared prepareBackwardCompatImpl(Connection conn, string sql)
+{
 	return BackwardCompatPrepared(conn, prepare(conn, sql));
 }
 
