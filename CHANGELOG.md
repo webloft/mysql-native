@@ -5,7 +5,7 @@ Connection-independent redesign of Prepared, plus other new features and houseke
 See the [migration guide](https://github.com/mysql-d/mysql-native/blob/master/MIGRATING_TO_V2.md).
 
 Since v2.0.0-rc1:
-- **Change:** The query overloads which take prepared statements no longer
+- **Change:** The query functions which take prepared statements no longer
 	support `ColumnSpecialization`. Use `Prepared.columnSpecials` instead. (@Abscissa)
 - **New:** Added `Prepared.columnSpecials` to get/set the array of `ColumnSpecialization`. (@Abscissa)
 - **Docs:** More CSS improvements. (@Abscissa)
