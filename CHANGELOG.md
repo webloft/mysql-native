@@ -1,3 +1,12 @@
+v2.1.0 - TBD
+=====================
+
+- **New:** [#118](https://github.com/mysql-d/mysql-native/issues/118):
+	Convenience exec/query overloads that do parameterized SQL. (@Abscissa)
+- **Tests:** [#149](https://github.com/mysql-d/mysql-native/issues/149):
+	Optionally support [unit-threaded](https://github.com/atilaneves/unit-threaded)
+	for vibe tests (not used by default) (@Abscissa)
+
 v2.0.0 - TBD
 =====================
 
