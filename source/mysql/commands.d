@@ -174,16 +174,14 @@ ulong exec(Connection conn, string sql)
 {
 	return execImpl(conn, ExecQueryImplInfo(false, sql));
 }
-
 ///ditto
 ulong exec(T...)(Connection conn, string sql, T args)
-	if(T.length > 0 || !is(T[0] == Variant[]))
+	if(T.length > 0 && !is(T[0] == Variant[]))
 {
 	auto prepared = conn.prepare(sql);
 	prepared.setArgs(args);
 	return exec(conn, prepared);
 }
-
 ///ditto
 ulong exec(Connection conn, string sql, Variant[] args)
 {
@@ -200,15 +198,13 @@ ulong exec(Connection conn, ref Prepared prepared)
 	prepared._lastInsertID = conn.lastInsertID;
 	return ra;
 }
-
 ///ditto
 ulong exec(T...)(Connection conn, ref Prepared prepared, T args)
-	if(T.length > 0 || !is(T[0] == Variant[]))
+	if(T.length > 0 && !is(T[0] == Variant[]))
 {
 	prepared.setArgs(args);
 	return exec(conn, prepared);
 }
-
 ///ditto
 ulong exec(Connection conn, ref Prepared prepared, Variant[] args)
 {
@@ -300,6 +296,21 @@ ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null
 {
 	return queryImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
+///ditto
+ResultRange query(T...)(Connection conn, string sql, T args)
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+{
+	auto prepared = conn.prepare(sql);
+	prepared.setArgs(args);
+	return query(conn, prepared);
+}
+///ditto
+ResultRange query(Connection conn, string sql, Variant[] args)
+{
+	auto prepared = conn.prepare(sql);
+	prepared.setArgs(args);
+	return query(conn, prepared);
+}
 
 ///ditto
 ResultRange query(Connection conn, ref Prepared prepared)
@@ -308,6 +319,19 @@ ResultRange query(Connection conn, ref Prepared prepared)
 	auto result = queryImpl(prepared.columnSpecials, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
+}
+///ditto
+ResultRange query(T...)(Connection conn, ref Prepared prepared, T args)
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+{
+	prepared.setArgs(args);
+	return query(conn, prepared);
+}
+///ditto
+ResultRange query(Connection conn, ref Prepared prepared, Variant[] args)
+{
+	prepared.setArgs(args);
+	return query(conn, prepared);
 }
 
 ///ditto
@@ -382,12 +406,27 @@ query resulted in an empty result set.
 Example:
 ---
 auto myInt = 7;
-Row row = myConnection.queryRow("SELECT * FROM `myTable` WHERE `a` = ?", myInt);
+Nullable!Row row = myConnection.queryRow("SELECT * FROM `myTable` WHERE `a` = ?", myInt);
 ---
 +/
 Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {
 	return queryRowImpl(csa, conn, ExecQueryImplInfo(false, sql));
+}
+///ditto
+Nullable!Row queryRow(T...)(Connection conn, string sql, T args)
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+{
+	auto prepared = conn.prepare(sql);
+	prepared.setArgs(args);
+	return queryRow(conn, prepared);
+}
+///ditto
+Nullable!Row queryRow(Connection conn, string sql, Variant[] args)
+{
+	auto prepared = conn.prepare(sql);
+	prepared.setArgs(args);
+	return queryRow(conn, prepared);
 }
 
 ///ditto
@@ -397,6 +436,19 @@ Nullable!Row queryRow(Connection conn, ref Prepared prepared)
 	auto result = queryRowImpl(prepared.columnSpecials, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
+}
+///ditto
+Nullable!Row queryRow(T...)(Connection conn, ref Prepared prepared, T args)
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+{
+	prepared.setArgs(args);
+	return queryRow(conn, prepared);
+}
+///ditto
+Nullable!Row queryRow(Connection conn, ref Prepared prepared, Variant[] args)
+{
+	prepared.setArgs(args);
+	return queryRow(conn, prepared);
 }
 
 ///ditto
@@ -496,7 +548,6 @@ package void queryRowTupleImpl(T...)(Connection conn, ExecQueryImplInfo info, re
 debug(MYSQLN_TESTS)
 unittest
 {
-	import mysql.prepared;
 	import mysql.test.common : scopedCn, createCn;
 	mixin(scopedCn);
 
@@ -572,6 +623,21 @@ Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] 
 {
 	return queryValueImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
+///ditto
+Nullable!Variant queryValue(T...)(Connection conn, string sql, T args)
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+{
+	auto prepared = conn.prepare(sql);
+	prepared.setArgs(args);
+	return queryValue(conn, prepared);
+}
+///ditto
+Nullable!Variant queryValue(Connection conn, string sql, Variant[] args)
+{
+	auto prepared = conn.prepare(sql);
+	prepared.setArgs(args);
+	return queryValue(conn, prepared);
+}
 
 ///ditto
 Nullable!Variant queryValue(Connection conn, ref Prepared prepared)
@@ -580,6 +646,19 @@ Nullable!Variant queryValue(Connection conn, ref Prepared prepared)
 	auto result = queryValueImpl(prepared.columnSpecials, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
+}
+///ditto
+Nullable!Variant queryValue(T...)(Connection conn, ref Prepared prepared, T args)
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+{
+	prepared.setArgs(args);
+	return queryValue(conn, prepared);
+}
+///ditto
+Nullable!Variant queryValue(Connection conn, ref Prepared prepared, Variant[] args)
+{
+	prepared.setArgs(args);
+	return queryValue(conn, prepared);
 }
 
 ///ditto
