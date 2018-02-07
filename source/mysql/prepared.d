@@ -25,6 +25,7 @@ The source should fill the indicated slice with data and arrange for the delegat
 return the length of the data supplied. If that is less than the `chunkSize`
 then the chunk will be assumed to be the last one.
 +/
+//TODO: I'm not sure this is tested
 struct ParameterSpecialization
 {
 	import mysql.protocol.constants;
@@ -60,6 +61,7 @@ package:
 	PreparedStmtHeaders _headers;
 	Variant[] _inParams;
 	ParameterSpecialization[] _psa;
+	ColumnSpecialization[] _columnSpecials;
 	ulong _lastInsertID;
 
 	ExecQueryImplInfo getExecQueryImplInfo(uint statementId)
@@ -325,4 +327,10 @@ public:
 
 	/// Gets the prepared header's param descriptions.
 	@property ParamDescription[] preparedParamDescriptions() pure { return _headers.paramDescriptions; }
+
+	/// Get/set the column specializations.
+	@property ColumnSpecialization[] columnSpecials() pure { return _columnSpecials; }
+
+	///ditto
+	@property void columnSpecials(ColumnSpecialization[] csa) pure { _columnSpecials = csa; }
 }

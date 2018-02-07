@@ -25,7 +25,7 @@ import mysql.protocol.packets;
 import mysql.result;
 
 /++
-A struct to represent specializations of prepared statement parameters.
+A struct to represent specializations of returned statement columns.
 
 If you are executing a query that will include result columns that are large objects,
 it may be expedient to deal with the data as it is received rather than first buffering
@@ -39,6 +39,7 @@ field descriptions returned for a resultset have all of the types TINYTEXT, MEDI
 TEXT, LONGTEXT, TINYBLOB, MEDIUMBLOB, BLOB, and LONGBLOB lumped as type 0xfc
 contrary to what it says in the protocol documentation.
 +/
+//TODO: I'm not sure this is tested
 struct ColumnSpecialization
 {
 	size_t  cIndex;    // parameter number 0 - number of params-1
@@ -209,7 +210,8 @@ Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs.
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 
 Returns: A (possibly empty) `mysql.result.ResultRange`.
 
@@ -225,19 +227,19 @@ ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null
 }
 
 ///ditto
-ResultRange query(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+ResultRange query(Connection conn, ref Prepared prepared)
 {
 	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
-	auto result = queryImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	auto result = queryImpl(prepared.columnSpecials, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
 }
 
 ///ditto
-ResultRange query(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+ResultRange query(Connection conn, ref BackwardCompatPrepared prepared)
 {
 	auto p = prepared.prepared;
-	auto result = query(conn, p, csa);
+	auto result = query(conn, p);
 	prepared._prepared = p;
 	return result;
 }
@@ -279,7 +281,8 @@ Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs.
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 
 Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
@@ -290,19 +293,19 @@ Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = 
 }
 
 ///ditto
-Nullable!Row queryRow(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+Nullable!Row queryRow(Connection conn, ref Prepared prepared)
 {
 	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
-	auto result = queryRowImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	auto result = queryRowImpl(prepared.columnSpecials, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
 }
 
 ///ditto
-Nullable!Row queryRow(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+Nullable!Row queryRow(Connection conn, ref BackwardCompatPrepared prepared)
 {
 	auto p = prepared.prepared;
-	auto result = queryRow(conn, p, csa);
+	auto result = queryRow(conn, p);
 	prepared._prepared = p;
 	return result;
 }
@@ -438,7 +441,8 @@ Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs.
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 
 Returns: `Nullable!Variant`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
@@ -449,19 +453,19 @@ Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] 
 }
 
 ///ditto
-Nullable!Variant queryValue(Connection conn, ref Prepared prepared, ColumnSpecialization[] csa = null)
+Nullable!Variant queryValue(Connection conn, ref Prepared prepared)
 {
 	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
-	auto result = queryValueImpl(csa, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	auto result = queryValueImpl(prepared.columnSpecials, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
 }
 
 ///ditto
-Nullable!Variant queryValue(Connection conn, ref BackwardCompatPrepared prepared, ColumnSpecialization[] csa = null)
+Nullable!Variant queryValue(Connection conn, ref BackwardCompatPrepared prepared)
 {
 	auto p = prepared.prepared;
-	auto result = queryValue(conn, p, csa);
+	auto result = queryValue(conn, p);
 	prepared._prepared = p;
 	return result;
 }
