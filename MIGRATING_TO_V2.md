@@ -70,7 +70,9 @@ your code. See
 Be aware there are downsides to using `prepareBackwardCompat`: You loose
 certain safety and vibe.d forward-compatibility benefits of the newly improved
 `Prepared`, it doesn't support `ColumnSpecialization, `prepareFunction`,
-`prepareProcedure` or the old API for `release`, and you will face an onslaught
-of deprecation messages helpfully reminding you how to update your code. So be
-sure to only use `prepareBackwardCompat` as a temporary measure, and complete
-the migration properly at your earliest convenience.
+`prepareProcedure`,
+the old API for `release`, or any of the exec/query overloads that automatically take
+prepared statement arguments. Also, you will face an onslaught of deprecation
+messages helpfully reminding you how to update your code. So be sure to only
+use `prepareBackwardCompat` as a temporary measure, and complete the migration
+properly at your earliest convenience.

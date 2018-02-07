@@ -134,9 +134,26 @@ This method is intended for commands such as which do not produce a result set
 produces a result set (such as SELECT), `mysql.exceptions.MYXResultRecieved`
 will be thrown.
 
-Only use the `string sql` overload when you are not going to be using the same
+If `args` is supplied, the sql string will automatically be used as a prepared
+statement. Prepared statements are automatically cached by mysql-native,
+so there's no performance penalty for using this multiple times for the
+same statement instead of manually preparing a statement.
+
+If `args` and `prepared` are both provided, `args` will be used,
+and any arguments that are already set in the prepared statement
+will automatically be replaced with `args` (note, just like calling
+`mysql.prepared.Prepared.setArgs`, this will also remove all
+`mysql.prepared.ParameterSpecialization` that may have been applied).
+
+Only use the `string sql` overload that doesn't take `args`
+when you are not going to be using the same
 command repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise, consider using overload that takes a `Prepared`.
+
+If you need to use any `mysql.prepared.ParameterSpecialization`, use
+`mysql.connection.prepare` to manually create a `mysql.prepared.Prepared`,
+and set your parameter specializations using `mysql.prepared.Prepared.setArg`
+or `mysql.prepared.Prepared.setArgs`.
 
 Type_Mappings: $(TYPE_MAPPINGS)
 
@@ -146,10 +163,33 @@ sql = The SQL command to be run.
 prepared = The prepared statement to be run.
 
 Returns: The number of rows affected.
+
+Example:
+---
+auto myInt = 7;
+auto rowsAffected = myConnection.exec("INSERT INTO `myTable` (`a`) VALUES (?)", myInt);
+---
 +/
 ulong exec(Connection conn, string sql)
 {
 	return execImpl(conn, ExecQueryImplInfo(false, sql));
+}
+
+///ditto
+ulong exec(T...)(Connection conn, string sql, T args)
+	if(T.length > 0 || !is(T[0] == Variant[]))
+{
+	auto prepared = conn.prepare(sql);
+	prepared.setArgs(args);
+	return exec(conn, prepared);
+}
+
+///ditto
+ulong exec(Connection conn, string sql, Variant[] args)
+{
+	auto prepared = conn.prepare(sql);
+	prepared.setArgs(args);
+	return exec(conn, prepared);
 }
 
 ///ditto
@@ -159,6 +199,21 @@ ulong exec(Connection conn, ref Prepared prepared)
 	auto ra = execImpl(conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID;
 	return ra;
+}
+
+///ditto
+ulong exec(T...)(Connection conn, ref Prepared prepared, T args)
+	if(T.length > 0 || !is(T[0] == Variant[]))
+{
+	prepared.setArgs(args);
+	return exec(conn, prepared);
+}
+
+///ditto
+ulong exec(Connection conn, ref Prepared prepared, Variant[] args)
+{
+	prepared.setArgs(args);
+	return exec(conn, prepared);
 }
 
 ///ditto
@@ -196,9 +251,26 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Only use the `string sql` overload when you are not going to be using the same
+If `args` is supplied, the sql string will automatically be used as a prepared
+statement. Prepared statements are automatically cached by mysql-native,
+so there's no performance penalty for using this multiple times for the
+same statement instead of manually preparing a statement.
+
+If `args` and `prepared` are both provided, `args` will be used,
+and any arguments that are already set in the prepared statement
+will automatically be replaced with `args` (note, just like calling
+`mysql.prepared.Prepared.setArgs`, this will also remove all
+`mysql.prepared.ParameterSpecialization` that may have been applied).
+
+Only use the `string sql` overload that doesn't take `args`
+when you are not going to be using the same
 command repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise, consider using overload that takes a `Prepared`.
+
+If you need to use any `mysql.prepared.ParameterSpecialization`, use
+`mysql.connection.prepare` to manually create a `mysql.prepared.Prepared`,
+and set your parameter specializations using `mysql.prepared.Prepared.setArg`
+or `mysql.prepared.Prepared.setArgs`.
 
 If there are long data items among the expected result columns you can use
 the `csa` param to specify that they are to be subject to chunked transfer via a
@@ -217,8 +289,11 @@ Returns: A (possibly empty) `mysql.result.ResultRange`.
 
 Example:
 ---
-ResultRange oneAtATime = myConnection.query("SELECT * from myTable");
-Row[]       allAtOnce  = myConnection.query("SELECT * from myTable").array;
+ResultRange oneAtATime = myConnection.query("SELECT * from `myTable`");
+Row[]       allAtOnce  = myConnection.query("SELECT * from `myTable`").array;
+
+auto myInt = 7;
+ResultRange rows = myConnection.query("SELECT * FROM `myTable` WHERE `a` = ?", myInt);
 ---
 +/
 ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null)
@@ -267,9 +342,26 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Only use the `string sql` overload when you are not going to be using the same
+If `args` is supplied, the sql string will automatically be used as a prepared
+statement. Prepared statements are automatically cached by mysql-native,
+so there's no performance penalty for using this multiple times for the
+same statement instead of manually preparing a statement.
+
+If `args` and `prepared` are both provided, `args` will be used,
+and any arguments that are already set in the prepared statement
+will automatically be replaced with `args` (note, just like calling
+`mysql.prepared.Prepared.setArgs`, this will also remove all
+`mysql.prepared.ParameterSpecialization` that may have been applied).
+
+Only use the `string sql` overload that doesn't take `args`
+when you are not going to be using the same
 command repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise, consider using overload that takes a `Prepared`.
+
+If you need to use any `mysql.prepared.ParameterSpecialization`, use
+`mysql.connection.prepare` to manually create a `mysql.prepared.Prepared`,
+and set your parameter specializations using `mysql.prepared.Prepared.setArg`
+or `mysql.prepared.Prepared.setArgs`.
 
 If there are long data items among the expected result columns you can use
 the `csa` param to specify that they are to be subject to chunked transfer via a
@@ -286,6 +378,12 @@ use this with a prepared statement, please use `mysql.prepared.Prepared.columnSp
 
 Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
+
+Example:
+---
+auto myInt = 7;
+Row row = myConnection.queryRow("SELECT * FROM `myTable` WHERE `a` = ?", myInt);
+---
 +/
 Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {
@@ -427,9 +525,26 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Only use the `string sql` overload when you are not going to be using the same
+If `args` is supplied, the sql string will automatically be used as a prepared
+statement. Prepared statements are automatically cached by mysql-native,
+so there's no performance penalty for using this multiple times for the
+same statement instead of manually preparing a statement.
+
+If `args` and `prepared` are both provided, `args` will be used,
+and any arguments that are already set in the prepared statement
+will automatically be replaced with `args` (note, just like calling
+`mysql.prepared.Prepared.setArgs`, this will also remove all
+`mysql.prepared.ParameterSpecialization` that may have been applied).
+
+Only use the `string sql` overload that doesn't take `args`
+when you are not going to be using the same
 command repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise, consider using overload that takes a `Prepared`.
+
+If you need to use any `mysql.prepared.ParameterSpecialization`, use
+`mysql.connection.prepare` to manually create a `mysql.prepared.Prepared`,
+and set your parameter specializations using `mysql.prepared.Prepared.setArg`
+or `mysql.prepared.Prepared.setArgs`.
 
 If there are long data items among the expected result columns you can use
 the `csa` param to specify that they are to be subject to chunked transfer via a
@@ -446,6 +561,12 @@ use this with a prepared statement, please use `mysql.prepared.Prepared.columnSp
 
 Returns: `Nullable!Variant`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
+
+Example:
+---
+auto myInt = 7;
+Nullable!Variant value = myConnection.queryRow("SELECT * FROM `myTable` WHERE `a` = ?", myInt);
+---
 +/
 Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {
