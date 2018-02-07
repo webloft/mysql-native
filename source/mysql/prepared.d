@@ -181,13 +181,13 @@ public:
 	Type_Mappings: $(TYPE_MAPPINGS)
 
 	Params:
-	va = External list of Variants to be used as parameters
+	args = External list of Variants to be used as parameters
 	psnList = Any required specializations
 	+/
-	void setArgs(Variant[] va, ParameterSpecialization[] psnList= null)
+	void setArgs(Variant[] args, ParameterSpecialization[] psnList=null)
 	{
-		enforceEx!MYX(va.length == _numParams, "Param count supplied does not match prepared statement");
-		_inParams[] = va[];
+		enforceEx!MYX(args.length == _numParams, "Param count supplied does not match prepared statement");
+		_inParams[] = args[];
 		if (psnList !is null)
 		{
 			foreach (PSN psn; psnList)
