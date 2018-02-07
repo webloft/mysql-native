@@ -6,7 +6,8 @@ See the [migration guide](https://github.com/mysql-d/mysql-native/blob/master/MI
 
 Since v2.0.0-rc1:
 - **Change:** The query overloads which take prepared statements no longer
-	support `ColumnSpecialization`.
+	support `ColumnSpecialization`. Use `Prepared.columnSpecials` instead.
+- **New:** Added `Prepared.columnSpecials` to get/set the array of `ColumnSpecialization`.
 
 Since v1.2.2:
 - **Change:** [#95](https://github.com/mysql-d/mysql-native/issues/95),

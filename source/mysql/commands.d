@@ -25,7 +25,7 @@ import mysql.protocol.packets;
 import mysql.result;
 
 /++
-A struct to represent specializations of prepared statement parameters.
+A struct to represent specializations of returned statement columns.
 
 If you are executing a query that will include result columns that are large objects,
 it may be expedient to deal with the data as it is received rather than first buffering
@@ -39,6 +39,7 @@ field descriptions returned for a resultset have all of the types TINYTEXT, MEDI
 TEXT, LONGTEXT, TINYBLOB, MEDIUMBLOB, BLOB, and LONGBLOB lumped as type 0xfc
 contrary to what it says in the protocol documentation.
 +/
+//TODO: I'm not sure this is tested
 struct ColumnSpecialization
 {
 	size_t  cIndex;    // parameter number 0 - number of params-1
@@ -228,7 +229,7 @@ ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null
 ResultRange query(Connection conn, ref Prepared prepared)
 {
 	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
-	auto result = queryImpl(null, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	auto result = queryImpl(prepared.columnSpecials, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
 }
@@ -293,7 +294,7 @@ Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = 
 Nullable!Row queryRow(Connection conn, ref Prepared prepared)
 {
 	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
-	auto result = queryRowImpl(null, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	auto result = queryRowImpl(prepared.columnSpecials, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
 }
@@ -452,7 +453,7 @@ Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] 
 Nullable!Variant queryValue(Connection conn, ref Prepared prepared)
 {
 	auto preparedInfo = conn.registerIfNeeded(prepared.sql);
-	auto result = queryValueImpl(null, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
+	auto result = queryValueImpl(prepared.columnSpecials, conn, prepared.getExecQueryImplInfo(preparedInfo.statementId));
 	prepared._lastInsertID = conn.lastInsertID; // Conceivably, this might be needed when multi-statements are enabled.
 	return result;
 }
