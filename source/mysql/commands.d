@@ -210,7 +210,8 @@ Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs.
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 
 Returns: A (possibly empty) `mysql.result.ResultRange`.
 
@@ -280,7 +281,8 @@ Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs.
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 
 Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
@@ -439,7 +441,8 @@ Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs.
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 
 Returns: `Nullable!Variant`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
