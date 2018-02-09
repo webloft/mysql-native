@@ -238,6 +238,45 @@ public:
 			setArg(index, val.get(), psn);
 	}
 
+	@("setArg-typeMods")
+	debug(MYSQLN_TESTS)
+	unittest
+	{
+		import mysql.test.common;
+		mixin(scopedCn);
+
+		// Setup
+		cn.exec("DROP TABLE IF EXISTS `setArg-typeMods`");
+		cn.exec("CREATE TABLE `setArg-typeMods` (
+			`i` INTEGER
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+
+		auto insertSQL = "INSERT INTO `setArg-typeMods` VALUES (?)";
+
+		// Sanity check
+		{
+			int i = 111;
+			assert(cn.exec(insertSQL, i) == 1);
+			auto value = cn.queryValue("SELECT `i` FROM `setArg-typeMods`");
+			assert(!value.isNull);
+			assert(value.get == i);
+		}
+
+		// Test const(int)
+		{
+			const(int) i = 112;
+			//TODO Fix #13
+			//assert(cn.exec(insertSQL, i) == 1);
+		}
+
+		// Test immutable(int)
+		{
+			immutable(int) i = 113;
+			//TODO Fix #13
+			//assert(cn.exec(insertSQL, i) == 1);
+		}
+	}
+
 	/++
 	Bind a tuple of D variables to the parameters of a prepared statement.
 	
