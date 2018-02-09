@@ -24,7 +24,8 @@ import mysql.protocol.extra_types;
 import mysql.protocol.packets;
 import mysql.result;
 
-/++
+/// This feature is not yet implemented. It currently has no effect.
+/+
 A struct to represent specializations of returned statement columns.
 
 If you are executing a query that will include result columns that are large objects,
@@ -39,16 +40,112 @@ field descriptions returned for a resultset have all of the types TINYTEXT, MEDI
 TEXT, LONGTEXT, TINYBLOB, MEDIUMBLOB, BLOB, and LONGBLOB lumped as type 0xfc
 contrary to what it says in the protocol documentation.
 +/
-//TODO: I'm not sure this is tested
 struct ColumnSpecialization
 {
 	size_t  cIndex;    // parameter number 0 - number of params-1
 	ushort  type;
-	uint    chunkSize;
+	uint    chunkSize; /// In bytes
 	void delegate(const(ubyte)[] chunk, bool finished) chunkDelegate;
 }
 ///ditto
 alias CSN = ColumnSpecialization;
+
+@("columnSpecial")
+debug(MYSQLN_TESTS)
+unittest
+{
+	import std.array;
+	import std.range;
+	import mysql.test.common;
+	mixin(scopedCn);
+
+	// Setup
+	cn.exec("DROP TABLE IF EXISTS `columnSpecial`");
+	cn.exec("CREATE TABLE `columnSpecial` (
+		`data` LONGBLOB
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+
+	immutable totalSize = 1000; // Deliberately not a multiple of chunkSize below
+	auto alph = cast(const(ubyte)[]) "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	auto data = alph.cycle.take(totalSize).array;
+	cn.exec("INSERT INTO `columnSpecial` VALUES (\""~(cast(string)data)~"\")");
+
+	// Common stuff
+	int chunkSize;
+	immutable selectSQL = "SELECT `data` FROM `columnSpecial`";
+	ubyte[] received;
+	bool lastValueOfFinished;
+	void receiver(const(ubyte)[] chunk, bool finished)
+	{
+		assert(lastValueOfFinished == false);
+
+		if(finished)
+			assert(chunk.length == chunkSize);
+		else
+			assert(chunk.length < chunkSize); // Not always true in general, but true in this unittest
+
+		received ~= chunk;
+		lastValueOfFinished = finished;
+	}
+
+	// Sanity check
+	auto value = cn.queryValue(selectSQL);
+	assert(!value.isNull);
+	assert(value.get == data);
+
+	// Use ColumnSpecialization with sql string,
+	// and totalSize as a multiple of chunkSize
+	{
+		chunkSize = 100;
+		assert(cast(int)(totalSize / chunkSize) * chunkSize == totalSize);
+		auto columnSpecial = ColumnSpecialization(0, 0xfc, chunkSize, &receiver);
+		
+		received = null;
+		lastValueOfFinished = false;
+		value = cn.queryValue(selectSQL, [columnSpecial]);
+		assert(!value.isNull);
+		assert(value.get == data);
+		//TODO: ColumnSpecialization is not yet implemented
+		//assert(lastValueOfFinished == true);
+		//assert(received == data);
+	}
+	
+	// Use ColumnSpecialization with sql string,
+	// and totalSize as a non-multiple of chunkSize
+	{
+		chunkSize = 64;
+		assert(cast(int)(totalSize / chunkSize) * chunkSize != totalSize);
+		auto columnSpecial = ColumnSpecialization(0, 0xfc, chunkSize, &receiver);
+
+		received = null;
+		lastValueOfFinished = false;
+		value = cn.queryValue(selectSQL, [columnSpecial]);
+		assert(!value.isNull);
+		assert(value.get == data);
+		//TODO: ColumnSpecialization is not yet implemented
+		//assert(lastValueOfFinished == true);
+		//assert(received == data);
+	}
+
+	// Use ColumnSpecialization with prepared statement,
+	// and totalSize as a multiple of chunkSize
+	{
+		chunkSize = 100;
+		assert(cast(int)(totalSize / chunkSize) * chunkSize == totalSize);
+		auto columnSpecial = ColumnSpecialization(0, 0xfc, chunkSize, &receiver);
+
+		received = null;
+		lastValueOfFinished = false;
+		auto prepared = cn.prepare(selectSQL);
+		prepared.columnSpecials = [columnSpecial];
+		value = cn.queryValue(prepared);
+		assert(!value.isNull);
+		assert(value.get == data);
+		//TODO: ColumnSpecialization is not yet implemented
+		//assert(lastValueOfFinished == true);
+		//assert(received == data);
+	}
+}
 
 package struct ExecQueryImplInfo
 {
@@ -268,18 +365,13 @@ If you need to use any `mysql.prepared.ParameterSpecialization`, use
 and set your parameter specializations using `mysql.prepared.Prepared.setArg`
 or `mysql.prepared.Prepared.setArgs`.
 
-If there are long data items among the expected result columns you can use
-the `csa` param to specify that they are to be subject to chunked transfer via a
-delegate.
-
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs. If you need to
-use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
+csa = Not yet implemented.
 
 Returns: A (possibly empty) `mysql.result.ResultRange`.
 
@@ -292,13 +384,22 @@ auto myInt = 7;
 ResultRange rows = myConnection.query("SELECT * FROM `myTable` WHERE `a` = ?", myInt);
 ---
 +/
+/+
+Future text:
+If there are long data items among the expected result columns you can use
+the `csa` param to specify that they are to be subject to chunked transfer via a
+delegate.
+
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
++/
 ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {
 	return queryImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 ///ditto
 ResultRange query(T...)(Connection conn, string sql, T args)
-	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization) && !is(T[0] == ColumnSpecialization[]))
 {
 	auto prepared = conn.prepare(sql);
 	prepared.setArgs(args);
@@ -322,7 +423,7 @@ ResultRange query(Connection conn, ref Prepared prepared)
 }
 ///ditto
 ResultRange query(T...)(Connection conn, ref Prepared prepared, T args)
-	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization) && !is(T[0] == ColumnSpecialization[]))
 {
 	prepared.setArgs(args);
 	return query(conn, prepared);
@@ -351,7 +452,7 @@ package ResultRange queryImpl(ColumnSpecialization[] csa,
 	enforceEx!MYXNoResultRecieved(execQueryImpl(conn, info, ra));
 
 	conn._rsh = ResultSetHeaders(conn, conn._fieldCount);
-	if (csa !is null)
+	if(csa !is null)
 		conn._rsh.addSpecializations(csa);
 
 	conn._headersPending = false;
@@ -387,18 +488,13 @@ If you need to use any `mysql.prepared.ParameterSpecialization`, use
 and set your parameter specializations using `mysql.prepared.Prepared.setArg`
 or `mysql.prepared.Prepared.setArgs`.
 
-If there are long data items among the expected result columns you can use
-the `csa` param to specify that they are to be subject to chunked transfer via a
-delegate.
-
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs. If you need to
-use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
+csa = Not yet implemented.
 
 Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
@@ -409,13 +505,22 @@ auto myInt = 7;
 Nullable!Row row = myConnection.queryRow("SELECT * FROM `myTable` WHERE `a` = ?", myInt);
 ---
 +/
+/+
+Future text:
+If there are long data items among the expected result columns you can use
+the `csa` param to specify that they are to be subject to chunked transfer via a
+delegate.
+
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
++/
 Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {
 	return queryRowImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 ///ditto
 Nullable!Row queryRow(T...)(Connection conn, string sql, T args)
-	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization) && !is(T[0] == ColumnSpecialization[]))
 {
 	auto prepared = conn.prepare(sql);
 	prepared.setArgs(args);
@@ -439,7 +544,7 @@ Nullable!Row queryRow(Connection conn, ref Prepared prepared)
 }
 ///ditto
 Nullable!Row queryRow(T...)(Connection conn, ref Prepared prepared, T args)
-	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization) && !is(T[0] == ColumnSpecialization[]))
 {
 	prepared.setArgs(args);
 	return queryRow(conn, prepared);
@@ -598,18 +703,13 @@ If you need to use any `mysql.prepared.ParameterSpecialization`, use
 and set your parameter specializations using `mysql.prepared.Prepared.setArg`
 or `mysql.prepared.Prepared.setArgs`.
 
-If there are long data items among the expected result columns you can use
-the `csa` param to specify that they are to be subject to chunked transfer via a
-delegate.
-
 Type_Mappings: $(TYPE_MAPPINGS)
 
 Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs. If you need to
-use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
+csa = Not yet implemented.
 
 Returns: `Nullable!Variant`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
@@ -620,13 +720,22 @@ auto myInt = 7;
 Nullable!Variant value = myConnection.queryRow("SELECT * FROM `myTable` WHERE `a` = ?", myInt);
 ---
 +/
+/+
+Future text:
+If there are long data items among the expected result columns you can use
+the `csa` param to specify that they are to be subject to chunked transfer via a
+delegate.
+
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
++/
 Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {
 	return queryValueImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 ///ditto
 Nullable!Variant queryValue(T...)(Connection conn, string sql, T args)
-	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization) && !is(T[0] == ColumnSpecialization[]))
 {
 	auto prepared = conn.prepare(sql);
 	prepared.setArgs(args);
@@ -650,7 +759,7 @@ Nullable!Variant queryValue(Connection conn, ref Prepared prepared)
 }
 ///ditto
 Nullable!Variant queryValue(T...)(Connection conn, ref Prepared prepared, T args)
-	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization[]))
+	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization) && !is(T[0] == ColumnSpecialization[]))
 {
 	prepared.setArgs(args);
 	return queryValue(conn, prepared);

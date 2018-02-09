@@ -3,9 +3,13 @@ v2.1.0 - TBD
 
 - **New:** [#118](https://github.com/mysql-d/mysql-native/issues/118):
 	Convenience exec/query overloads that do parameterized SQL. (@Abscissa)
+- **Fixed:** ParameterSpecialization chunked transfer fails unless
+	the total size is a multiple of the chunk size. (@Abscissa)
 - **Tests:** [#149](https://github.com/mysql-d/mysql-native/issues/149):
 	Optionally support [unit-threaded](https://github.com/atilaneves/unit-threaded)
 	for vibe tests (not used by default) (@Abscissa)
+- **Tests:** [#161](https://github.com/mysql-d/mysql-native/issues/161):
+	Added tests for ParameterSpecialization (ie, chunked transfer). (@Abscissa)
 
 v2.0.0 - TBD
 =====================

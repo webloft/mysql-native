@@ -22,21 +22,115 @@ If you need to send large objects to the database it might be convenient to
 send them in pieces. The `chunkSize` and `chunkDelegate` variables allow for this.
 If both are provided then the corresponding column will be populated by calling the delegate repeatedly.
 The source should fill the indicated slice with data and arrange for the delegate to
-return the length of the data supplied. If that is less than the `chunkSize`
+return the length of the data supplied (in bytes). If that is less than the `chunkSize`
 then the chunk will be assumed to be the last one.
 +/
-//TODO: I'm not sure this is tested
 struct ParameterSpecialization
 {
 	import mysql.protocol.constants;
 	
 	size_t pIndex;    //parameter number 0 - number of params-1
 	SQLType type = SQLType.INFER_FROM_D_TYPE;
-	uint chunkSize;
+	uint chunkSize; /// In bytes
 	uint delegate(ubyte[]) chunkDelegate;
 }
 ///ditto
 alias PSN = ParameterSpecialization;
+
+@("paramSpecial")
+debug(MYSQLN_TESTS)
+unittest
+{
+	import std.array;
+	import std.range;
+	import mysql.connection;
+	import mysql.test.common;
+	mixin(scopedCn);
+
+	// Setup
+	cn.exec("DROP TABLE IF EXISTS `paramSpecial`");
+	cn.exec("CREATE TABLE `paramSpecial` (
+		`data` LONGBLOB
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+
+	immutable totalSize = 1000; // Deliberately not a multiple of chunkSize below
+	auto alph = cast(const(ubyte)[]) "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	auto data = alph.cycle.take(totalSize).array;
+
+	int chunkSize;
+	const(ubyte)[] dataToSend;
+	bool finished;
+	uint sender(ubyte[] chunk)
+	{
+		assert(!finished);
+		assert(chunk.length == chunkSize);
+
+		if(dataToSend.length < chunkSize)
+		{
+			auto actualSize = cast(uint) dataToSend.length;
+			chunk[0..actualSize] = dataToSend[];
+			finished = true;
+			dataToSend.length = 0;
+			return actualSize;
+		}
+		else
+		{
+			chunk[] = dataToSend[0..chunkSize];
+			dataToSend = dataToSend[chunkSize..$];
+			return chunkSize;
+		}
+	}
+
+	immutable selectSQL = "SELECT `data` FROM `paramSpecial`";
+
+	// Sanity check
+	cn.exec("INSERT INTO `paramSpecial` VALUES (\""~(cast(string)data)~"\")");
+	auto value = cn.queryValue(selectSQL);
+	assert(!value.isNull);
+	assert(value.get == data);
+
+	{
+		// Clear table
+		cn.exec("DELETE FROM `paramSpecial`");
+		value = cn.queryValue(selectSQL); // Ensure deleted
+		assert(value.isNull);
+
+		// Test: totalSize as a multiple of chunkSize
+		chunkSize = 100;
+		assert(cast(int)(totalSize / chunkSize) * chunkSize == totalSize);
+		auto paramSpecial = ParameterSpecialization(0, SQLType.INFER_FROM_D_TYPE, chunkSize, &sender);
+
+		finished = false;
+		dataToSend = data;
+		auto prepared = cn.prepare("INSERT INTO `paramSpecial` VALUES (?)");
+		prepared.setArg(0, cast(ubyte[])[], paramSpecial);
+		assert(cn.exec(prepared) == 1);
+		value = cn.queryValue(selectSQL);
+		assert(!value.isNull);
+		assert(value.get == data);
+	}
+
+	{
+		// Clear table
+		cn.exec("DELETE FROM `paramSpecial`");
+		value = cn.queryValue(selectSQL); // Ensure deleted
+		assert(value.isNull);
+
+		// Test: totalSize as a non-multiple of chunkSize
+		chunkSize = 64;
+		assert(cast(int)(totalSize / chunkSize) * chunkSize != totalSize);
+		auto paramSpecial = ParameterSpecialization(0, SQLType.INFER_FROM_D_TYPE, chunkSize, &sender);
+
+		finished = false;
+		dataToSend = data;
+		auto prepared = cn.prepare("INSERT INTO `paramSpecial` VALUES (?)");
+		prepared.setArg(0, cast(ubyte[])[], paramSpecial);
+		assert(cn.exec(prepared) == 1);
+		value = cn.queryValue(selectSQL);
+		assert(!value.isNull);
+		assert(value.get == data);
+	}
+}
 
 /++
 Encapsulation of a prepared statement.
@@ -109,6 +203,10 @@ public:
 
 	The value can be null.
 
+	Parameter specializations (ie, for chunked transfer) can be added if required.
+	If you wish to use chunked transfer (via `psn`), note that you must supply
+	a dummy value for `val` that's typed `ubyte[]`. For example: `cast(ubyte[])[]`.
+	
 	Type_Mappings: $(TYPE_MAPPINGS)
 
 	Params: index = The zero based index
@@ -166,7 +264,11 @@ public:
 	You can use this method to bind a set of variables in Variant form to
 	the parameters of a prepared statement.
 	
-	Parameter specializations can be added if required. This method could be
+	Parameter specializations (ie, for chunked transfer) can be added if required.
+	If you wish to use chunked transfer (via `psn`), note that you must supply
+	a dummy value for `val` that's typed `ubyte[]`. For example: `cast(ubyte[])[]`.
+
+	This method could be
 	used to add records from a data entry form along the lines of
 	------------
 	auto stmt = conn.prepare("INSERT INTO `table42` VALUES(?, ?, ?)");
@@ -176,7 +278,7 @@ public:
 	{
 	    dr.get();
 	    stmt.setArgs(dr("Name"), dr("City"), dr("Whatever"));
-	    ulong rowsAffected = stmt.exec();
+	    ulong rowsAffected = conn.exec(stmt);
 	} while(!dr.done);
 	------------
 
