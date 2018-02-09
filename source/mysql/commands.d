@@ -24,7 +24,8 @@ import mysql.protocol.extra_types;
 import mysql.protocol.packets;
 import mysql.result;
 
-/++
+/// This feature is not yet implemented. It currently has no effect.
+/+
 A struct to represent specializations of returned statement columns.
 
 If you are executing a query that will include result columns that are large objects,
@@ -210,8 +211,7 @@ Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs. If you need to
-use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
+csa = Not yet implemented.
 
 Returns: A (possibly empty) `mysql.result.ResultRange`.
 
@@ -220,6 +220,15 @@ Example:
 ResultRange oneAtATime = myConnection.query("SELECT * from myTable");
 Row[]       allAtOnce  = myConnection.query("SELECT * from myTable").array;
 ---
++/
+/+
+Future text:
+If there are long data items among the expected result columns you can use
+the `csa` param to specify that they are to be subject to chunked transfer via a
+delegate.
+
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 +/
 ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {
@@ -281,11 +290,19 @@ Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs. If you need to
-use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
+csa = Not yet implemented.
 
 Returns: `Nullable!(mysql.result.Row)`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
++/
+/+
+Future text:
+If there are long data items among the expected result columns you can use
+the `csa` param to specify that they are to be subject to chunked transfer via a
+delegate.
+
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 +/
 Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {
@@ -441,11 +458,19 @@ Params:
 conn = An open `mysql.connection.Connection` to the database.
 sql = The SQL command to be run.
 prepared = The prepared statement to be run.
-csa = An optional array of `ColumnSpecialization` structs. If you need to
-use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
+csa = Not yet implemented.
 
 Returns: `Nullable!Variant`: This will be null (check via `Nullable.isNull`) if the
 query resulted in an empty result set.
++/
+/+
+Future text:
+If there are long data items among the expected result columns you can use
+the `csa` param to specify that they are to be subject to chunked transfer via a
+delegate.
+
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 +/
 Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {

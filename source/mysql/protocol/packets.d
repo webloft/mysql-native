@@ -351,12 +351,16 @@ public:
 	/++
 	Add specialization information to one or more field descriptions.
 	
+	Currently, no specializations are implemented yet.
+
+	Params:
+		csa = An array of ColumnSpecialization structs
+	+/
+	/+
+	Future text:
 	Currently the only specialization supported is the capability to deal with long data
 	e.g. BLOB or TEXT data in chunks by stipulating a chunkSize and a delegate to sink
 	the data.
-	
-	Params:
-		csa = An array of ColumnSpecialization structs
 	+/
 	void addSpecializations(ColumnSpecialization[] csa)
 	{

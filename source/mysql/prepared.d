@@ -22,7 +22,7 @@ If you need to send large objects to the database it might be convenient to
 send them in pieces. The `chunkSize` and `chunkDelegate` variables allow for this.
 If both are provided then the corresponding column will be populated by calling the delegate repeatedly.
 The source should fill the indicated slice with data and arrange for the delegate to
-return the length of the data supplied. If that is less than the `chunkSize`
+return the length of the data supplied (in bytes). If that is less than the `chunkSize`
 then the chunk will be assumed to be the last one.
 +/
 //TODO: I'm not sure this is tested
@@ -32,7 +32,7 @@ struct ParameterSpecialization
 	
 	size_t pIndex;    //parameter number 0 - number of params-1
 	SQLType type = SQLType.INFER_FROM_D_TYPE;
-	uint chunkSize;
+	uint chunkSize; /// In bytes
 	uint delegate(ubyte[]) chunkDelegate;
 }
 ///ditto
@@ -109,6 +109,10 @@ public:
 
 	The value can be null.
 
+	Parameter specializations (ie, for chunked transfer) can be added if required.
+	If you wish to use chunked transfer (via `psn`), note that you must supply
+	a dummy value for `val` that's typed `ubyte[]`. For example: `cast(ubyte[])[]`.
+	
 	Type_Mappings: $(TYPE_MAPPINGS)
 
 	Params: index = The zero based index
@@ -166,7 +170,11 @@ public:
 	You can use this method to bind a set of variables in Variant form to
 	the parameters of a prepared statement.
 	
-	Parameter specializations can be added if required. This method could be
+	Parameter specializations (ie, for chunked transfer) can be added if required.
+	If you wish to use chunked transfer (via `psn`), note that you must supply
+	a dummy value for `val` that's typed `ubyte[]`. For example: `cast(ubyte[])[]`.
+
+	This method could be
 	used to add records from a data entry form along the lines of
 	------------
 	auto stmt = conn.prepare("INSERT INTO `table42` VALUES(?, ?, ?)");
@@ -176,7 +184,7 @@ public:
 	{
 	    dr.get();
 	    stmt.setArgs(dr("Name"), dr("City"), dr("Whatever"));
-	    ulong rowsAffected = stmt.exec();
+	    ulong rowsAffected = conn.exec(stmt);
 	} while(!dr.done);
 	------------
 
