@@ -98,26 +98,25 @@ Prepared prepareFunction(Connection conn, string name, int numArgs)
 }
 
 ///
+@("prepareFunction")
+debug(MYSQLN_TESTS)
 unittest
 {
-	debug(MYSQLN_TESTS)
-	{
-		import mysql.test.common;
-		mixin(scopedCn);
+	import mysql.test.common;
+	mixin(scopedCn);
 
-		exec(cn, `DROP FUNCTION IF EXISTS hello`);
-		exec(cn, `
-			CREATE FUNCTION hello (s CHAR(20))
-			RETURNS CHAR(50) DETERMINISTIC
-			RETURN CONCAT('Hello ',s,'!')
-		`);
+	exec(cn, `DROP FUNCTION IF EXISTS hello`);
+	exec(cn, `
+		CREATE FUNCTION hello (s CHAR(20))
+		RETURNS CHAR(50) DETERMINISTIC
+		RETURN CONCAT('Hello ',s,'!')
+	`);
 
-		auto preparedHello = prepareFunction(cn, "hello", 1);
-		preparedHello.setArgs("World");
-		auto rs = cn.query(preparedHello).array;
-		assert(rs.length == 1);
-		assert(rs[0][0] == "Hello World!");
-	}
+	auto preparedHello = prepareFunction(cn, "hello", 1);
+	preparedHello.setArgs("World");
+	auto rs = cn.query(preparedHello).array;
+	assert(rs.length == 1);
+	assert(rs[0][0] == "Hello World!");
 }
 
 /++
@@ -143,31 +142,30 @@ Prepared prepareProcedure(Connection conn, string name, int numArgs)
 }
 
 ///
+@("prepareProcedure")
+debug(MYSQLN_TESTS)
 unittest
 {
-	debug(MYSQLN_TESTS)
-	{
-		import mysql.test.common;
-		import mysql.test.integration;
-		mixin(scopedCn);
-		initBaseTestTables(cn);
+	import mysql.test.common;
+	import mysql.test.integration;
+	mixin(scopedCn);
+	initBaseTestTables(cn);
 
-		exec(cn, `DROP PROCEDURE IF EXISTS insert2`);
-		exec(cn, `
-			CREATE PROCEDURE insert2 (IN p1 INT, IN p2 CHAR(50))
-			BEGIN
-				INSERT INTO basetest (intcol, stringcol) VALUES(p1, p2);
-			END
-		`);
+	exec(cn, `DROP PROCEDURE IF EXISTS insert2`);
+	exec(cn, `
+		CREATE PROCEDURE insert2 (IN p1 INT, IN p2 CHAR(50))
+		BEGIN
+			INSERT INTO basetest (intcol, stringcol) VALUES(p1, p2);
+		END
+	`);
 
-		auto preparedInsert2 = prepareProcedure(cn, "insert2", 2);
-		preparedInsert2.setArgs(2001, "inserted string 1");
-		cn.exec(preparedInsert2);
+	auto preparedInsert2 = prepareProcedure(cn, "insert2", 2);
+	preparedInsert2.setArgs(2001, "inserted string 1");
+	cn.exec(preparedInsert2);
 
-		auto rs = query(cn, "SELECT stringcol FROM basetest WHERE intcol=2001").array;
-		assert(rs.length == 1);
-		assert(rs[0][0] == "inserted string 1");
-	}
+	auto rs = query(cn, "SELECT stringcol FROM basetest WHERE intcol=2001").array;
+	assert(rs.length == 1);
+	assert(rs[0][0] == "inserted string 1");
 }
 
 private string preparedPlaceholderArgs(int numArgs)
@@ -189,6 +187,7 @@ private string preparedPlaceholderArgs(int numArgs)
 	return sql;
 }
 
+@("preparedPlaceholderArgs")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -1939,6 +1938,7 @@ public:
 }
 
 // Test register, release, isRegistered, and auto-register for prepared statements
+@("autoRegistration")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -2047,6 +2047,7 @@ unittest
 
 // An attempt to reproduce issue #81: Using mysql-native driver with no default database
 // I'm unable to actually reproduce the error, though.
+@("issue81")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -2068,6 +2069,7 @@ unittest
 //
 // This simulates a disconnect by closing the socket underneath the Connection
 // object itself.
+@("dropConnection")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -2133,6 +2135,7 @@ debug(MYSQLN_TESTS)
 		return refCounted(move(payload));
 	}
 
+	@("rcPrepared")
 	unittest
 	{
 		import core.memory;

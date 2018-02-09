@@ -26,6 +26,7 @@ import mysql.test.common;
 
 alias indexOf = std.string.indexOf; // Needed on DMD 2.064.2
 
+@("connect")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -103,6 +104,7 @@ debug(MYSQLN_TESTS)
 	}
 }
 
+@("basetest")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -434,6 +436,7 @@ unittest
 +/
 }
 
+@("MetaData")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -550,6 +553,7 @@ https://github.com/simendsjo/mysqln
 +/
 
 // Bind values in prepared statements
+@("bind-values")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -666,6 +670,7 @@ unittest
 
 
 // Simple commands
+@("simple-commands")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -690,6 +695,7 @@ unittest
 }
 /+
 // COM_FIELD_LIST and some ColumnDescription
+@("COM_FIELD_LIST")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -773,6 +779,7 @@ unittest
 }
 +/
 /+
+@("processInfo")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -783,6 +790,7 @@ unittest
 +/
 
 // Simple text queries
+@("simple-text-queries")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -802,6 +810,7 @@ unittest
 
 /+
 // Multi results
+@("multi-results")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -822,6 +831,7 @@ unittest
 +/
 
 // Create and query table
+@("create-and-query-table")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -923,6 +933,7 @@ unittest
 	//assertBasicTests!DateTime("TIMESTAMP NULL", Timestamp(2013_10_03_12_55_35));
 }
 
+@("info_character_sets")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -942,6 +953,7 @@ unittest
 	assert(row[3] == 3);
 }
 
+@("coupleTypes")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -1129,6 +1141,7 @@ unittest
 // Note: This always tests example.d using Vibe sockets, regardless of
 // what kind of sockets the unittests are using. Once DUB Issue #1089
 // is fixed, this will always test example.d using Phobos sockets.
+@("example")
 debug(MYSQLN_TESTS)
 unittest
 {

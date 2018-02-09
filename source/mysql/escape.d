@@ -69,6 +69,8 @@ MysqlEscape!(T) mysqlEscape ( T ) ( T input )
 	return MysqlEscape!(T)(input);
 }
 
+@("mysqlEscape")
+debug(MYSQLN_TESTS)
 unittest
 {
 	import std.array : appender;

@@ -29,6 +29,7 @@ import mysql.test.common;
 
 // Issue #40: Decoding LCB value for large feilds
 // And likely Issue #18: select varchar - thinks the package is incomplete while it's actually complete
+@("issue40")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -52,6 +53,7 @@ unittest
 }
 
 // Issue #24: Driver doesn't like BIT
+@("issue24")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -78,6 +80,7 @@ unittest
 }
 
 // Issue #33: TINYTEXT, TEXT, MEDIUMTEXT, LONGTEXT types treated as ubyte[]
+@("issue33")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -104,6 +107,7 @@ unittest
 }
 
 // Issue #39: Unsupported SQL type NEWDECIMAL
+@("issue39-NEWDECIMAL")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -114,6 +118,7 @@ unittest
 }
 
 // Issue #56: Result set quantity does not equal MySQL rows quantity
+@("issue56")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -139,6 +144,7 @@ unittest
 }
 
 // Issue #66: Can't connect when omitting default database
+@("issue66")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -158,6 +164,7 @@ unittest
 }
 
 // Issue #117: Server packet out of order when Prepared is destroyed too early
+@("issue117")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -182,6 +189,7 @@ unittest
 }
 
 // Issue #133: `queryValue`: result of 1 row & field `NULL` check inconsistency / error
+@("issue133")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -199,6 +207,7 @@ unittest
 }
 
 // Issue #139: Server packet out of order when Prepared is destroyed too early
+@("issue139")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -229,6 +238,7 @@ unittest
 }
 
 // 
+@("timestamp")
 debug(MYSQLN_TESTS)
 unittest
 {

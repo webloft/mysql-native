@@ -372,6 +372,7 @@ public:
 		return _sql;
 	}
 
+	@("setNullArg")
 	debug(MYSQLN_TESTS)
 	unittest
 	{
@@ -443,6 +444,7 @@ public:
 	/// from this prepared statement.
 	@property ulong lastInsertID() pure const nothrow { return _lastInsertID; }
 
+	@("lastInsertID")
 	debug(MYSQLN_TESTS)
 	unittest
 	{

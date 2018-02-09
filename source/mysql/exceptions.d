@@ -148,6 +148,7 @@ class MYXInvalidatedRange: MYX
 	}
 }
 
+@("wrongFunctionException")
 debug(MYSQLN_TESTS)
 unittest
 {

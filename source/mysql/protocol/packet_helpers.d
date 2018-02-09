@@ -1005,7 +1005,7 @@ ubyte[] packLCS(void[] a) pure nothrow
 	return t;
 }
 
-
+@("testLCB")
 debug(MYSQLN_TESTS)
 unittest
 {
@@ -1056,6 +1056,7 @@ unittest
 	testLCB!"decode"(false);
 }
 
+@("consume!LCS")
 debug(MYSQLN_TESTS)
 unittest
 {

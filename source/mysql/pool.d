@@ -179,6 +179,7 @@ version(IncludeMySQLPool)
 			return m_onNewConnection;
 		}
 
+		@("onNewConnection")
 		debug(MYSQLN_TESTS)
 		unittest
 		{
@@ -222,7 +223,6 @@ version(IncludeMySQLPool)
 			}
 		}
 
-		
 		/++
 		Forwards to vibe.d's
 		$(LINK2 http://vibed.org/api/vibe.core.connectionpool/ConnectionPool.maxConcurrency, ConnectionPool.maxConcurrency)
