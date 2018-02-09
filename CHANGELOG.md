@@ -17,6 +17,11 @@ v2.0.0 - TBD
 Connection-independent redesign of Prepared, plus other new features and housekeeping.
 See the [migration guide](https://github.com/mysql-d/mysql-native/blob/master/MIGRATING_TO_V2.md).
 
+Since v2.0.0-rc2:
+- **Fixed:** ParameterSpecialization chunked transfer fails unless
+	the total size is a multiple of the chunk size. (@Abscissa)
+- **Docs:** Improve documentation relating to chunked transfer. (@Abscissa)
+
 Since v2.0.0-rc1:
 - **Change:** The query functions which take prepared statements no longer
 	support `ColumnSpecialization`. Use `Prepared.columnSpecials` instead. (@Abscissa)

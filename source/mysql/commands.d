@@ -514,6 +514,15 @@ delegate.
 csa = An optional array of `ColumnSpecialization` structs. If you need to
 use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 +/
+/+
+Future text:
+If there are long data items among the expected result columns you can use
+the `csa` param to specify that they are to be subject to chunked transfer via a
+delegate.
+
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
++/
 Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = null)
 {
 	return queryRowImpl(csa, conn, ExecQueryImplInfo(false, sql));
@@ -719,6 +728,15 @@ Example:
 auto myInt = 7;
 Nullable!Variant value = myConnection.queryRow("SELECT * FROM `myTable` WHERE `a` = ?", myInt);
 ---
++/
+/+
+Future text:
+If there are long data items among the expected result columns you can use
+the `csa` param to specify that they are to be subject to chunked transfer via a
+delegate.
+
+csa = An optional array of `ColumnSpecialization` structs. If you need to
+use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 +/
 /+
 Future text:
