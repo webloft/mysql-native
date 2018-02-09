@@ -1213,21 +1213,16 @@ package:
 	/// Does nothing if statement not in `preparedLookup`.
 	private void setQueuedForRelease(string sql, bool value)
 	{
-		if(sql in preparedLookup)
+		if(auto pInfo = sql in preparedLookup)
 		{
-			auto info = preparedLookup[sql];
-			info.queuedForRelease = value;
-			preparedLookup[sql] = info;
+			pInfo.queuedForRelease = value;
+			preparedLookup[sql] = *pInfo;
 		}
 	}
 
 	/// Queue a prepared statement for release.
 	void queueForRelease(string sql)
 	{
-		// If connection's closed, then it IS released.
-		if(closed)
-			return;
-
 		setQueuedForRelease(sql, true);
 	}
 
@@ -1848,6 +1843,82 @@ public:
 		queueForRelease(sql);
 	}
 	
+	/++
+	Manually release all prepared statements on this connection.
+	
+	While minimal, every prepared statement registered on a connection does
+	use up a small amount of resources in both mysql-native and on the server.
+	Additionally, servers can be configured
+	$(LINK2 https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_max_prepared_stmt_count,
+	to limit the number of prepared statements)
+	allowed on a connection at one time (the default, however
+	is quite high). Note also, that certain overloads of `mysql.commands.exec`,
+	`mysql.commands.query`, etc. register prepared statements behind-the-scenes
+	which are cached for quick re-use later.
+	
+	Therefore, it may occasionally be useful to clear out all prepared
+	statements on a connection, together with all resources used by them (or
+	at least leave the resources ready for garbage-collection). This function
+	does just that.
+	
+	Note that this is ALWAYS COMPLETELY SAFE to call, even if you still have
+	live prepared statements you intend to use again. This is safe because
+	mysql-native will automatically register or re-register prepared statements
+	as-needed.
+
+	Notes:
+	
+	In actuality, the prepared statements might not be immediately released
+	(although `isRegistered` will still report `false` for them).
+	
+	This is because there could be a `mysql.result.ResultRange` with results
+	still pending for retrieval, and the protocol doesn't allow sending commands
+	(such as "release a prepared statement") to the server while data is pending.
+	Therefore, this function may instead queue the statement to be released
+	when it is safe to do so: Either the next time a result set is purged or
+	the next time a command (such as `mysql.commands.query` or
+	`mysql.commands.exec`) is performed (because such commands automatically
+	purge any pending results).
+	
+	This function does NOT auto-purge because, if this is ever called from
+	automatic resource management cleanup (refcounting, RAII, etc), that
+	would create ugly situations where hidden, implicit behavior triggers
+	an unexpected auto-purge.
+	+/
+	void releaseAll()
+	{
+		foreach(sql, info; preparedLookup)
+			queueForRelease(sql);
+	}
+
+	@("releaseAll")
+	debug(MYSQLN_TESTS)
+	unittest
+	{
+		mixin(scopedCn);
+		
+		cn.exec("DROP TABLE IF EXISTS `releaseAll`");
+		cn.exec("CREATE TABLE `releaseAll` (a INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+
+		auto preparedSelect = cn.prepare("SELECT * FROM `releaseAll`");
+		auto preparedInsert = cn.prepare("INSERT INTO `releaseAll` (a) VALUES (1)");
+		assert(cn.isRegistered(preparedSelect));
+		assert(cn.isRegistered(preparedInsert));
+
+		cn.releaseAll();
+		assert(!cn.isRegistered(preparedSelect));
+		assert(!cn.isRegistered(preparedInsert));
+		cn.exec("INSERT INTO `releaseAll` (a) VALUES (1)");
+		assert(!cn.isRegistered(preparedSelect));
+		assert(!cn.isRegistered(preparedInsert));
+
+		cn.exec(preparedInsert);
+		cn.query(preparedSelect).array;
+		assert(cn.isRegistered(preparedSelect));
+		assert(cn.isRegistered(preparedInsert));
+
+	}
+
 	/// Is the given SQL registered on this connection as a prepared statement?
 	bool isRegistered(Prepared prepared)
 	{
