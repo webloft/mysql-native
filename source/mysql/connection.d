@@ -655,8 +655,8 @@ package struct ProtocolPrepared
 				{
 					if (sent == 0)    // data was exact multiple of chunk size - all sent
 						break;
-					sent += 7;        // adjust for non-payload bytes
 					chunk.length = chunk.length - (cs-sent);     // trim the chunk
+					sent += 7;        // adjust for non-payload bytes
 					packInto!(uint, true)(cast(uint)sent, chunk[0..3]);
 					conn.send(chunk);
 					break;
