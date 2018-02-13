@@ -27,57 +27,6 @@ import mysql.protocol.sockets;
 import mysql.result;
 import mysql.test.common;
 
-// Issue #28: MySQLProtocolException thrown when using large integers as prepared parameters.
-@("issue28")
-debug(MYSQLN_TESTS)
-unittest
-{
-	mixin(scopedCn);
-
-	cn.exec("DROP TABLE IF EXISTS `issue28`");
-	cn.exec("CREATE TABLE IF NOT EXISTS `issue28` (
-		`added` DATETIME NOT NULL
-	) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8 COLLATE = utf8_bin");
-	cn.exec("INSERT INTO `issue28` (added) VALUES (NOW())");
-
-	auto prepared = cn.prepare(
-		"SELECT added
-		FROM `issue28` WHERE UNIX_TIMESTAMP(added) >= (? - ?)");
-
-	uint baseTimeStamp    = 1371477821;
-    uint cacheCutOffLimit = int.max;
-
-	prepared.setArgs(baseTimeStamp, cacheCutOffLimit);
-	// Issue #28: MYXProtocol: Expected null header byte for binary result row
-	//TODO: Fix #28
-	//auto results = cn.query(prepared).array;
-}
-
-// Issue #40: Decoding LCB value for large feilds
-// And likely Issue #18: select varchar - thinks the package is incomplete while it's actually complete
-@("issue40")
-debug(MYSQLN_TESTS)
-unittest
-{
-	mixin(scopedCn);
-	cn.exec("DROP TABLE IF EXISTS `issue40`");
-	cn.exec(
-		"CREATE TABLE `issue40` (
-		`str` varchar(255)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8"
-	);
-
-	auto longString = repeat('a').take(251).array().idup;
-	cn.exec("INSERT INTO `issue40` VALUES('"~longString~"')");
-	cn.query("SELECT * FROM `issue40`");
-
-	cn.exec("DELETE FROM `issue40`");
-
-	longString = repeat('a').take(255).array().idup;
-	cn.exec("INSERT INTO `issue40` VALUES('"~longString~"')");
-	cn.query("SELECT * FROM `issue40`");
-}
-
 // Issue #24: Driver doesn't like BIT
 @("issue24")
 debug(MYSQLN_TESTS)
@@ -103,6 +52,32 @@ unittest
 	assert(results[0][1] == Date(1970, 1, 1));
 	assert(results[1][0] == false);
 	assert(results[1][1] == Date(1950, 4, 24));
+}
+
+// Issue #28: MySQLProtocolException thrown when using large integers as prepared parameters.
+@("issue28")
+debug(MYSQLN_TESTS)
+unittest
+{
+	mixin(scopedCn);
+
+	cn.exec("DROP TABLE IF EXISTS `issue28`");
+	cn.exec("CREATE TABLE IF NOT EXISTS `issue28` (
+		`added` DATETIME NOT NULL
+	) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8 COLLATE = utf8_bin");
+	cn.exec("INSERT INTO `issue28` (added) VALUES (NOW())");
+
+	auto prepared = cn.prepare(
+		"SELECT added
+		FROM `issue28` WHERE UNIX_TIMESTAMP(added) >= (? - ?)");
+
+	uint baseTimeStamp    = 1371477821;
+    uint cacheCutOffLimit = int.max;
+
+	prepared.setArgs(baseTimeStamp, cacheCutOffLimit);
+	// Issue #28: MYXProtocol: Expected null header byte for binary result row
+	//TODO: Fix #28
+	//auto results = cn.query(prepared).array;
 }
 
 // Issue #33: TINYTEXT, TEXT, MEDIUMTEXT, LONGTEXT types treated as ubyte[]
@@ -141,6 +116,31 @@ unittest
 	auto rows = cn.query("SELECT SUM(123.456)").array;
 	assert(rows.length == 1);
 	assert(rows[0][0] == "123.456");
+}
+
+// Issue #40: Decoding LCB value for large feilds
+// And likely Issue #18: select varchar - thinks the package is incomplete while it's actually complete
+@("issue40")
+debug(MYSQLN_TESTS)
+unittest
+{
+	mixin(scopedCn);
+	cn.exec("DROP TABLE IF EXISTS `issue40`");
+	cn.exec(
+		"CREATE TABLE `issue40` (
+		`str` varchar(255)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8"
+	);
+
+	auto longString = repeat('a').take(251).array().idup;
+	cn.exec("INSERT INTO `issue40` VALUES('"~longString~"')");
+	cn.query("SELECT * FROM `issue40`");
+
+	cn.exec("DELETE FROM `issue40`");
+
+	longString = repeat('a').take(255).array().idup;
+	cn.exec("INSERT INTO `issue40` VALUES('"~longString~"')");
+	cn.query("SELECT * FROM `issue40`");
 }
 
 // Issue #56: Result set quantity does not equal MySQL rows quantity
