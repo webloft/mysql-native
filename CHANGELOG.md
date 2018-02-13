@@ -15,7 +15,7 @@ v2.1.0 - TBD
 - **Tests:** [#161](https://github.com/mysql-d/mysql-native/issues/161):
 	Added tests for ParameterSpecialization (ie, chunked transfer). (@Abscissa)
 
-v2.0.0 - TBD
+v2.0.0 - 2018-02-13
 =====================
 
 Connection-independent redesign of Prepared, plus other new features and housekeeping.
