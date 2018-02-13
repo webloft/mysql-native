@@ -27,6 +27,32 @@ import mysql.protocol.sockets;
 import mysql.result;
 import mysql.test.common;
 
+// Issue #28: MySQLProtocolException thrown when using large integers as prepared parameters.
+@("issue28")
+debug(MYSQLN_TESTS)
+unittest
+{
+	mixin(scopedCn);
+
+	cn.exec("DROP TABLE IF EXISTS `issue28`");
+	cn.exec("CREATE TABLE IF NOT EXISTS `issue28` (
+		`added` DATETIME NOT NULL
+	) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8 COLLATE = utf8_bin");
+	cn.exec("INSERT INTO `issue28` (added) VALUES (NOW())");
+
+	auto prepared = cn.prepare(
+		"SELECT added
+		FROM `issue28` WHERE UNIX_TIMESTAMP(added) >= (? - ?)");
+
+	uint baseTimeStamp    = 1371477821;
+    uint cacheCutOffLimit = int.max;
+
+	prepared.setArgs(baseTimeStamp, cacheCutOffLimit);
+	// Issue #28: MYXProtocol: Expected null header byte for binary result row
+	//TODO: Fix #28
+	//auto results = cn.query(prepared).array;
+}
+
 // Issue #40: Decoding LCB value for large feilds
 // And likely Issue #18: select varchar - thinks the package is incomplete while it's actually complete
 @("issue40")
