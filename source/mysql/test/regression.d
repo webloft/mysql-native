@@ -143,6 +143,18 @@ unittest
 	cn.query("SELECT * FROM `issue40`");
 }
 
+// Issue #52: execSQLSequence doesn't work with map
+@("issue52")
+debug(MYSQLN_TESTS)
+unittest
+{
+	mixin(scopedCn);
+
+	assert(cn.query("SELECT 1").array.length == 1);
+	assert(cn.query("SELECT 1").map!(r => r).array.length == 1);
+	assert(cn.query("SELECT 1").array.map!(r => r).array.length == 1);
+}
+
 // Issue #56: Result set quantity does not equal MySQL rows quantity
 @("issue56")
 debug(MYSQLN_TESTS)
