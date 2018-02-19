@@ -1170,10 +1170,7 @@ package:
 		// on the server automatically.
 		_headersPending = _rowsPending = _binaryPending = false;
 		
-		static if(__traits(compiles, (){ int[int] aa; aa.clear(); }))
-			preparedLookup.clear();
-		else
-			preparedLookup = null;
+		preparedRegistrations.clear();
 	}
 	
 	/// Called whenever mysql-native needs to send a command to the server
@@ -1206,52 +1203,23 @@ package:
 	}
 
 	/// Lookup per-connection prepared statement info by SQL
-	PreparedServerInfo[string] preparedLookup;
-	
-	/// Set `queuedForRelease` flag for a statement in `preparedLookup`.
-	/// Does nothing if statement not in `preparedLookup`.
-	private void setQueuedForRelease(string sql, bool value)
-	{
-		if(auto pInfo = sql in preparedLookup)
-		{
-			pInfo.queuedForRelease = value;
-			preparedLookup[sql] = *pInfo;
-		}
-	}
-
-	/// Queue a prepared statement for release.
-	void queueForRelease(string sql)
-	{
-		setQueuedForRelease(sql, true);
-	}
-
-	/// Remove a statement from the queue to be released.
-	void unqueueForRelease(string sql)
-	{
-		setQueuedForRelease(sql, false);
-	}
+	private PreparedRegistrations!PreparedServerInfo preparedRegistrations;
 
 	/// Releases all prepared statements that are queued for release.
 	void releaseQueued()
 	{
-		foreach(sql, info; preparedLookup)
+		foreach(sql, info; preparedRegistrations.directLookup)
 		if(info.queuedForRelease)
 		{
 			immediateReleasePrepared(info.statementId);
-			preparedLookup.remove(sql);
+			preparedRegistrations.directLookup.remove(sql);
 		}
 	}
 
 	/// Returns null if not found
 	Nullable!PreparedServerInfo getPreparedServerInfo(const string sql) pure nothrow
 	{
-		Nullable!PreparedServerInfo result;
-		
-		auto pInfo = sql in preparedLookup;
-		if(pInfo)
-			result = *pInfo;
-		
-		return result;
+		return preparedRegistrations[sql];
 	}
 	
 	/// If already registered, simply returns the cached `PreparedServerInfo`.
@@ -1264,7 +1232,7 @@ package:
 	}
 	body
 	{
-		if(auto pInfo = sql in preparedLookup)
+		if(auto pInfo = sql in preparedRegistrations.directLookup)
 		{
 			// The statement is registered. It may, or may not, be queued
 			// for release. Either way, all we need to do is make sure it's
@@ -1274,7 +1242,7 @@ package:
 		}
 
 		auto info = registerIfNeededImpl(sql);
-		preparedLookup[sql] = info;
+		preparedRegistrations.directLookup[sql] = info;
 
 		return info;
 	}
@@ -1839,7 +1807,7 @@ public:
 	{
 		//TODO: Don't queue it if nothing is pending. Just do it immediately.
 		//      But need to be certain both situations are unittested.
-		queueForRelease(sql);
+		preparedRegistrations.queueForRelease(sql);
 	}
 	
 	/++
@@ -1886,8 +1854,7 @@ public:
 	+/
 	void releaseAll()
 	{
-		foreach(sql, info; preparedLookup)
-			queueForRelease(sql);
+		preparedRegistrations.queueAllForRelease();
 	}
 
 	@("releaseAll")
@@ -1927,7 +1894,7 @@ public:
 	///ditto
 	bool isRegistered(string sql)
 	{
-		return isRegistered( getPreparedServerInfo(sql) );
+		return isRegistered( preparedRegistrations[sql] );
 	}
 
 	///ditto
