@@ -12,7 +12,9 @@ the connection when done).
 module mysql.pool;
 
 import std.conv;
+import std.typecons;
 import mysql.connection;
+import mysql.prepared;
 import mysql.protocol.constants;
 debug(MYSQLN_TESTS)
 {
@@ -74,8 +76,10 @@ version(IncludeMySQLPool)
 	directly. Simply provide it with a delegate that creates a new `mysql.connection.Connection`
 	and does any other custom processing if needed.
 	+/
-	class MySQLPool {
-		private {
+	class MySQLPool
+	{
+		private
+		{
 			string m_host;
 			string m_user;
 			string m_password;
@@ -84,6 +88,12 @@ version(IncludeMySQLPool)
 			SvrCapFlags m_capFlags;
 			void delegate(Connection) m_onNewConnection;
 			ConnectionPool!Connection m_pool;
+			PreparedRegistrations!PreparedInfo preparedRegistrations;
+
+			struct PreparedInfo
+			{
+				bool queuedForRelease = false;
+			}
 		}
 
 		/// Sets up a connection pool with the provided connection settings.
@@ -152,8 +162,30 @@ version(IncludeMySQLPool)
 		There is no need to close, release or unlock this connection. It is
 		reference-counted and will automatically be returned to the pool once
 		your fiber is done with it.
+		
+		If you have passed any prepared statements to  `autoRegister`
+		or `autoRelease`, then those statements will automatically be
+		registered/released on the connection. (Currently, this automatic
+		register/release may actually occur upon the first command sent via
+		the connection.)
 		+/
-		auto lockConnection() { return m_pool.lockConnection(); }
+		auto lockConnection()
+		{
+			auto conn = m_pool.lockConnection();
+
+			foreach(sql, info; preparedRegistrations.directLookup)
+			{
+				auto registeredOnPool = !info.queuedForRelease;
+				auto registeredOnConnection = conn.isRegistered(sql);
+				
+				if(registeredOnPool && !registeredOnConnection) // Need to register?
+					conn.register(sql);
+				else if(!registeredOnPool && registeredOnConnection) // Need to release?
+					conn.release(sql);
+			}
+
+			return conn;
+		}
 
 		private Connection createConnection()
 		{
@@ -165,7 +197,6 @@ version(IncludeMySQLPool)
 			return conn;
 		}
 
-		
 		/// Get/set a callback delegate to be run every time a new connection
 		/// is created.
 		@property void onNewConnection(void delegate(Connection) onNewConnection)
@@ -236,6 +267,151 @@ version(IncludeMySQLPool)
 		@property void maxConcurrency(uint maxConcurrent)
 		{
 			m_pool.maxConcurrency = maxConcurrent;
+		}
+
+		/++
+		Set a prepared statement to be automatically registered on all
+		connections received from this pool.
+
+		This also clears any `autoRelease` which may have been set for this statement.
+
+		Calling this is not strictly necessary, as a prepared statement will
+		automatically be registered upon its first use on any `Connection`.
+		This is provided for those who prefer eager registration over lazy
+		for performance reasons.
+
+		Once this has been called, obtaining a connection via `lockConnection`
+		will automatically register the prepared statement on the connection
+		if it isn't already registered on the connection. This single
+		registration safely persists after the connection is reclaimed by the
+		pool and locked again by another Vibe.d task.
+		
+		Note, due to the way Vibe.d works, it is not possible to eagerly
+		register or release a statement on all connections already sitting
+		in the pool. This can only be done when locking a connection.
+		
+		You can stop the pool from continuing to auto-register the statement
+		by calling either `autoRelease` or `clearAuto`.
+		+/
+		void autoRegister(Prepared prepared)
+		{
+			preparedRegistrations.registerIfNeeded(prepared.sql, (sql) => PreparedInfo());
+		}
+
+		/++
+		Set a prepared statement to be automatically released from all
+		connections received from this pool.
+
+		This also clears any `autoRegister` which may have been set for this statement.
+
+		Calling this is not strictly necessary. The server considers prepared
+		statements to be per-connection, so they'll go away when the connection
+		closes anyway. This is provided in case direct control is actually needed.
+
+		Once this has been called, obtaining a connection via `lockConnection`
+		will automatically release the prepared statement from the connection
+		if it isn't already releases from the connection.
+		
+		Note, due to the way Vibe.d works, it is not possible to eagerly
+		register or release a statement on all connections already sitting
+		in the pool. This can only be done when locking a connection.
+
+		You can stop the pool from continuing to auto-release the statement
+		by calling either `autoRegister` or `clearAuto`.
+		+/
+		void autoRelease(Prepared prepared)
+		{
+			autoRelease(prepared.sql);
+		}
+
+		///ditto
+		void autoRelease(string sql)
+		{
+			preparedRegistrations.queueForRelease(sql);
+		}
+
+		/// Is the given statement set to be automatically registered on all
+		/// connections obtained from this connection pool?
+		bool isAutoRegistered(Prepared prepared)
+		{
+			return isAutoRegistered(prepared.sql);
+		}
+		///ditto
+		bool isAutoRegistered(string sql)
+		{
+			return isAutoRegistered(preparedRegistrations[sql]);
+		}
+		///ditto
+		package bool isAutoRegistered(Nullable!PreparedInfo info)
+		{
+			return !info.isNull && !info.queuedForRelease;
+		}
+
+		/// Is the given statement set to be automatically released on all
+		/// connections obtained from this connection pool?
+		bool isAutoReleased(Prepared prepared)
+		{
+			return isAutoReleased(prepared.sql);
+		}
+		///ditto
+		bool isAutoReleased(string sql)
+		{
+			return isAutoReleased(preparedRegistrations[sql]);
+		}
+		///ditto
+		package bool isAutoReleased(Nullable!PreparedInfo info)
+		{
+			return !info.isNull && info.queuedForRelease;
+		}
+
+		/++
+		Is the given statement set for NEITHER auto-register
+		NOR auto-release on connections obtained from
+		this connection pool?
+
+		Equivalent to `!isAutoRegistered && !isAutoReleased`.
+		+/
+		bool isAutoCleared(Prepared prepared)
+		{
+			return isAutoCleared(prepared.sql);
+		}
+		///ditto
+		bool isAutoCleared(string sql)
+		{
+			return isAutoCleared(preparedRegistrations[sql]);
+		}
+		///ditto
+		package bool isAutoCleared(Nullable!PreparedInfo info)
+		{
+			return info.isNull;
+		}
+
+		/++
+		Removes any `autoRegister` or `autoRelease` which may have been set
+		for this prepared statement.
+
+		Does nothing if the statement has not been set for auto-register or auto-release.
+
+		This releases any relevent memory for potential garbage collection.
+		+/
+		void clearAuto(Prepared prepared)
+		{
+			return clearAuto(prepared.sql);
+		}
+		///ditto
+		void clearAuto(string sql)
+		{
+			preparedRegistrations.directLookup.remove(sql);
+		}
+		
+		/++
+		Removes ALL prepared statement `autoRegister` and `autoRelease` which have been set.
+		
+		This releases all relevent memory for potential garbage collection.
+		+/
+		void clearAllRegistrations()
+		{
+			preparedRegistrations.clear();
 		}
 	}
 }

@@ -7,7 +7,13 @@ v2.1.0 - TBD
 	that do parameterized SQL. (@Abscissa)
 - **New:** [#162](https://github.com/mysql-d/mysql-native/issues/162):
 	Create
-	[Connection.releaseAll](http://semitwist.com/mysql-native/mysql/connection/Connection.release.html)
+	[Connection.releaseAll](http://semitwist.com/mysql-native/mysql/connection/Connection.releaseAll.html)
+	(@Abscissa)
+- **New:**
+	Add a
+	[Connection.register](http://semitwist.com/mysql-native/mysql/connection/Connection.register.html)
+	overload that takes an sql string, for symmetry with
+	[Connection.release](http://semitwist.com/mysql-native/mysql/connection/Connection.release.html)
 	(@Abscissa)
 - **Tests:** [#149](https://github.com/mysql-d/mysql-native/issues/149):
 	Optionally support [unit-threaded](https://github.com/atilaneves/unit-threaded)

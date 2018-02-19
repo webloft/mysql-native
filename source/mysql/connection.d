@@ -1736,7 +1736,13 @@ public:
 	+/
 	void register(Prepared prepared)
 	{
-		registerIfNeeded(prepared.sql);
+		register(prepared.sql);
+	}
+
+	///ditto
+	void register(string sql)
+	{
+		registerIfNeeded(sql);
 	}
 
 	/++
@@ -1866,7 +1872,7 @@ public:
 
 	}
 
-	/// Is the given SQL registered on this connection as a prepared statement?
+	/// Is the given statement registered on this connection as a prepared statement?
 	bool isRegistered(Prepared prepared)
 	{
 		return isRegistered( prepared.sql );
