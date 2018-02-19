@@ -26,7 +26,7 @@ version(IncludeMySQLPool)
 {
 	version(Have_vibe_d_core)
 		import vibe.core.connectionpool;
-	else
+	else version(MySQLDocs)
 	{
 		/++
 		Vibe.d's
