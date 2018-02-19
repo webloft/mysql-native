@@ -478,6 +478,14 @@ public:
 	@property void columnSpecials(ColumnSpecialization[] csa) pure { _columnSpecials = csa; }
 }
 
+/// Template constraint for `PreparedRegistrations`
+private enum isPreparedRegistrationsPayload(Payload) =
+	__traits(compiles, (){
+			static assert(Payload.init.queuedForRelease == false);
+			Payload p;
+			p.queuedForRelease = true;
+		});
+
 /++
 Common functionality for recordkeeping of prepared statement registration
 and queueing for unregister.
@@ -492,12 +500,7 @@ Allowing access to `directLookup` from other parts of mysql-native IS intentiona
 to factor out common functionality needed by both `Connection` and `MySQLPool`.
 +/
 package struct PreparedRegistrations(Payload)
-	if(__traits(compiles, (){
-		static assert(Payload.init.queuedForRelease == false);
-		Payload p;
-		p.queuedForRelease = true;
-		
-	}))
+	if(	isPreparedRegistrationsPayload!Payload)
 {
 	/++
 	Lookup payload by sql string.
@@ -558,6 +561,31 @@ package struct PreparedRegistrations(Payload)
 		else
 			directLookup = null;
 	}
+
+	/// If already registered, simply returns the cached Payload.
+	Payload registerIfNeeded(string sql, Payload delegate(string) doRegister)
+	out(info)
+	{
+		// I'm confident this can't currently happen, but
+		// let's make sure that doesn't change.
+		assert(!info.queuedForRelease);
+	}
+	body
+	{
+		if(auto pInfo = sql in directLookup)
+		{
+			// The statement is registered. It may, or may not, be queued
+			// for release. Either way, all we need to do is make sure it's
+			// un-queued and then return.
+			pInfo.queuedForRelease = false;
+			return *pInfo;
+		}
+
+		auto info = doRegister(sql);
+		directLookup[sql] = info;
+
+		return info;
+	}
 }
 
 // Test PreparedRegistrations
@@ -569,14 +597,16 @@ debug(MYSQLN_TESTS)
 	struct TestPreparedRegistrationsBad3 { int queuedForRelease = 1; }
 	struct TestPreparedRegistrationsBad4 { bool queuedForRelease = true; }
 	struct TestPreparedRegistrationsGood1 { bool queuedForRelease = false; }
-	struct TestPreparedRegistrationsGood2 { bool queuedForRelease = false; int id; }
-
-	static assert(!__traits(compiles, PreparedRegistrations!int));
-	static assert(!__traits(compiles, PreparedRegistrations!bool));
-	static assert(!__traits(compiles, PreparedRegistrations!TestPreparedRegistrationsBad1));
-	static assert(!__traits(compiles, PreparedRegistrations!TestPreparedRegistrationsBad2));
-	static assert(!__traits(compiles, PreparedRegistrations!TestPreparedRegistrationsBad3));
-	static assert(!__traits(compiles, PreparedRegistrations!TestPreparedRegistrationsBad4));
+	struct TestPreparedRegistrationsGood2 { bool queuedForRelease = false; string id; }
+	
+	static assert(!isPreparedRegistrationsPayload!int);
+	static assert(!isPreparedRegistrationsPayload!bool);
+	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad1);
+	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad2);
+	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad3);
+	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad4);
+	//static assert(isPreparedRegistrationsPayload!TestPreparedRegistrationsGood1);
+	//static assert(isPreparedRegistrationsPayload!TestPreparedRegistrationsGood2);
 	PreparedRegistrations!TestPreparedRegistrationsGood1 testPreparedRegistrationsGood1;
 	PreparedRegistrations!TestPreparedRegistrationsGood2 testPreparedRegistrationsGood2;
 
@@ -589,79 +619,94 @@ debug(MYSQLN_TESTS)
 
 		void resetData(bool isQueued1, bool isQueued2, bool isQueued3)
 		{
-			pr.directLookup["1"] = TestPreparedRegistrationsGood2(isQueued1, 1);
-			pr.directLookup["2"] = TestPreparedRegistrationsGood2(isQueued2, 2);
-			pr.directLookup["3"] = TestPreparedRegistrationsGood2(isQueued3, 3);
+			pr.directLookup["1"] = TestPreparedRegistrationsGood2(isQueued1, "1");
+			pr.directLookup["2"] = TestPreparedRegistrationsGood2(isQueued2, "2");
+			pr.directLookup["3"] = TestPreparedRegistrationsGood2(isQueued3, "3");
 			assert(pr.directLookup.keys.length == 3);
 		}
 
 		// Test resetData (sanity check)
 		resetData(false, true, false);
-		assert(pr.directLookup["1"] == TestPreparedRegistrationsGood2(false, 1));
-		assert(pr.directLookup["2"] == TestPreparedRegistrationsGood2(true,  2));
-		assert(pr.directLookup["3"] == TestPreparedRegistrationsGood2(false, 3));
+		assert(pr.directLookup["1"] == TestPreparedRegistrationsGood2(false, "1"));
+		assert(pr.directLookup["2"] == TestPreparedRegistrationsGood2(true,  "2"));
+		assert(pr.directLookup["3"] == TestPreparedRegistrationsGood2(false, "3"));
 
 		// Test opIndex
 		resetData(false, true, false);
-		pr.directLookup["1"] = TestPreparedRegistrationsGood2(false, 1);
-		pr.directLookup["2"] = TestPreparedRegistrationsGood2(true,  2);
-		pr.directLookup["3"] = TestPreparedRegistrationsGood2(false, 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, 1));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  2));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(false, 3));
+		pr.directLookup["1"] = TestPreparedRegistrationsGood2(false, "1");
+		pr.directLookup["2"] = TestPreparedRegistrationsGood2(true,  "2");
+		pr.directLookup["3"] = TestPreparedRegistrationsGood2(false, "3");
+		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
+		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
+		assert(pr["3"] == TestPreparedRegistrationsGood2(false, "3"));
 		assert(pr["4"].isNull);
 
 		// Test queueForRelease
 		resetData(false, true, false);
 		pr.queueForRelease("2");
 		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, 1));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  2));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(false, 3));
+		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
+		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
+		assert(pr["3"] == TestPreparedRegistrationsGood2(false, "3"));
 		
 		pr.queueForRelease("3");
 		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, 1));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  2));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(true,  3));
+		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
+		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
+		assert(pr["3"] == TestPreparedRegistrationsGood2(true,  "3"));
 
 		pr.queueForRelease("4");
 		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, 1));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  2));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(true,  3));
+		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
+		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
+		assert(pr["3"] == TestPreparedRegistrationsGood2(true,  "3"));
 
 		// Test unqueueForRelease
 		resetData(false, true, false);
 		pr.unqueueForRelease("1");
 		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, 1));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  2));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(false, 3));
+		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
+		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
+		assert(pr["3"] == TestPreparedRegistrationsGood2(false, "3"));
 
 		pr.unqueueForRelease("2");
 		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, 1));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(false, 2));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(false, 3));
+		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
+		assert(pr["2"] == TestPreparedRegistrationsGood2(false, "2"));
+		assert(pr["3"] == TestPreparedRegistrationsGood2(false, "3"));
 
 		pr.unqueueForRelease("4");
 		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, 1));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(false, 2));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(false, 3));
+		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
+		assert(pr["2"] == TestPreparedRegistrationsGood2(false, "2"));
+		assert(pr["3"] == TestPreparedRegistrationsGood2(false, "3"));
 
 		// Test queueAllForRelease
 		resetData(false, true, false);
 		pr.queueAllForRelease();
-		assert(pr["1"] == TestPreparedRegistrationsGood2(true,  1));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  2));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(true,  3));
+		assert(pr["1"] == TestPreparedRegistrationsGood2(true,  "1"));
+		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
+		assert(pr["3"] == TestPreparedRegistrationsGood2(true,  "3"));
 		assert(pr["4"].isNull);
 
 		// Test clear
 		resetData(false, true, false);
 		pr.clear();
 		assert(pr.directLookup.keys.length == 0);
+		
+		// Test registerIfNeeded
+		auto doRegister(string sql) { return TestPreparedRegistrationsGood2(false, sql); }
+		pr.registerIfNeeded("1", &doRegister);
+		assert(pr.directLookup.keys.length == 1);
+		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
+
+		pr.registerIfNeeded("1", &doRegister);
+		assert(pr.directLookup.keys.length == 1);
+		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
+
+		pr.registerIfNeeded("2", &doRegister);
+		assert(pr.directLookup.keys.length == 2);
+		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
+		assert(pr["2"] == TestPreparedRegistrationsGood2(false, "2"));
 	}
 }

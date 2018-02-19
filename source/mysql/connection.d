@@ -1224,30 +1224,11 @@ package:
 	
 	/// If already registered, simply returns the cached `PreparedServerInfo`.
 	PreparedServerInfo registerIfNeeded(string sql)
-	out(info)
 	{
-		// I'm confident this can't currently happen, but
-		// let's make sure that doesn't change.
-		assert(!info.queuedForRelease);
-	}
-	body
-	{
-		if(auto pInfo = sql in preparedRegistrations.directLookup)
-		{
-			// The statement is registered. It may, or may not, be queued
-			// for release. Either way, all we need to do is make sure it's
-			// un-queued and then return.
-			pInfo.queuedForRelease = false;
-			return *pInfo;
-		}
-
-		auto info = registerIfNeededImpl(sql);
-		preparedRegistrations.directLookup[sql] = info;
-
-		return info;
+		return preparedRegistrations.registerIfNeeded(sql, &performRegister);
 	}
 
-	PreparedServerInfo registerIfNeededImpl(string sql)
+	PreparedServerInfo performRegister(string sql)
 	{
 		scope(failure) kill();
 
