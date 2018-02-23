@@ -3,6 +3,7 @@ rdmd --build-only -c -Isource -Dddocs_tmp -X -Xfdocs/docs.json -version=MySQLDoc
 rm -rf docs_tmp
 rm source/mysql/package.o
 
+dub --version
 dub run gen-package-version -- mysql --ddoc=ddoc --src=source
 rm source/mysql/packageVersion.d
 
