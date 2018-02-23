@@ -15,6 +15,11 @@ v2.1.0 - TBD
 	overload that takes an sql string, for symmetry with
 	[Connection.release](http://semitwist.com/mysql-native/mysql/connection/Connection.release.html)
 	(@Abscissa)
+- **New:** [#160](https://github.com/mysql-d/mysql-native/issues/160):
+	Pool-level prepared statement management tools for
+	[MySQLPool](http://semitwist.com/mysql-native/mysql/pool/MySQLPool.html),
+	including `autoRegister`/`autoRelease`/etc...
+	(@Abscissa)
 - **Tests:** [#149](https://github.com/mysql-d/mysql-native/issues/149):
 	Optionally support [unit-threaded](https://github.com/atilaneves/unit-threaded)
 	for vibe tests (not used by default) (@Abscissa)
