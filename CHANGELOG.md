@@ -1,6 +1,8 @@
 v2.1.0 - TBD
 =====================
 
+New features.
+
 - **New:** [#118](https://github.com/mysql-d/mysql-native/issues/118):
 	Convenience
 	[exec/query overloads](http://semitwist.com/mysql-native/mysql/commands.html)
