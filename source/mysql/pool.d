@@ -171,7 +171,7 @@ version(IncludeMySQLPool)
 		+/
 		auto lockConnection()
 		{
-			auto conn = m_pool.lockConnection();
+			Connection conn = m_pool.lockConnection();
 			applyAuto(conn);
 			return conn;
 		}
