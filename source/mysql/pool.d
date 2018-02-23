@@ -61,7 +61,7 @@ version(IncludeMySQLPool)
 		documentation purposes. For LockedConnection and it's documentation, see:
 		$(LINK http://vibed.org/api/vibe.core.connectionpool/LockedConnection)
 		+/
-		struct LockedConnection(Connection) {}
+		struct LockedConnection(Connection) { Connection c; alias c this; }
 	}
 
 	/++
@@ -178,7 +178,7 @@ version(IncludeMySQLPool)
 
 		/// Applies any `autoRegister`/`autoRelease` settings to a connection,
 		/// if necessary.
-		private void applyAuto(Connection conn)
+		private void applyAuto(T)(T conn)
 		{
 			foreach(sql, info; preparedRegistrations.directLookup)
 			{
