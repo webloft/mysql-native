@@ -477,3 +477,22 @@ package bool execQueryImpl(Connection conn, ExecQueryImplInfo info)
 	ulong rowsAffected;
 	return execQueryImpl(conn, info, rowsAffected);
 }
+
+package(mysql) void immediateReleasePrepared(Connection conn, uint statementId)
+{
+	scope(failure) conn.kill();
+
+	if(conn.closed())
+		return;
+
+	ubyte[9] packet_buf;
+	ubyte[] packet = packet_buf;
+	packet.setPacketHeader(0/*packet number*/);
+	conn.bumpPacket();
+	packet[4] = CommandType.STMT_CLOSE;
+	statementId.packInto(packet[5..9]);
+	conn.purgeResult();
+	conn.send(packet);
+	// It seems that the server does not find it necessary to send a response
+	// for this command.
+}

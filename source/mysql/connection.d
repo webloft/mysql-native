@@ -842,7 +842,7 @@ package:
 		foreach(sql, info; preparedRegistrations.directLookup)
 		if(info.queuedForRelease)
 		{
-			immediateReleasePrepared(info.statementId);
+			immediateReleasePrepared(this, info.statementId);
 			preparedRegistrations.directLookup.remove(sql);
 		}
 	}
@@ -894,26 +894,6 @@ package:
 			assert(0); // FIXME: what now?
 
 		return info;
-	}
-
-	private void immediateReleasePrepared(uint statementId)
-	{
-		scope(failure) kill();
-
-		if(closed())
-			return;
-
-		//TODO: All low-level commms should be moved into the mysql.protocol package.
-		ubyte[9] packet_buf;
-		ubyte[] packet = packet_buf;
-		packet.setPacketHeader(0/*packet number*/);
-		bumpPacket();
-		packet[4] = CommandType.STMT_CLOSE;
-		statementId.packInto(packet[5..9]);
-		purgeResult();
-		send(packet);
-		// It seems that the server does not find it necessary to send a response
-		// for this command.
 	}
 
 public:
