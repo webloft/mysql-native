@@ -1061,6 +1061,8 @@ package:
 
 	void initConnection()
 	{
+		kill(); // Ensure internal state gets reset
+
 		resetPacket();
 		final switch(_socketType)
 		{
@@ -1140,10 +1142,6 @@ package:
 	SvrCapFlags _clientCapabilities;
 
 	void connect(SvrCapFlags clientCapabilities)
-	in
-	{
-		assert(closed);
-	}
 	out
 	{
 		assert(_open == OpenState.authenticated);
@@ -1159,18 +1157,25 @@ package:
 		authenticate(greeting);
 	}
 	
-	/// Forcefully close the socket without sending the quit command.
-	/// Needed in case an error leaves communatations in an undefined or non-recoverable state.
+	/++
+	Forcefully close the socket without sending the quit command.
+	
+	Also resets internal state regardless of whether the connection is open or not.
+	
+	Needed in case an error leaves communatations in an undefined or non-recoverable state.
+	+/
 	void kill()
 	{
-		if(_socket.connected)
+		if(_socket && _socket.connected)
 			_socket.close();
 		_open = OpenState.notConnected;
 		// any pending data is gone. Any statements to release will be released
 		// on the server automatically.
 		_headersPending = _rowsPending = _binaryPending = false;
-		
+
 		preparedRegistrations.clear();
+
+		_lastCommandID++; // Invalidate result sets
 	}
 	
 	/// Called whenever mysql-native needs to send a command to the server
@@ -1195,7 +1200,7 @@ package:
 		}
 		catch(Exception e)
 		{
-			// likely the connection was closed, so reset any state.
+			// Likely the connection was closed, so reset any state (and force-close if needed).
 			// Don't treat this as a real error, because everything will be reset when we
 			// reconnect.
 			kill();
@@ -1471,7 +1476,6 @@ public:
 	then was originally used to create the `Connection`, the connection will
 	be closed and then reconnected using the new `mysql.protocol.constants.SvrCapFlags`.
 	+/
-	//TODO: This needs unittested.
 	void reconnect()
 	{
 		reconnect(_clientCapabilities);
@@ -1493,6 +1497,64 @@ public:
 		connect(clientCapabilities);
 	}
 
+	// This also serves as a regression test for #167:
+	// ResultRange doesn't get invalidated upon reconnect
+	@("reconnect")
+	debug(MYSQLN_TESTS)
+	unittest
+	{
+		import std.variant;
+		mixin(scopedCn);
+		cn.exec("DROP TABLE IF EXISTS `reconnect`");
+		cn.exec("CREATE TABLE `reconnect` (a INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+		cn.exec("INSERT INTO `reconnect` VALUES (1),(2),(3)");
+
+		enum sql = "SELECT a FROM `reconnect`";
+
+		// Sanity check
+		auto rows = cn.query(sql).array;
+		assert(rows[0][0] == 1);
+		assert(rows[1][0] == 2);
+		assert(rows[2][0] == 3);
+
+		// Ensure reconnect keeps the same connection when it's supposed to
+		auto range = cn.query(sql);
+		assert(range.front[0] == 1);
+		cn.reconnect();
+		assert(!cn.closed); // Is open?
+		assert(range.isValid); // Still valid?
+		range.popFront();
+		assert(range.front[0] == 2);
+
+		// Ensure reconnect reconnects when it's supposed to
+		range = cn.query(sql);
+		assert(range.front[0] == 1);
+		cn._clientCapabilities = ~cn._clientCapabilities; // Pretend that we're changing the clientCapabilities
+		cn.reconnect(~cn._clientCapabilities);
+		assert(!cn.closed); // Is open?
+		assert(!range.isValid); // Was invalidated?
+		cn.query(sql).array; // Connection still works?
+
+		// Try manually reconnecting
+		range = cn.query(sql);
+		assert(range.front[0] == 1);
+		cn.connect(cn._clientCapabilities);
+		assert(!cn.closed); // Is open?
+		assert(!range.isValid); // Was invalidated?
+		cn.query(sql).array; // Connection still works?
+
+		// Try manually closing and connecting
+		range = cn.query(sql);
+		assert(range.front[0] == 1);
+		cn.close();
+		assert(cn.closed); // Is closed?
+		assert(!range.isValid); // Was invalidated?
+		cn.connect(cn._clientCapabilities);
+		assert(!cn.closed); // Is open?
+		assert(!range.isValid); // Was invalidated?
+		cn.query(sql).array; // Connection still works?
+	}
+	
 	private void quit()
 	in
 	{

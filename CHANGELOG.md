@@ -1,3 +1,11 @@
+TBD - TBD
+=====================
+- **Fixed:** [#167](https://github.com/mysql-d/mysql-native/issues/167):
+	ResultRange doesn't get invalidated upon reconnect. (@Abscissa)
+- **Fixed:** Remove unnecessary precondition that connection must be
+	closed before calling `Connection.connect`. (@Abscissa)
+- **Tests:** Add tests for reconnecting. (@Abscissa)
+
 v2.1.0 - 2018-03-02
 =====================
 
