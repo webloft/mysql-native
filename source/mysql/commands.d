@@ -19,6 +19,7 @@ import std.variant;
 import mysql.connection;
 import mysql.exceptions;
 import mysql.prepared;
+import mysql.protocol.comms;
 import mysql.protocol.constants;
 import mysql.protocol.extra_types;
 import mysql.protocol.packets;

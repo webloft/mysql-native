@@ -78,6 +78,7 @@ public import mysql.types;
 
 debug(MYSQLN_TESTS)
 {
+	public import mysql.protocol.comms;
 	public import mysql.protocol.constants;
 	public import mysql.protocol.extra_types;
 	public import mysql.protocol.packet_helpers;
