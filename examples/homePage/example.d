@@ -12,7 +12,7 @@ void main(string[] args)
 	scope(exit) conn.close();
 
 	// Insert
-	auto rowsAffected = conn.exec(
+	ulong rowsAffected = conn.exec(
 		"INSERT INTO `tablename` (`id`, `name`) VALUES (1, 'Ann'), (2, 'Bob')");
 
 	// Query
@@ -27,24 +27,31 @@ void main(string[] args)
 	assert(range.front[0] == 2);
 	assert(range.front[1] == "Bob");
 
-	// Prepared statements
-	Prepared prepared = conn.prepare("SELECT * FROM `tablename` WHERE `name`=? OR `name`=?");
-	prepared.setArgs("Bob", "Bobby");
-	ResultRange bobs = conn.query(prepared);
+	// Simplified prepared statements
+	ResultRange bobs = conn.query(
+		"SELECT * FROM `tablename` WHERE `name`=? OR `name`=?",
+		"Bob", "Bobby");
 	bobs.close(); // Skip them
 	
-	prepared.setArgs("Bob", "Ann");
-	Row[] rs = conn.query(prepared).array;
+	Row[] rs = conn.query( // Same SQL as above, but only prepared once and is reused!
+		"SELECT * FROM `tablename` WHERE `name`=? OR `name`=?",
+		"Bob", "Ann").array; // Get ALL the rows at once
 	assert(rs.length == 2);
 	assert(rs[0][0] == 1);
 	assert(rs[0][1] == "Ann");
 	assert(rs[1][0] == 2);
 	assert(rs[1][1] == "Bob");
 
+	// Full-featured prepared statements
+	Prepared prepared = conn.prepare("SELECT * FROM `tablename` WHERE `name`=? OR `name`=?");
+	prepared.setArgs("Bob", "Bobby");
+	bobs = conn.query(prepared);
+	bobs.close(); // Skip them
+
 	// Nulls
-	Prepared insert = conn.prepare("INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)");
-	insert.setArgs(null, "Cam"); // Also takes Nullable!T
-	conn.exec(insert);
+	conn.exec(
+		"INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)",
+		null, "Cam"); // Can also take Nullable!T
 	range = conn.query("SELECT * FROM `tablename` WHERE `name`='Cam'");
 	assert( range.front[0].type == typeid(typeof(null)) );
 }
