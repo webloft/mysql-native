@@ -1,8 +1,12 @@
-v2.1.0 - TBD
+v2.1.0 - 2018-03-02
 =====================
 
-New features.
+New prepared statement features.
 
+Since v2.1.0-rc1:
+- **Docs:** Update readme example for new simplified prepared statement interface. (@Abscissa)
+
+Since v2.0.0:
 - **New:** [#118](https://github.com/mysql-d/mysql-native/issues/118):
 	Convenience
 	[exec/query overloads](http://semitwist.com/mysql-native/mysql/commands.html)
