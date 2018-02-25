@@ -16,6 +16,9 @@ containing the bulk of the MySQL/MariaDB-specific code. Hang on tight...
 +/
 module mysql.protocol.comms;
 
+import std.range;
+import std.variant;
+
 import mysql.connection;
 import mysql.exceptions;
 import mysql.prepared;
@@ -398,4 +401,79 @@ package struct ProtocolPrepared
 		conn.bumpPacket();
 		conn.send(packet);
 	}
+}
+
+package(mysql) struct ExecQueryImplInfo
+{
+	bool isPrepared;
+
+	// For non-prepared statements:
+	string sql;
+
+	// For prepared statements:
+	uint hStmt;
+	PreparedStmtHeaders psh;
+	Variant[] inParams;
+	ParameterSpecialization[] psa;
+}
+
+/++
+Internal implementation for the exec and query functions.
+
+Execute a one-off SQL command.
+
+Any result set can be accessed via Connection.getNextRow(), but you should really be
+using the query function for such queries.
+
+Params: ra = An out parameter to receive the number of rows affected.
+Returns: true if there was a (possibly empty) result set.
++/
+package(mysql) bool execQueryImpl(Connection conn, ExecQueryImplInfo info, out ulong ra)
+{
+	scope(failure) conn.kill();
+
+	// Send data
+	if(info.isPrepared)
+		ProtocolPrepared.sendCommand(conn, info.hStmt, info.psh, info.inParams, info.psa);
+	else
+	{
+		conn.sendCmd(CommandType.QUERY, info.sql);
+		conn._fieldCount = 0;
+	}
+
+	// Handle response
+	ubyte[] packet = conn.getPacket();
+	bool rv;
+	if (packet.front == ResultPacketMarker.ok || packet.front == ResultPacketMarker.error)
+	{
+		conn.resetPacket();
+		auto okp = OKErrorPacket(packet);
+		enforcePacketOK(okp);
+		ra = okp.affected;
+		conn._serverStatus = okp.serverStatus;
+		conn._insertID = okp.insertID;
+		rv = false;
+	}
+	else
+	{
+		// There was presumably a result set
+		assert(packet.front >= 1 && packet.front <= 250); // Result set packet header should have this value
+		conn._headersPending = conn._rowsPending = true;
+		conn._binaryPending = info.isPrepared;
+		auto lcb = packet.consumeIfComplete!LCB();
+		assert(!lcb.isNull);
+		assert(!lcb.isIncomplete);
+		conn._fieldCount = cast(ushort)lcb.value;
+		assert(conn._fieldCount == lcb.value);
+		rv = true;
+		ra = 0;
+	}
+	return rv;
+}
+
+///ditto
+package bool execQueryImpl(Connection conn, ExecQueryImplInfo info)
+{
+	ulong rowsAffected;
+	return execQueryImpl(conn, info, rowsAffected);
 }
