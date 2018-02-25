@@ -1553,6 +1553,13 @@ public:
 		assert(!cn.closed); // Is open?
 		assert(!range.isValid); // Was invalidated?
 		cn.query(sql).array; // Connection still works?
+
+		// Auto-reconnect upon a command
+		cn.close();
+		assert(cn.closed);
+		range = cn.query(sql);
+		assert(!cn.closed);
+		assert(range.front[0] == 1);
 	}
 	
 	private void quit()
