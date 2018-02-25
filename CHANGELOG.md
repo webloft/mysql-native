@@ -1,5 +1,7 @@
 TBD - TBD
 =====================
+- **Fixed:** [#165](https://github.com/mysql-d/mysql-native/issues/165):
+	MySQLPool should automatically reopen any closed connections. (@Abscissa)
 - **Fixed:** [#167](https://github.com/mysql-d/mysql-native/issues/167):
 	ResultRange doesn't get invalidated upon reconnect. (@Abscissa)
 - **Fixed:** Remove unnecessary precondition that connection must be

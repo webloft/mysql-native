@@ -172,6 +172,9 @@ version(IncludeMySQLPool)
 		auto lockConnection()
 		{
 			Connection conn = m_pool.lockConnection();
+			if(conn.closed)
+				conn.reconnect();
+
 			applyAuto(conn);
 			return conn;
 		}
@@ -511,6 +514,39 @@ version(IncludeMySQLPool)
 			auto cn3 = pool.createConnection();
 			pool.applyAuto(cn3);
 			assert(!cn3.isRegistered(sql));
+		}
+	}
+
+	@("closedConnection") // "cct"
+	debug(MYSQLN_TESTS)
+	{
+		MySQLPool cctPool;
+		int cctCount=0;
+		
+		void cctStart()
+		{
+			import std.array;
+			import mysql.commands;
+
+			cctPool = new MySQLPool(testConnectionStr);
+			cctPool.onNewConnection = (Connection conn) { cctCount++; };
+			assert(cctCount == 0);
+
+			auto cn = cctPool.lockConnection();
+			assert(!cn.closed);
+			cn.close();
+			assert(cn.closed);
+			assert(cctCount == 1);
+		}
+
+		unittest
+		{
+			cctStart();
+			assert(cctCount == 1);
+
+			auto cn = cctPool.lockConnection();
+			assert(cctCount == 1);
+			assert(!cn.closed);
 		}
 	}
 }
