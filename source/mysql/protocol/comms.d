@@ -16,6 +16,7 @@ containing the bulk of the MySQL/MariaDB-specific code. Hang on tight...
 +/
 module mysql.protocol.comms;
 
+import std.exception;
 import std.range;
 import std.variant;
 
@@ -495,4 +496,120 @@ package(mysql) void immediateReleasePrepared(Connection conn, uint statementId)
 	conn.send(packet);
 	// It seems that the server does not find it necessary to send a response
 	// for this command.
+}
+
+// Moved here from `struct Row`
+package(mysql) bool[] consumeNullBitmap(ref ubyte[] packet, uint fieldCount) pure
+{
+	uint bitmapLength = calcBitmapLength(fieldCount);
+	enforceEx!MYXProtocol(packet.length >= bitmapLength, "Packet too small to hold null bitmap for all fields");
+	auto bitmap = packet.consume(bitmapLength);
+	return decodeNullBitmap(bitmap, fieldCount);
+}
+
+// Moved here from `struct Row`
+private static uint calcBitmapLength(uint fieldCount) pure nothrow
+{
+	return (fieldCount+7+2)/8;
+}
+
+// Moved here from `struct Row`
+// This is to decode the bitmap in a binary result row. First two bits are skipped
+private bool[] decodeNullBitmap(ubyte[] bitmap, uint numFields) pure nothrow
+in
+{
+	assert(bitmap.length >= calcBitmapLength(numFields),
+		"bitmap not large enough to store all null fields");
+}
+out(result)
+{
+	assert(result.length == numFields);
+}
+body
+{
+	bool[] nulls;
+	nulls.length = numFields;
+
+	// the current byte we are processing for nulls
+	ubyte bits = bitmap.front();
+	// strip away the first two bits as they are reserved
+	bits >>= 2;
+	// .. and then we only have 6 bits left to process for this byte
+	ubyte bitsLeftInByte = 6;
+	foreach(ref isNull; nulls)
+	{
+		assert(bitsLeftInByte <= 8);
+		// processed all bits? fetch new byte
+		if (bitsLeftInByte == 0)
+		{
+			assert(bits == 0, "not all bits are processed!");
+			assert(!bitmap.empty, "bits array too short for number of columns");
+			bitmap.popFront();
+			bits = bitmap.front;
+			bitsLeftInByte = 8;
+		}
+		assert(bitsLeftInByte > 0);
+		isNull = (bits & 0b0000_0001) != 0;
+
+		// get ready to process next bit
+		bits >>= 1;
+		--bitsLeftInByte;
+	}
+	return nulls;
+}
+
+// Moved here from `struct Row.this`
+package(mysql) void ctorRow(Connection con, ref ubyte[] packet, ResultSetHeaders rh, bool binary,
+	out Variant[] _values, out bool[] _nulls)
+in
+{
+	assert(rh.fieldCount <= uint.max);
+}
+body
+{
+	scope(failure) con.kill();
+
+	uint fieldCount = cast(uint)rh.fieldCount;
+	_values.length = _nulls.length = fieldCount;
+
+	if(binary)
+	{
+		// There's a null byte header on a binary result sequence, followed by some bytes of bitmap
+		// indicating which columns are null
+		enforceEx!MYXProtocol(packet.front == 0, "Expected null header byte for binary result row");
+		packet.popFront();
+		_nulls = consumeNullBitmap(packet, fieldCount);
+	}
+
+	foreach(size_t i; 0..fieldCount)
+	{
+		if(binary && _nulls[i])
+		{
+			_values[i] = null;
+			continue;
+		}
+
+		SQLValue sqlValue;
+		do
+		{
+			FieldDescription fd = rh[i];
+			sqlValue = packet.consumeIfComplete(fd.type, binary, fd.unsigned, fd.charSet);
+			// TODO: Support chunk delegate
+			if(sqlValue.isIncomplete)
+				packet ~= con.getPacket();
+		} while(sqlValue.isIncomplete);
+		assert(!sqlValue.isIncomplete);
+
+		if(sqlValue.isNull)
+		{
+			assert(!binary);
+			assert(!_nulls[i]);
+			_nulls[i] = true;
+			_values[i] = null;
+		}
+		else
+		{
+			_values[i] = sqlValue.value;
+		}
+	}
 }
