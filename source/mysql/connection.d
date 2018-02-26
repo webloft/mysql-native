@@ -922,6 +922,9 @@ package:
 		ubyte[] packet;
 		Row rr;
 		packet = getPacket();
+		if(packet.front == ResultPacketMarker.error)
+			throw new MYXReceived(OKErrorPacket(packet), __FILE__, __LINE__);
+
 		if (packet.isEOFPacket())
 		{
 			_rowsPending = _binaryPending = false;

@@ -75,9 +75,10 @@ unittest
     uint cacheCutOffLimit = int.max;
 
 	prepared.setArgs(baseTimeStamp, cacheCutOffLimit);
-	// Issue #28: MYXProtocol: Expected null header byte for binary result row
-	//TODO: Fix #28
-	//auto results = cn.query(prepared).array;
+	auto e = collectException( cn.query(prepared).array );
+	assert(e !is null);
+	auto myxReceived = cast(MYXReceived) e;
+	assert(myxReceived !is null);
 }
 
 // Issue #33: TINYTEXT, TEXT, MEDIUMTEXT, LONGTEXT types treated as ubyte[]
