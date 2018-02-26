@@ -17,6 +17,7 @@ containing the bulk of the MySQL/MariaDB-specific code. Hang on tight...
 module mysql.protocol.comms;
 
 import std.algorithm;
+import std.conv;
 import std.digest.sha;
 import std.exception;
 import std.range;
@@ -473,7 +474,7 @@ package(mysql) bool execQueryImpl(Connection conn, ExecQueryImplInfo info, out u
 }
 
 ///ditto
-package bool execQueryImpl(Connection conn, ExecQueryImplInfo info)
+package(mysql) bool execQueryImpl(Connection conn, ExecQueryImplInfo info)
 {
 	ulong rowsAffected;
 	return execQueryImpl(conn, info, rowsAffected);
@@ -655,7 +656,7 @@ body
 		_socket.write(data);
 }
 
-void sendCmd(T)(Connection conn, CommandType cmd, const(T)[] data)
+package(mysql) void sendCmd(T)(Connection conn, CommandType cmd, const(T)[] data)
 in
 {
 	// Internal thread states. Clients shouldn't use this
@@ -706,7 +707,7 @@ body
 	conn._socket.send(header, cast(const(ubyte)[])data);
 }
 
-OKErrorPacket getCmdResponse(Connection conn, bool asString = false)
+package(mysql) OKErrorPacket getCmdResponse(Connection conn, bool asString = false)
 {
 	auto okp = OKErrorPacket(conn.getPacket());
 	enforcePacketOK(okp);
@@ -714,7 +715,7 @@ OKErrorPacket getCmdResponse(Connection conn, bool asString = false)
 	return okp;
 }
 
-ubyte[] buildAuthPacket(Connection conn, ubyte[] token)
+package(mysql) ubyte[] buildAuthPacket(Connection conn, ubyte[] token)
 in
 {
 	assert(token.length == 20);
@@ -767,7 +768,7 @@ body
 	return packet;
 }
 
-ubyte[] makeToken(Connection conn, ubyte[] authBuf)
+package(mysql) ubyte[] makeToken(Connection conn, ubyte[] authBuf)
 {
 	auto pass1 = sha1Of(cast(const(ubyte)[])conn._pwd);
 	auto pass2 = sha1Of(pass1);
@@ -783,7 +784,7 @@ ubyte[] makeToken(Connection conn, ubyte[] authBuf)
 }
 
 /// Get the next `mysql.result.Row` of a pending result set.
-Row getNextRow(Connection conn)
+package(mysql) Row getNextRow(Connection conn)
 {
 	scope(failure) conn.kill();
 
@@ -808,7 +809,7 @@ Row getNextRow(Connection conn)
 	return rr;
 }
 
-void consumeServerInfo(Connection conn, ref ubyte[] packet)
+package(mysql) void consumeServerInfo(Connection conn, ref ubyte[] packet)
 {
 	scope(failure) conn.kill();
 
@@ -822,7 +823,7 @@ void consumeServerInfo(Connection conn, ref ubyte[] packet)
 	enforceEx!MYX(conn._sCaps & SvrCapFlags.SECURE_CONNECTION, "Server doesn't support protocol v4.1 connection");
 }
 
-ubyte[] parseGreeting(Connection conn)
+package(mysql) ubyte[] parseGreeting(Connection conn)
 {
 	scope(failure) conn.kill();
 
@@ -864,7 +865,7 @@ ubyte[] parseGreeting(Connection conn)
 	return authBuf;
 }
 
-SvrCapFlags getCommonCapabilities(SvrCapFlags server, SvrCapFlags client) pure
+package(mysql) SvrCapFlags getCommonCapabilities(SvrCapFlags server, SvrCapFlags client) pure
 {
 	SvrCapFlags common;
 	uint filter = 1;
@@ -879,7 +880,7 @@ SvrCapFlags getCommonCapabilities(SvrCapFlags server, SvrCapFlags client) pure
 	return common;
 }
 
-void setClientFlags(Connection conn, SvrCapFlags capFlags)
+package(mysql) void setClientFlags(Connection conn, SvrCapFlags capFlags)
 {
 	conn._cCaps = getCommonCapabilities(conn._sCaps, capFlags);
 
@@ -889,7 +890,7 @@ void setClientFlags(Connection conn, SvrCapFlags capFlags)
 	conn._cCaps |= SvrCapFlags.SECURE_CONNECTION;
 }
 
-void authenticate(Connection conn, ubyte[] greeting)
+package(mysql) void authenticate(Connection conn, ubyte[] greeting)
 in
 {
 	assert(conn._open == Connection.OpenState.connected);
@@ -911,7 +912,7 @@ body
 }
 
 // Register prepared statement
-PreparedServerInfo performRegister(Connection conn, string sql)
+package(mysql) PreparedServerInfo performRegister(Connection conn, string sql)
 {
 	scope(failure) conn.kill();
 
@@ -920,7 +921,6 @@ PreparedServerInfo performRegister(Connection conn, string sql)
 	conn.sendCmd(CommandType.STMT_PREPARE, sql);
 	conn._fieldCount = 0;
 
-	//TODO: All packet handling should be moved into the mysql.protocol package.
 	ubyte[] packet = conn.getPacket();
 	if(packet.front == ResultPacketMarker.ok)
 	{
@@ -946,4 +946,88 @@ PreparedServerInfo performRegister(Connection conn, string sql)
 		assert(0); // FIXME: what now?
 
 	return info;
+}
+
+/++
+Flush any outstanding result set elements.
+
+When the server responds to a command that produces a result set, it
+queues the whole set of corresponding packets over the current connection.
+Before that `Connection` can embark on any new command, it must receive
+all of those packets and junk them.
+
+As of v1.1.4, this is done automatically as needed. But you can still
+call this manually to force a purge to occur when you want.
+
+See_Also: $(LINK http://www.mysqlperformanceblog.com/2007/07/08/mysql-net_write_timeout-vs-wait_timeout-and-protocol-notes/)
++/
+package(mysql) ulong purgeResult(Connection conn)
+{
+	scope(failure) conn.kill();
+
+	conn._lastCommandID++;
+
+	ulong rows = 0;
+	if (conn._headersPending)
+	{
+		for (size_t i = 0;; i++)
+		{
+			if (conn.getPacket().isEOFPacket())
+			{
+				conn._headersPending = false;
+				break;
+			}
+			enforceEx!MYXProtocol(i < conn._fieldCount,
+				text("Field header count (", conn._fieldCount, ") exceeded but no EOF packet found."));
+		}
+	}
+	if (conn._rowsPending)
+	{
+		for (;;  rows++)
+		{
+			if (conn.getPacket().isEOFPacket())
+			{
+				conn._rowsPending = conn._binaryPending = false;
+				break;
+			}
+		}
+	}
+	conn.resetPacket();
+	return rows;
+}
+
+/++
+Get a textual report on the server status.
+
+(COM_STATISTICS)
++/
+package(mysql) string serverStats(Connection conn)
+{
+	conn.sendCmd(CommandType.STATISTICS, []);
+	return cast(string) conn.getPacket();
+}
+
+/++
+Enable multiple statement commands.
+
+This can be used later if this feature was not requested in the client capability flags.
+
+Warning: This functionality is currently untested.
+
+Params: on = Boolean value to turn the capability on or off.
++/
+//TODO: Need to test this
+package(mysql) void enableMultiStatements(Connection conn, bool on)
+{
+	scope(failure) conn.kill();
+
+	ubyte[] t;
+	t.length = 2;
+	t[0] = on ? 0 : 1;
+	t[1] = 0;
+	conn.sendCmd(CommandType.STMT_OPTION, t);
+
+	// For some reason this command gets an EOF packet as response
+	auto packet = conn.getPacket();
+	enforceEx!MYXProtocol(packet[0] == 254 && packet.length == 5, "Unexpected response to SET_OPTION command");
 }

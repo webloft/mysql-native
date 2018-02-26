@@ -959,37 +959,7 @@ public:
 	+/
 	ulong purgeResult()
 	{
-		scope(failure) kill();
-
-		_lastCommandID++;
-
-		ulong rows = 0;
-		if (_headersPending)
-		{
-			for (size_t i = 0;; i++)
-			{
-				if (this.getPacket().isEOFPacket())
-				{
-					_headersPending = false;
-					break;
-				}
-				enforceEx!MYXProtocol(i < _fieldCount,
-					text("Field header count (", _fieldCount, ") exceeded but no EOF packet found."));
-			}
-		}
-		if (_rowsPending)
-		{
-			for (;;  rows++)
-			{
-				if (this.getPacket().isEOFPacket())
-				{
-					_rowsPending = _binaryPending = false;
-					break;
-				}
-			}
-		}
-		resetPacket();
-		return rows;
+		return mysql.protocol.comms.purgeResult(this);
 	}
 
 	/++
@@ -999,8 +969,7 @@ public:
 	+/
 	string serverStats()
 	{
-		this.sendCmd(CommandType.STATISTICS, []);
-		return cast(string) this.getPacket();
+		return mysql.protocol.comms.serverStats(this);
 	}
 
 	/++
@@ -1015,17 +984,7 @@ public:
 	//TODO: Need to test this
 	void enableMultiStatements(bool on)
 	{
-		scope(failure) this.kill();
-
-		ubyte[] t;
-		t.length = 2;
-		t[0] = on ? 0 : 1;
-		t[1] = 0;
-		this.sendCmd(CommandType.STMT_OPTION, t);
-
-		// For some reason this command gets an EOF packet as response
-		auto packet = this.getPacket();
-		enforceEx!MYXProtocol(packet[0] == 254 && packet.length == 5, "Unexpected response to SET_OPTION command");
+		mysql.protocol.comms.enableMultiStatements(this, on);
 	}
 
 	/// Return the in-force protocol number.
