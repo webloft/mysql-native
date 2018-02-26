@@ -7,6 +7,8 @@ TBD - TBD
 - **Fixed:** Remove unnecessary precondition that connection must be
 	closed before calling `Connection.connect`. (@Abscissa)
 - **Tests:** Add tests for reconnecting. (@Abscissa)
+- **Internal:** [#144](https://github.com/mysql-d/mysql-native/issues/144):
+	Move all packet handling, etc., into mysql.protocol.comms (@Abscissa)
 
 v2.1.0 - 2018-03-02
 =====================
