@@ -8,6 +8,8 @@ TBD - TBD
 	closed before calling `Connection.connect`. (@Abscissa)
 - **Fixed:** [#121](https://github.com/mysql-d/mysql-native/issues/121):
 	Use `const(char[])` instead `string` for queries. (@Abscissa)
+- **Fixed:** [#13](https://github.com/mysql-d/mysql-native/issues/13):
+	No support for type modifiers in prepared statement parameters. (@Abscissa)
 - **Tests:** Add tests for reconnecting. (@Abscissa)
 - **Internal:** [#144](https://github.com/mysql-d/mysql-native/issues/144):
 	Move all packet handling, etc., into mysql.protocol.comms (@Abscissa)

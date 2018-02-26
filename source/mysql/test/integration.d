@@ -879,16 +879,22 @@ unittest
 		assert(x.type == typeid(typeof(null)));
 
 		// Values
-		foreach(value; values)
+		void assertBasicTestsValue(T, U)(U val)
 		{
 			cn.exec("TRUNCATE "~tablename);
 
-			inscmd.setArg(0, value);
-			okp = cn.exec(inscmd);
-			//assert(okp.affectedRows == 1, "value not inserted");
-			assert(okp == 1, "value not inserted");
+			inscmd.setArg(0, val);
+			auto ra = cn.exec(inscmd);
+			assert(ra == 1, "value not inserted");
 
-			cn.assertScalar!T(selectOneSql, value);
+			cn.assertScalar!(Unqual!T)(selectOneSql, val);
+		}
+		foreach(value; values)
+		{
+			assertBasicTestsValue!(T)(value);
+			assertBasicTestsValue!(T)(cast(const(U))value);
+			assertBasicTestsValue!(T)(cast(immutable(U))value);
+			assertBasicTestsValue!(T)(cast(shared(immutable(U)))value);
 		}
 	}
 
@@ -896,10 +902,11 @@ unittest
 	assertBasicTests!float("FLOAT", 0.0f, 0.1f, -0.1f, 1.0f, -1.0f);
 	assertBasicTests!double("DOUBLE", 0.0, 0.1, -0.1, 1.0, -1.0);
 
+	// TODO: Why don't these work?
 	//assertBasicTests!bool("BOOL", true, false);
 	//assertBasicTests!bool("TINYINT(1)", true, false);
-	assertBasicTests!byte("BOOL", cast(byte)0, cast(byte)1);
-	assertBasicTests!byte("TINYINT(1)", cast(byte)0, cast(byte)1);
+	assertBasicTests!byte("BOOl", cast(byte)1, cast(byte)0);
+	assertBasicTests!byte("TINYINT(1)", cast(byte)1, cast(byte)0);
 
 	assertBasicTests!byte("TINYINT",
 			cast(byte)0, cast(byte)1, cast(byte)-1, byte.min, byte.max);
@@ -927,10 +934,14 @@ unittest
 	assertBasicTests!(ubyte[])("BLOB", "", "aoeu");
 	assertBasicTests!(ubyte[])("LONGBLOB", "", "aoeu");
 
+	assertBasicTests!(ubyte[])("TINYBLOB", cast(byte[])"", cast(byte[])"aoeu");
+	assertBasicTests!(ubyte[])("TINYBLOB", cast(char[])"", cast(char[])"aoeu");
+
 	assertBasicTests!Date("DATE", Date(2013, 10, 03));
 	assertBasicTests!DateTime("DATETIME", DateTime(2013, 10, 03, 12, 55, 35));
-	//assertBasicTests!TimeOfDay("TIME", TimeOfDay(12, 55, 35));
+	assertBasicTests!TimeOfDay("TIME", TimeOfDay(12, 55, 35));
 	//assertBasicTests!DateTime("TIMESTAMP NULL", Timestamp(2013_10_03_12_55_35));
+	//TODO: Add Timestamp
 }
 
 @("info_character_sets")

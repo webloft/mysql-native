@@ -127,69 +127,93 @@ package struct ProtocolPrepared
 			switch (ts)
 			{
 				case "bool":
+				case "const(bool)":
+				case "immutable(bool)":
+				case "shared(immutable(bool))":
 					if (ext == SQLType.INFER_FROM_D_TYPE)
 						types[ct++] = SQLType.BIT;
 					else
 						types[ct++] = cast(ubyte) ext;
 					types[ct++] = SIGNED;
 					reAlloc(2);
-					bool bv = isRef? *(v.get!(bool*)): v.get!(bool);
+					bool bv = isRef? *(v.get!(const(bool*))): v.get!(const(bool));
 					vals[vcl++] = 1;
 					vals[vcl++] = bv? 0x31: 0x30;
 					break;
 				case "byte":
+				case "const(byte)":
+				case "immutable(byte)":
+				case "shared(immutable(byte))":
 					types[ct++] = SQLType.TINY;
 					types[ct++] = SIGNED;
 					reAlloc(1);
-					vals[vcl++] = isRef? *(v.get!(byte*)): v.get!(byte);
+					vals[vcl++] = isRef? *(v.get!(const(byte*))): v.get!(const(byte));
 					break;
 				case "ubyte":
+				case "const(ubyte)":
+				case "immutable(ubyte)":
+				case "shared(immutable(ubyte))":
 					types[ct++] = SQLType.TINY;
 					types[ct++] = UNSIGNED;
 					reAlloc(1);
-					vals[vcl++] = isRef? *(v.get!(ubyte*)): v.get!(ubyte);
+					vals[vcl++] = isRef? *(v.get!(const(ubyte*))): v.get!(const(ubyte));
 					break;
 				case "short":
+				case "const(short)":
+				case "immutable(short)":
+				case "shared(immutable(short))":
 					types[ct++] = SQLType.SHORT;
 					types[ct++] = SIGNED;
 					reAlloc(2);
-					short si = isRef? *(v.get!(short*)): v.get!(short);
+					short si = isRef? *(v.get!(const(short*))): v.get!(const(short));
 					vals[vcl++] = cast(ubyte) (si & 0xff);
 					vals[vcl++] = cast(ubyte) ((si >> 8) & 0xff);
 					break;
 				case "ushort":
+				case "const(ushort)":
+				case "immutable(ushort)":
+				case "shared(immutable(ushort))":
 					types[ct++] = SQLType.SHORT;
 					types[ct++] = UNSIGNED;
 					reAlloc(2);
-					ushort us = isRef? *(v.get!(ushort*)): v.get!(ushort);
+					ushort us = isRef? *(v.get!(const(ushort*))): v.get!(const(ushort));
 					vals[vcl++] = cast(ubyte) (us & 0xff);
 					vals[vcl++] = cast(ubyte) ((us >> 8) & 0xff);
 					break;
 				case "int":
+				case "const(int)":
+				case "immutable(int)":
+				case "shared(immutable(int))":
 					types[ct++] = SQLType.INT;
 					types[ct++] = SIGNED;
 					reAlloc(4);
-					int ii = isRef? *(v.get!(int*)): v.get!(int);
+					int ii = isRef? *(v.get!(const(int*))): v.get!(const(int));
 					vals[vcl++] = cast(ubyte) (ii & 0xff);
 					vals[vcl++] = cast(ubyte) ((ii >> 8) & 0xff);
 					vals[vcl++] = cast(ubyte) ((ii >> 16) & 0xff);
 					vals[vcl++] = cast(ubyte) ((ii >> 24) & 0xff);
 					break;
 				case "uint":
+				case "const(uint)":
+				case "immutable(uint)":
+				case "shared(immutable(uint))":
 					types[ct++] = SQLType.INT;
 					types[ct++] = UNSIGNED;
 					reAlloc(4);
-					uint ui = isRef? *(v.get!(uint*)): v.get!(uint);
+					uint ui = isRef? *(v.get!(const(uint*))): v.get!(const(uint));
 					vals[vcl++] = cast(ubyte) (ui & 0xff);
 					vals[vcl++] = cast(ubyte) ((ui >> 8) & 0xff);
 					vals[vcl++] = cast(ubyte) ((ui >> 16) & 0xff);
 					vals[vcl++] = cast(ubyte) ((ui >> 24) & 0xff);
 					break;
 				case "long":
+				case "const(long)":
+				case "immutable(long)":
+				case "shared(immutable(long))":
 					types[ct++] = SQLType.LONGLONG;
 					types[ct++] = SIGNED;
 					reAlloc(8);
-					long li = isRef? *(v.get!(long*)): v.get!(long);
+					long li = isRef? *(v.get!(const(long*))): v.get!(const(long));
 					vals[vcl++] = cast(ubyte) (li & 0xff);
 					vals[vcl++] = cast(ubyte) ((li >> 8) & 0xff);
 					vals[vcl++] = cast(ubyte) ((li >> 16) & 0xff);
@@ -200,10 +224,13 @@ package struct ProtocolPrepared
 					vals[vcl++] = cast(ubyte) ((li >> 56) & 0xff);
 					break;
 				case "ulong":
+				case "const(ulong)":
+				case "immutable(ulong)":
+				case "shared(immutable(ulong))":
 					types[ct++] = SQLType.LONGLONG;
 					types[ct++] = UNSIGNED;
 					reAlloc(8);
-					ulong ul = isRef? *(v.get!(ulong*)): v.get!(ulong);
+					ulong ul = isRef? *(v.get!(const(ulong*))): v.get!(const(ulong));
 					vals[vcl++] = cast(ubyte) (ul & 0xff);
 					vals[vcl++] = cast(ubyte) ((ul >> 8) & 0xff);
 					vals[vcl++] = cast(ubyte) ((ul >> 16) & 0xff);
@@ -214,10 +241,13 @@ package struct ProtocolPrepared
 					vals[vcl++] = cast(ubyte) ((ul >> 56) & 0xff);
 					break;
 				case "float":
+				case "const(float)":
+				case "immutable(float)":
+				case "shared(immutable(float))":
 					types[ct++] = SQLType.FLOAT;
 					types[ct++] = SIGNED;
 					reAlloc(4);
-					float f = isRef? *(v.get!(float*)): v.get!(float);
+					float f = isRef? *(v.get!(const(float*))): v.get!(const(float));
 					ubyte* ubp = cast(ubyte*) &f;
 					vals[vcl++] = *ubp++;
 					vals[vcl++] = *ubp++;
@@ -225,10 +255,13 @@ package struct ProtocolPrepared
 					vals[vcl++] = *ubp;
 					break;
 				case "double":
+				case "const(double)":
+				case "immutable(double)":
+				case "shared(immutable(double))":
 					types[ct++] = SQLType.DOUBLE;
 					types[ct++] = SIGNED;
 					reAlloc(8);
-					double d = isRef? *(v.get!(double*)): v.get!(double);
+					double d = isRef? *(v.get!(const(double*))): v.get!(const(double));
 					ubyte* ubp = cast(ubyte*) &d;
 					vals[vcl++] = *ubp++;
 					vals[vcl++] = *ubp++;
@@ -240,10 +273,17 @@ package struct ProtocolPrepared
 					vals[vcl++] = *ubp;
 					break;
 				case "std.datetime.date.Date":
+				case "const(std.datetime.date.Date)":
+				case "immutable(std.datetime.date.Date)":
+				case "shared(immutable(std.datetime.date.Date))":
+
 				case "std.datetime.Date":
+				case "const(std.datetime.Date)":
+				case "immutable(std.datetime.Date)":
+				case "shared(immutable(std.datetime.Date))":
 					types[ct++] = SQLType.DATE;
 					types[ct++] = SIGNED;
-					Date date = isRef? *(v.get!(Date*)): v.get!(Date);
+					Date date = isRef? *(v.get!(const(Date*))): v.get!(const(Date));
 					ubyte[] da = pack(date);
 					size_t l = da.length;
 					reAlloc(l);
@@ -251,10 +291,17 @@ package struct ProtocolPrepared
 					vcl += l;
 					break;
 				case "std.datetime.TimeOfDay":
+				case "const(std.datetime.TimeOfDay)":
+				case "immutable(std.datetime.TimeOfDay)":
+				case "shared(immutable(std.datetime.TimeOfDay))":
+				
 				case "std.datetime.Time":
+				case "const(std.datetime.Time)":
+				case "immutable(std.datetime.Time)":
+				case "shared(immutable(std.datetime.Time))":
 					types[ct++] = SQLType.TIME;
 					types[ct++] = SIGNED;
-					TimeOfDay time = isRef? *(v.get!(TimeOfDay*)): v.get!(TimeOfDay);
+					TimeOfDay time = isRef? *(v.get!(const(TimeOfDay*))): v.get!(const(TimeOfDay));
 					ubyte[] ta = pack(time);
 					size_t l = ta.length;
 					reAlloc(l);
@@ -262,10 +309,17 @@ package struct ProtocolPrepared
 					vcl += l;
 					break;
 				case "std.datetime.date.DateTime":
+				case "const(std.datetime.date.DateTime)":
+				case "immutable(std.datetime.date.DateTime)":
+				case "shared(immutable(std.datetime.date.DateTime))":
+				
 				case "std.datetime.DateTime":
+				case "const(std.datetime.DateTime)":
+				case "immutable(std.datetime.DateTime)":
+				case "shared(immutable(std.datetime.DateTime))":
 					types[ct++] = SQLType.DATETIME;
 					types[ct++] = SIGNED;
-					DateTime dt = isRef? *(v.get!(DateTime*)): v.get!(DateTime);
+					DateTime dt = isRef? *(v.get!(const(DateTime*))): v.get!(const(DateTime));
 					ubyte[] da = pack(dt);
 					size_t l = da.length;
 					reAlloc(l);
@@ -273,9 +327,12 @@ package struct ProtocolPrepared
 					vcl += l;
 					break;
 				case "mysql.types.Timestamp":
+				case "const(mysql.types.Timestamp)":
+				case "immutable(mysql.types.Timestamp)":
+				case "shared(immutable(mysql.types.Timestamp))":
 					types[ct++] = SQLType.TIMESTAMP;
 					types[ct++] = SIGNED;
-					Timestamp tms = isRef? *(v.get!(Timestamp*)): v.get!(Timestamp);
+					Timestamp tms = isRef? *(v.get!(const(Timestamp*))): v.get!(const(Timestamp));
 					DateTime dt = mysql.protocol.packet_helpers.toDateTime(tms.rep);
 					ubyte[] da = pack(dt);
 					size_t l = da.length;
@@ -283,49 +340,58 @@ package struct ProtocolPrepared
 					vals[vcl..vcl+l] = da[];
 					vcl += l;
 					break;
-				case "immutable(char)[]":
-					if (ext == SQLType.INFER_FROM_D_TYPE)
-						types[ct++] = SQLType.VARCHAR;
-					else
-						types[ct++] = cast(ubyte) ext;
-					types[ct++] = SIGNED;
-					string s = isRef? *(v.get!(string*)): v.get!(string);
-					ubyte[] packed = packLCS(cast(void[]) s);
-					reAlloc(packed.length);
-					vals[vcl..vcl+packed.length] = packed[];
-					vcl += packed.length;
-					break;
 				case "char[]":
+				case "const(char[])":
+				case "immutable(char[])":
+				case "const(char)[]":
+				case "immutable(char)[]":
+				case "shared(immutable(char)[])":
+				case "shared(immutable(char))[]":
+				case "shared(immutable(char[]))":
 					if (ext == SQLType.INFER_FROM_D_TYPE)
 						types[ct++] = SQLType.VARCHAR;
 					else
 						types[ct++] = cast(ubyte) ext;
 					types[ct++] = SIGNED;
-					char[] ca = isRef? *(v.get!(char[]*)): v.get!(char[]);
+					const char[] ca = isRef? *(v.get!(const(char[]*))): v.get!(const(char[]));
 					ubyte[] packed = packLCS(cast(void[]) ca);
 					reAlloc(packed.length);
 					vals[vcl..vcl+packed.length] = packed[];
 					vcl += packed.length;
 					break;
 				case "byte[]":
+				case "const(byte[])":
+				case "immutable(byte[])":
+				case "const(byte)[]":
+				case "immutable(byte)[]":
+				case "shared(immutable(byte)[])":
+				case "shared(immutable(byte))[]":
+				case "shared(immutable(byte[]))":
 					if (ext == SQLType.INFER_FROM_D_TYPE)
 						types[ct++] = SQLType.TINYBLOB;
 					else
 						types[ct++] = cast(ubyte) ext;
 					types[ct++] = SIGNED;
-					byte[] ba = isRef? *(v.get!(byte[]*)): v.get!(byte[]);
+					const byte[] ba = isRef? *(v.get!(const(byte[]*))): v.get!(const(byte[]));
 					ubyte[] packed = packLCS(cast(void[]) ba);
 					reAlloc(packed.length);
 					vals[vcl..vcl+packed.length] = packed[];
 					vcl += packed.length;
 					break;
 				case "ubyte[]":
+				case "const(ubyte[])":
+				case "immutable(ubyte[])":
+				case "const(ubyte)[]":
+				case "immutable(ubyte)[]":
+				case "shared(immutable(ubyte)[])":
+				case "shared(immutable(ubyte))[]":
+				case "shared(immutable(ubyte[]))":
 					if (ext == SQLType.INFER_FROM_D_TYPE)
 						types[ct++] = SQLType.TINYBLOB;
 					else
 						types[ct++] = cast(ubyte) ext;
 					types[ct++] = SIGNED;
-					ubyte[] uba = isRef? *(v.get!(ubyte[]*)): v.get!(ubyte[]);
+					const ubyte[] uba = isRef? *(v.get!(const(ubyte[]*))): v.get!(const(ubyte[]));
 					ubyte[] packed = packLCS(cast(void[]) uba);
 					reAlloc(packed.length);
 					vals[vcl..vcl+packed.length] = packed[];

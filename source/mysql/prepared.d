@@ -266,15 +266,22 @@ public:
 		// Test const(int)
 		{
 			const(int) i = 112;
-			//TODO Fix #13
-			//assert(cn.exec(insertSQL, i) == 1);
+			assert(cn.exec(insertSQL, i) == 1);
 		}
 
 		// Test immutable(int)
 		{
 			immutable(int) i = 113;
-			//TODO Fix #13
-			//assert(cn.exec(insertSQL, i) == 1);
+			assert(cn.exec(insertSQL, i) == 1);
+		}
+
+		// Note: Variant doesn't seem to support
+		// `shared(T)` or `shared(const(T)`. Only `shared(immutable(T))`.
+
+		// Test shared immutable(int)
+		{
+			shared immutable(int) i = 113;
+			assert(cn.exec(insertSQL, i) == 1);
 		}
 	}
 
