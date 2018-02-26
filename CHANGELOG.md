@@ -3,6 +3,10 @@ v2.1.0 - 2018-03-02
 
 New prepared statement features.
 
+Since v2.1.0-rc2:
+- **Fixed:** [#28](https://github.com/mysql-d/mysql-native/issues/28):
+	MYXProtocol thrown when using large integers as prepared parameters. (@Abscissa)
+
 Since v2.1.0-rc1:
 - **Docs:** Update readme example for new simplified prepared statement interface. (@Abscissa)
 
