@@ -484,7 +484,7 @@ package:
 		_open = OpenState.connected;
 
 		_clientCapabilities = clientCapabilities;
-		this.setClientFlags(clientCapabilities);
+		_cCaps = setClientFlags(_sCaps, clientCapabilities);
 		this.authenticate(greeting);
 	}
 	

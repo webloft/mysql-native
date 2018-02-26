@@ -2,17 +2,21 @@
 Internal - Low-level communications.
 
 Consider this module the main entry point for the low-level MySQL/MariaDB
-protocol code. The other modules in `mysql.protocol` are supporting tools
-for this module.
+protocol code. The other modules in `mysql.protocol` are mainly tools
+to support this module.
 
 Previously, the code handling low-level protocol details was scattered all
 across the library. Such functionality has been factored out into this module,
 to be kept in one place for better encapsulation and to facilitate further
 cleanup and refactoring.
 
-EXPECT MAJOR CHANGES to this entire `mysql.protocol` package until it
+EXPECT MAJOR CHANGES to this entire `mysql.protocol` sub-package until it
 eventually settles into what will eventually become a low-level library
 containing the bulk of the MySQL/MariaDB-specific code. Hang on tight...
+
+Next tasks for this sub-package's cleanup:
+- Reduce this module's reliance on Connection.
+- Abstract out a PacketStream to clean up getPacket and related functionality.
 +/
 module mysql.protocol.comms;
 
@@ -337,7 +341,7 @@ package struct ProtocolPrepared
 		return types;
 	}
 
-	static void sendLongData(Connection conn, uint hStmt, ParameterSpecialization[] psa)
+	static void sendLongData(MySQLSocket socket, uint hStmt, ParameterSpecialization[] psa)
 	{
 		assert(psa.length <= ushort.max); // parameter number is sent as short
 		foreach (ushort i, PSN psn; psa)
@@ -364,10 +368,10 @@ package struct ProtocolPrepared
 					chunk.length = chunk.length - (cs-sent);     // trim the chunk
 					sent += 7;        // adjust for non-payload bytes
 					packInto!(uint, true)(cast(uint)sent, chunk[0..3]);
-					conn._socket.send(chunk);
+					socket.send(chunk);
 					break;
 				}
-				conn._socket.send(chunk);
+				socket.send(chunk);
 			}
 		}
 	}
@@ -396,7 +400,7 @@ package struct ProtocolPrepared
 			packet = prefix;
 
 		if (longData)
-			sendLongData(conn, hStmt, psa);
+			sendLongData(conn._socket, hStmt, psa);
 
 		assert(packet.length <= uint.max);
 		packet.setPacketHeader(conn.pktNumber);
@@ -560,7 +564,7 @@ body
 }
 
 // Moved here from `struct Row.this`
-package(mysql) void ctorRow(Connection con, ref ubyte[] packet, ResultSetHeaders rh, bool binary,
+package(mysql) void ctorRow(Connection conn, ref ubyte[] packet, ResultSetHeaders rh, bool binary,
 	out Variant[] _values, out bool[] _nulls)
 in
 {
@@ -568,7 +572,7 @@ in
 }
 body
 {
-	scope(failure) con.kill();
+	scope(failure) conn.kill();
 
 	uint fieldCount = cast(uint)rh.fieldCount;
 	_values.length = _nulls.length = fieldCount;
@@ -597,7 +601,7 @@ body
 			sqlValue = packet.consumeIfComplete(fd.type, binary, fd.unsigned, fd.charSet);
 			// TODO: Support chunk delegate
 			if(sqlValue.isIncomplete)
-				packet ~= con.getPacket();
+				packet ~= conn.getPacket();
 		} while(sqlValue.isIncomplete);
 		assert(!sqlValue.isIncomplete);
 
@@ -768,9 +772,9 @@ body
 	return packet;
 }
 
-package(mysql) ubyte[] makeToken(Connection conn, ubyte[] authBuf)
+package(mysql) ubyte[] makeToken(string password, ubyte[] authBuf)
 {
-	auto pass1 = sha1Of(cast(const(ubyte)[])conn._pwd);
+	auto pass1 = sha1Of(cast(const(ubyte)[])password);
 	auto pass2 = sha1Of(pass1);
 
 	SHA1 sha1;
@@ -880,14 +884,16 @@ package(mysql) SvrCapFlags getCommonCapabilities(SvrCapFlags server, SvrCapFlags
 	return common;
 }
 
-package(mysql) void setClientFlags(Connection conn, SvrCapFlags capFlags)
+package(mysql) SvrCapFlags setClientFlags(SvrCapFlags serverCaps, SvrCapFlags capFlags)
 {
-	conn._cCaps = getCommonCapabilities(conn._sCaps, capFlags);
+	auto cCaps = getCommonCapabilities(serverCaps, capFlags);
 
 	// We cannot operate in <4.1 protocol, so we'll force it even if the user
 	// didn't supply it
-	conn._cCaps |= SvrCapFlags.PROTOCOL41;
-	conn._cCaps |= SvrCapFlags.SECURE_CONNECTION;
+	cCaps |= SvrCapFlags.PROTOCOL41;
+	cCaps |= SvrCapFlags.SECURE_CONNECTION;
+	
+	return cCaps;
 }
 
 package(mysql) void authenticate(Connection conn, ubyte[] greeting)
@@ -901,7 +907,7 @@ out
 }
 body
 {
-	auto token = conn.makeToken(greeting);
+	auto token = makeToken(conn._pwd, greeting);
 	auto authPacket = conn.buildAuthPacket(token);
 	conn._socket.send(authPacket);
 
