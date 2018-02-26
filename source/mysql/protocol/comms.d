@@ -800,6 +800,9 @@ package(mysql) Row getNextRow(Connection conn)
 	ubyte[] packet;
 	Row rr;
 	packet = conn.getPacket();
+	if(packet.front == ResultPacketMarker.error)
+		throw new MYXReceived(OKErrorPacket(packet), __FILE__, __LINE__);
+
 	if (packet.isEOFPacket())
 	{
 		conn._rowsPending = conn._binaryPending = false;
