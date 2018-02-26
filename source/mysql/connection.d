@@ -436,88 +436,6 @@ package:
 		assert(_socketType != MySQLSocketType.vibed);
 	}
 
-	/// Get the next `mysql.result.Row` of a pending result set.
-	Row getNextRow()
-	{
-		scope(failure) kill();
-
-		if (_headersPending)
-		{
-			_rsh = ResultSetHeaders(this, _fieldCount);
-			_headersPending = false;
-		}
-		ubyte[] packet;
-		Row rr;
-		packet = this.getPacket();
-		if (packet.isEOFPacket())
-		{
-			_rowsPending = _binaryPending = false;
-			return rr;
-		}
-		if (_binaryPending)
-			rr = Row(this, packet, _rsh, true);
-		else
-			rr = Row(this, packet, _rsh, false);
-		//rr._valid = true;
-		return rr;
-	}
-
-	void consumeServerInfo(ref ubyte[] packet)
-	{
-		scope(failure) kill();
-
-		_sCaps = cast(SvrCapFlags)packet.consume!ushort(); // server_capabilities (lower bytes)
-		_sCharSet = packet.consume!ubyte(); // server_language
-		_serverStatus = packet.consume!ushort(); //server_status
-		_sCaps += cast(SvrCapFlags)(packet.consume!ushort() << 16); // server_capabilities (upper bytes)
-		_sCaps |= SvrCapFlags.OLD_LONG_PASSWORD; // Assumed to be set since v4.1.1, according to spec
-
-		enforceEx!MYX(_sCaps & SvrCapFlags.PROTOCOL41, "Server doesn't support protocol v4.1");
-		enforceEx!MYX(_sCaps & SvrCapFlags.SECURE_CONNECTION, "Server doesn't support protocol v4.1 connection");
-	}
-
-	ubyte[] parseGreeting()
-	{
-		scope(failure) kill();
-
-		ubyte[] packet = this.getPacket();
-
-		if (packet.length > 0 && packet[0] == ResultPacketMarker.error)
-		{
-			auto okp = OKErrorPacket(packet);
-			enforceEx!MYX(!okp.error, "Connection failure: " ~ cast(string) okp.message);
-		}
-
-		_protocol = packet.consume!ubyte();
-
-		_serverVersion = packet.consume!string(packet.countUntil(0));
-		packet.skip(1); // \0 terminated _serverVersion
-
-		_sThread = packet.consume!uint();
-
-		// read first part of scramble buf
-		ubyte[] authBuf;
-		authBuf.length = 255;
-		authBuf[0..8] = packet.consume(8)[]; // scramble_buff
-
-		enforceEx!MYXProtocol(packet.consume!ubyte() == 0, "filler should always be 0");
-
-		consumeServerInfo(packet);
-
-		packet.skip(1); // this byte supposed to be scramble length, but is actually zero
-		packet.skip(10); // filler of \0
-
-		// rest of the scramble
-		auto len = packet.countUntil(0);
-		enforceEx!MYXProtocol(len >= 12, "second part of scramble buffer should be at least 12 bytes");
-		enforce(authBuf.length > 8+len);
-		authBuf[8..8+len] = packet.consume(len)[];
-		authBuf.length = 8+len; // cut to correct size
-		enforceEx!MYXProtocol(packet.consume!ubyte() == 0, "Excepted \\0 terminating scramble buf");
-
-		return authBuf;
-	}
-
 	static PlainPhobosSocket defaultOpenSocketPhobos(string host, ushort port)
 	{
 		auto s = new PlainPhobosSocket();
@@ -552,52 +470,6 @@ package:
 		}
 	}
 
-	SvrCapFlags getCommonCapabilities(SvrCapFlags server, SvrCapFlags client) pure
-	{
-		SvrCapFlags common;
-		uint filter = 1;
-		foreach (size_t i; 0..uint.sizeof)
-		{
-			bool serverSupport = (server & filter) != 0; // can the server do this capability?
-			bool clientSupport = (client & filter) != 0; // can we support it?
-			if(serverSupport && clientSupport)
-				common |= filter;
-			filter <<= 1; // check next flag
-		}
-		return common;
-	}
-
-	void setClientFlags(SvrCapFlags capFlags)
-	{
-		_cCaps = getCommonCapabilities(_sCaps, capFlags);
-
-		// We cannot operate in <4.1 protocol, so we'll force it even if the user
-		// didn't supply it
-		_cCaps |= SvrCapFlags.PROTOCOL41;
-		_cCaps |= SvrCapFlags.SECURE_CONNECTION;
-	}
-
-	void authenticate(ubyte[] greeting)
-	in
-	{
-		assert(_open == OpenState.connected);
-	}
-	out
-	{
-		assert(_open == OpenState.authenticated);
-	}
-	body
-	{
-		auto token = this.makeToken(greeting);
-		auto authPacket = this.buildAuthPacket(token);
-		this._socket.send(authPacket);
-
-		auto packet = this.getPacket();
-		auto okp = OKErrorPacket(packet);
-		enforceEx!MYX(!okp.error, "Authentication failure: " ~ cast(string) okp.message);
-		_open = OpenState.authenticated;
-	}
-
 	SvrCapFlags _clientCapabilities;
 
 	void connect(SvrCapFlags clientCapabilities)
@@ -608,12 +480,12 @@ package:
 	body
 	{
 		initConnection();
-		auto greeting = parseGreeting();
+		auto greeting = this.parseGreeting();
 		_open = OpenState.connected;
 
 		_clientCapabilities = clientCapabilities;
-		setClientFlags(clientCapabilities);
-		authenticate(greeting);
+		this.setClientFlags(clientCapabilities);
+		this.authenticate(greeting);
 	}
 	
 	/++
@@ -685,48 +557,11 @@ package:
 	{
 		return preparedRegistrations[sql];
 	}
-	
+
 	/// If already registered, simply returns the cached `PreparedServerInfo`.
 	PreparedServerInfo registerIfNeeded(string sql)
 	{
-		return preparedRegistrations.registerIfNeeded(sql, &performRegister);
-	}
-
-	PreparedServerInfo performRegister(string sql)
-	{
-		scope(failure) kill();
-
-		PreparedServerInfo info;
-		
-		this.sendCmd(CommandType.STMT_PREPARE, sql);
-		_fieldCount = 0;
-
-		//TODO: All packet handling should be moved into the mysql.protocol package.
-		ubyte[] packet = this.getPacket();
-		if(packet.front == ResultPacketMarker.ok)
-		{
-			packet.popFront();
-			info.statementId    = packet.consume!int();
-			_fieldCount         = packet.consume!short();
-			info.numParams      = packet.consume!short();
-
-			packet.popFront(); // one byte filler
-			info.psWarnings     = packet.consume!short();
-
-			// At this point the server also sends field specs for parameters
-			// and columns if there were any of each
-			info.headers = PreparedStmtHeaders(this, _fieldCount, info.numParams);
-		}
-		else if(packet.front == ResultPacketMarker.error)
-		{
-			auto error = OKErrorPacket(packet);
-			enforcePacketOK(error);
-			assert(0); // FIXME: what now?
-		}
-		else
-			assert(0); // FIXME: what now?
-
-		return info;
+		return preparedRegistrations.registerIfNeeded(sql, sql => performRegister(this, sql));
 	}
 
 public:

@@ -16,6 +16,7 @@ containing the bulk of the MySQL/MariaDB-specific code. Hang on tight...
 +/
 module mysql.protocol.comms;
 
+import std.algorithm;
 import std.digest.sha;
 import std.exception;
 import std.range;
@@ -24,6 +25,7 @@ import std.variant;
 import mysql.connection;
 import mysql.exceptions;
 import mysql.prepared;
+import mysql.result;
 
 import mysql.protocol.constants;
 import mysql.protocol.extra_types;
@@ -689,7 +691,7 @@ body
 		if(cmd == CommandType.QUIT)
 			return; // Don't bother reopening connection just to quit
 
-		conn._open = conn.OpenState.notConnected;
+		conn._open = Connection.OpenState.notConnected;
 		conn.connect(conn._clientCapabilities);
 	}
 
@@ -778,4 +780,170 @@ ubyte[] makeToken(Connection conn, ubyte[] authBuf)
 	foreach (size_t i; 0..20)
 		result[i] = result[i] ^ pass1[i];
 	return result.dup;
+}
+
+/// Get the next `mysql.result.Row` of a pending result set.
+Row getNextRow(Connection conn)
+{
+	scope(failure) conn.kill();
+
+	if (conn._headersPending)
+	{
+		conn._rsh = ResultSetHeaders(conn, conn._fieldCount);
+		conn._headersPending = false;
+	}
+	ubyte[] packet;
+	Row rr;
+	packet = conn.getPacket();
+	if (packet.isEOFPacket())
+	{
+		conn._rowsPending = conn._binaryPending = false;
+		return rr;
+	}
+	if (conn._binaryPending)
+		rr = Row(conn, packet, conn._rsh, true);
+	else
+		rr = Row(conn, packet, conn._rsh, false);
+	//rr._valid = true;
+	return rr;
+}
+
+void consumeServerInfo(Connection conn, ref ubyte[] packet)
+{
+	scope(failure) conn.kill();
+
+	conn._sCaps = cast(SvrCapFlags)packet.consume!ushort(); // server_capabilities (lower bytes)
+	conn._sCharSet = packet.consume!ubyte(); // server_language
+	conn._serverStatus = packet.consume!ushort(); //server_status
+	conn._sCaps += cast(SvrCapFlags)(packet.consume!ushort() << 16); // server_capabilities (upper bytes)
+	conn._sCaps |= SvrCapFlags.OLD_LONG_PASSWORD; // Assumed to be set since v4.1.1, according to spec
+
+	enforceEx!MYX(conn._sCaps & SvrCapFlags.PROTOCOL41, "Server doesn't support protocol v4.1");
+	enforceEx!MYX(conn._sCaps & SvrCapFlags.SECURE_CONNECTION, "Server doesn't support protocol v4.1 connection");
+}
+
+ubyte[] parseGreeting(Connection conn)
+{
+	scope(failure) conn.kill();
+
+	ubyte[] packet = conn.getPacket();
+
+	if (packet.length > 0 && packet[0] == ResultPacketMarker.error)
+	{
+		auto okp = OKErrorPacket(packet);
+		enforceEx!MYX(!okp.error, "Connection failure: " ~ cast(string) okp.message);
+	}
+
+	conn._protocol = packet.consume!ubyte();
+
+	conn._serverVersion = packet.consume!string(packet.countUntil(0));
+	packet.skip(1); // \0 terminated _serverVersion
+
+	conn._sThread = packet.consume!uint();
+
+	// read first part of scramble buf
+	ubyte[] authBuf;
+	authBuf.length = 255;
+	authBuf[0..8] = packet.consume(8)[]; // scramble_buff
+
+	enforceEx!MYXProtocol(packet.consume!ubyte() == 0, "filler should always be 0");
+
+	conn.consumeServerInfo(packet);
+
+	packet.skip(1); // this byte supposed to be scramble length, but is actually zero
+	packet.skip(10); // filler of \0
+
+	// rest of the scramble
+	auto len = packet.countUntil(0);
+	enforceEx!MYXProtocol(len >= 12, "second part of scramble buffer should be at least 12 bytes");
+	enforce(authBuf.length > 8+len);
+	authBuf[8..8+len] = packet.consume(len)[];
+	authBuf.length = 8+len; // cut to correct size
+	enforceEx!MYXProtocol(packet.consume!ubyte() == 0, "Excepted \\0 terminating scramble buf");
+
+	return authBuf;
+}
+
+SvrCapFlags getCommonCapabilities(SvrCapFlags server, SvrCapFlags client) pure
+{
+	SvrCapFlags common;
+	uint filter = 1;
+	foreach (size_t i; 0..uint.sizeof)
+	{
+		bool serverSupport = (server & filter) != 0; // can the server do this capability?
+		bool clientSupport = (client & filter) != 0; // can we support it?
+		if(serverSupport && clientSupport)
+			common |= filter;
+		filter <<= 1; // check next flag
+	}
+	return common;
+}
+
+void setClientFlags(Connection conn, SvrCapFlags capFlags)
+{
+	conn._cCaps = getCommonCapabilities(conn._sCaps, capFlags);
+
+	// We cannot operate in <4.1 protocol, so we'll force it even if the user
+	// didn't supply it
+	conn._cCaps |= SvrCapFlags.PROTOCOL41;
+	conn._cCaps |= SvrCapFlags.SECURE_CONNECTION;
+}
+
+void authenticate(Connection conn, ubyte[] greeting)
+in
+{
+	assert(conn._open == Connection.OpenState.connected);
+}
+out
+{
+	assert(conn._open == Connection.OpenState.authenticated);
+}
+body
+{
+	auto token = conn.makeToken(greeting);
+	auto authPacket = conn.buildAuthPacket(token);
+	conn._socket.send(authPacket);
+
+	auto packet = conn.getPacket();
+	auto okp = OKErrorPacket(packet);
+	enforceEx!MYX(!okp.error, "Authentication failure: " ~ cast(string) okp.message);
+	conn._open = Connection.OpenState.authenticated;
+}
+
+// Register prepared statement
+PreparedServerInfo performRegister(Connection conn, string sql)
+{
+	scope(failure) conn.kill();
+
+	PreparedServerInfo info;
+	
+	conn.sendCmd(CommandType.STMT_PREPARE, sql);
+	conn._fieldCount = 0;
+
+	//TODO: All packet handling should be moved into the mysql.protocol package.
+	ubyte[] packet = conn.getPacket();
+	if(packet.front == ResultPacketMarker.ok)
+	{
+		packet.popFront();
+		info.statementId    = packet.consume!int();
+		conn._fieldCount    = packet.consume!short();
+		info.numParams      = packet.consume!short();
+
+		packet.popFront(); // one byte filler
+		info.psWarnings     = packet.consume!short();
+
+		// At this point the server also sends field specs for parameters
+		// and columns if there were any of each
+		info.headers = PreparedStmtHeaders(conn, conn._fieldCount, info.numParams);
+	}
+	else if(packet.front == ResultPacketMarker.error)
+	{
+		auto error = OKErrorPacket(packet);
+		enforcePacketOK(error);
+		assert(0); // FIXME: what now?
+	}
+	else
+		assert(0); // FIXME: what now?
+
+	return info;
 }
