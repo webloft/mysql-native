@@ -56,7 +56,7 @@ followed by an EOF packet.
 
 Throws: `mysql.exceptions.MYX` if the server has a problem.
 +/
-Prepared prepare(Connection conn, string sql)
+Prepared prepare(Connection conn, const(char[]) sql)
 {
 	auto info = conn.registerIfNeeded(sql);
 	return Prepared(sql, info.headers, info.numParams);
@@ -68,13 +68,13 @@ This function is provided ONLY as a temporary aid in upgrading to mysql-native v
 See `BackwardCompatPrepared` for more info.
 +/
 deprecated("This is provided ONLY as a temporary aid in upgrading to mysql-native v2.0.0. You should migrate from this to the Prepared-compatible exec/query overloads in 'mysql.commands'.")
-BackwardCompatPrepared prepareBackwardCompat(Connection conn, string sql)
+BackwardCompatPrepared prepareBackwardCompat(Connection conn, const(char[]) sql)
 {
 	return prepareBackwardCompatImpl(conn, sql);
 }
 
 /// Allow mysql-native tests to get around the deprecation message
-package BackwardCompatPrepared prepareBackwardCompatImpl(Connection conn, string sql)
+package BackwardCompatPrepared prepareBackwardCompatImpl(Connection conn, const(char[]) sql)
 {
 	return BackwardCompatPrepared(conn, prepare(conn, sql));
 }
@@ -553,13 +553,13 @@ package:
 	}
 
 	/// Returns null if not found
-	Nullable!PreparedServerInfo getPreparedServerInfo(const string sql) pure nothrow
+	Nullable!PreparedServerInfo getPreparedServerInfo(const(char[]) sql) pure nothrow
 	{
 		return preparedRegistrations[sql];
 	}
 
 	/// If already registered, simply returns the cached `PreparedServerInfo`.
-	PreparedServerInfo registerIfNeeded(string sql)
+	PreparedServerInfo registerIfNeeded(const(char[]) sql)
 	{
 		return preparedRegistrations.registerIfNeeded(sql, sql => performRegister(this, sql));
 	}
@@ -1042,7 +1042,7 @@ public:
 	}
 
 	///ditto
-	void register(string sql)
+	void register(const(char[]) sql)
 	{
 		registerIfNeeded(sql);
 	}
@@ -1092,7 +1092,7 @@ public:
 	}
 	
 	///ditto
-	void release(string sql)
+	void release(const(char[]) sql)
 	{
 		//TODO: Don't queue it if nothing is pending. Just do it immediately.
 		//      But need to be certain both situations are unittested.
@@ -1181,7 +1181,7 @@ public:
 	}
 
 	///ditto
-	bool isRegistered(string sql)
+	bool isRegistered(const(char[]) sql)
 	{
 		return isRegistered( preparedRegistrations[sql] );
 	}
@@ -1382,7 +1382,7 @@ debug(MYSQLN_TESTS)
 	///ditto
 	alias RCPrepared = RefCounted!(RCPreparedPayload, RefCountedAutoInitialize.no);
 	///ditto
-	private RCPrepared rcPrepare(Connection conn, string sql)
+	private RCPrepared rcPrepare(Connection conn, const(char[]) sql)
 	{
 		import std.algorithm.mutation : move;
 

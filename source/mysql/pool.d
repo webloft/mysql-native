@@ -307,7 +307,7 @@ version(IncludeMySQLPool)
 		}
 
 		///ditto
-		void autoRegister(string sql)
+		void autoRegister(const(char[]) sql)
 		{
 			preparedRegistrations.registerIfNeeded(sql, (sql) => PreparedInfo());
 		}
@@ -339,7 +339,7 @@ version(IncludeMySQLPool)
 		}
 
 		///ditto
-		void autoRelease(string sql)
+		void autoRelease(const(char[]) sql)
 		{
 			preparedRegistrations.queueForRelease(sql);
 		}
@@ -351,7 +351,7 @@ version(IncludeMySQLPool)
 			return isAutoRegistered(prepared.sql);
 		}
 		///ditto
-		bool isAutoRegistered(string sql)
+		bool isAutoRegistered(const(char[]) sql)
 		{
 			return isAutoRegistered(preparedRegistrations[sql]);
 		}
@@ -368,7 +368,7 @@ version(IncludeMySQLPool)
 			return isAutoReleased(prepared.sql);
 		}
 		///ditto
-		bool isAutoReleased(string sql)
+		bool isAutoReleased(const(char[]) sql)
 		{
 			return isAutoReleased(preparedRegistrations[sql]);
 		}
@@ -390,7 +390,7 @@ version(IncludeMySQLPool)
 			return isAutoCleared(prepared.sql);
 		}
 		///ditto
-		bool isAutoCleared(string sql)
+		bool isAutoCleared(const(char[]) sql)
 		{
 			return isAutoCleared(preparedRegistrations[sql]);
 		}
@@ -413,7 +413,7 @@ version(IncludeMySQLPool)
 			return clearAuto(prepared.sql);
 		}
 		///ditto
-		void clearAuto(string sql)
+		void clearAuto(const(char[]) sql)
 		{
 			preparedRegistrations.directLookup.remove(sql);
 		}

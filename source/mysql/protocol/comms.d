@@ -414,7 +414,7 @@ package(mysql) struct ExecQueryImplInfo
 	bool isPrepared;
 
 	// For non-prepared statements:
-	string sql;
+	const(char[]) sql;
 
 	// For prepared statements:
 	uint hStmt;
@@ -921,7 +921,7 @@ body
 }
 
 // Register prepared statement
-package(mysql) PreparedServerInfo performRegister(Connection conn, string sql)
+package(mysql) PreparedServerInfo performRegister(Connection conn, const(char[]) sql)
 {
 	scope(failure) conn.kill();
 

@@ -149,7 +149,7 @@ INSERT/UPDATE/CREATE/etc, use `mysql.commands.exec`.
 struct Prepared
 {
 private:
-	string _sql;
+	const(char)[] _sql;
 
 package:
 	ushort _numParams; /// Number of parameters this prepared statement takes
@@ -182,7 +182,7 @@ public:
 	including parameter descriptions, and result set field descriptions,
 	followed by an EOF packet.
 	+/
-	this(string sql, PreparedStmtHeaders headers, ushort numParams)
+	this(const(char[]) sql, PreparedStmtHeaders headers, ushort numParams)
 	{
 		this._sql        = sql;
 		this._headers    = headers;
@@ -368,7 +368,7 @@ public:
 	}
 
 	/// Gets the SQL command for this prepared statement.
-	string sql()
+	const(char)[] sql()
 	{
 		return _sql;
 	}
@@ -510,10 +510,10 @@ package struct PreparedRegistrations(Payload)
 	`PreparedRegistrations` isn't intended as 100% encapsulation, it's mainly just
 	to factor out common functionality needed by both `Connection` and `MySQLPool`.
 	+/
-	Payload[string] directLookup;
+	Payload[const(char[])] directLookup;
 	
 	/// Returns null if not found
-	Nullable!Payload opIndex(const string sql) pure nothrow
+	Nullable!Payload opIndex(const(char[]) sql) pure nothrow
 	{
 		Nullable!Payload result;
 		
@@ -526,7 +526,7 @@ package struct PreparedRegistrations(Payload)
 
 	/// Set `queuedForRelease` flag for a statement in `directLookup`.
 	/// Does nothing if statement not in `directLookup`.
-	private void setQueuedForRelease(string sql, bool value)
+	private void setQueuedForRelease(const(char[]) sql, bool value)
 	{
 		if(auto pInfo = sql in directLookup)
 		{
@@ -536,13 +536,13 @@ package struct PreparedRegistrations(Payload)
 	}
 
 	/// Queue a prepared statement for release.
-	void queueForRelease(string sql)
+	void queueForRelease(const(char[]) sql)
 	{
 		setQueuedForRelease(sql, true);
 	}
 
 	/// Remove a statement from the queue to be released.
-	void unqueueForRelease(string sql)
+	void unqueueForRelease(const(char[]) sql)
 	{
 		setQueuedForRelease(sql, false);
 	}
@@ -564,7 +564,7 @@ package struct PreparedRegistrations(Payload)
 	}
 
 	/// If already registered, simply returns the cached Payload.
-	Payload registerIfNeeded(string sql, Payload delegate(string) doRegister)
+	Payload registerIfNeeded(const(char[]) sql, Payload delegate(const(char[])) doRegister)
 	out(info)
 	{
 		// I'm confident this can't currently happen, but
@@ -598,7 +598,7 @@ debug(MYSQLN_TESTS)
 	struct TestPreparedRegistrationsBad3 { int queuedForRelease = 1; }
 	struct TestPreparedRegistrationsBad4 { bool queuedForRelease = true; }
 	struct TestPreparedRegistrationsGood1 { bool queuedForRelease = false; }
-	struct TestPreparedRegistrationsGood2 { bool queuedForRelease = false; string id; }
+	struct TestPreparedRegistrationsGood2 { bool queuedForRelease = false; const(char)[] id; }
 	
 	static assert(!isPreparedRegistrationsPayload!int);
 	static assert(!isPreparedRegistrationsPayload!bool);
@@ -696,7 +696,7 @@ debug(MYSQLN_TESTS)
 		assert(pr.directLookup.keys.length == 0);
 		
 		// Test registerIfNeeded
-		auto doRegister(string sql) { return TestPreparedRegistrationsGood2(false, sql); }
+		auto doRegister(const(char[]) sql) { return TestPreparedRegistrationsGood2(false, sql); }
 		pr.registerIfNeeded("1", &doRegister);
 		assert(pr.directLookup.keys.length == 1);
 		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));

@@ -167,7 +167,7 @@ will automatically be replaced with `args` (note, just like calling
 `mysql.prepared.Prepared.setArgs`, this will also remove all
 `mysql.prepared.ParameterSpecialization` that may have been applied).
 
-Only use the `string sql` overload that doesn't take `args`
+Only use the `const(char[]) sql` overload that doesn't take `args`
 when you are not going to be using the same
 command repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise, consider using overload that takes a `Prepared`.
@@ -192,12 +192,12 @@ auto myInt = 7;
 auto rowsAffected = myConnection.exec("INSERT INTO `myTable` (`a`) VALUES (?)", myInt);
 ---
 +/
-ulong exec(Connection conn, string sql)
+ulong exec(Connection conn, const(char[]) sql)
 {
 	return execImpl(conn, ExecQueryImplInfo(false, sql));
 }
 ///ditto
-ulong exec(T...)(Connection conn, string sql, T args)
+ulong exec(T...)(Connection conn, const(char[]) sql, T args)
 	if(T.length > 0 && !is(T[0] == Variant[]))
 {
 	auto prepared = conn.prepare(sql);
@@ -205,7 +205,7 @@ ulong exec(T...)(Connection conn, string sql, T args)
 	return exec(conn, prepared);
 }
 ///ditto
-ulong exec(Connection conn, string sql, Variant[] args)
+ulong exec(Connection conn, const(char[]) sql, Variant[] args)
 {
 	auto prepared = conn.prepare(sql);
 	prepared.setArgs(args);
@@ -280,7 +280,7 @@ will automatically be replaced with `args` (note, just like calling
 `mysql.prepared.Prepared.setArgs`, this will also remove all
 `mysql.prepared.ParameterSpecialization` that may have been applied).
 
-Only use the `string sql` overload that doesn't take `args`
+Only use the `const(char[]) sql` overload that doesn't take `args`
 when you are not going to be using the same
 command repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise, consider using overload that takes a `Prepared`.
@@ -318,12 +318,12 @@ delegate.
 csa = An optional array of `ColumnSpecialization` structs. If you need to
 use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 +/
-ResultRange query(Connection conn, string sql, ColumnSpecialization[] csa = null)
+ResultRange query(Connection conn, const(char[]) sql, ColumnSpecialization[] csa = null)
 {
 	return queryImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 ///ditto
-ResultRange query(T...)(Connection conn, string sql, T args)
+ResultRange query(T...)(Connection conn, const(char[]) sql, T args)
 	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization) && !is(T[0] == ColumnSpecialization[]))
 {
 	auto prepared = conn.prepare(sql);
@@ -331,7 +331,7 @@ ResultRange query(T...)(Connection conn, string sql, T args)
 	return query(conn, prepared);
 }
 ///ditto
-ResultRange query(Connection conn, string sql, Variant[] args)
+ResultRange query(Connection conn, const(char[]) sql, Variant[] args)
 {
 	auto prepared = conn.prepare(sql);
 	prepared.setArgs(args);
@@ -403,7 +403,7 @@ will automatically be replaced with `args` (note, just like calling
 `mysql.prepared.Prepared.setArgs`, this will also remove all
 `mysql.prepared.ParameterSpecialization` that may have been applied).
 
-Only use the `string sql` overload that doesn't take `args`
+Only use the `const(char[]) sql` overload that doesn't take `args`
 when you are not going to be using the same
 command repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise, consider using overload that takes a `Prepared`.
@@ -448,12 +448,12 @@ delegate.
 csa = An optional array of `ColumnSpecialization` structs. If you need to
 use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 +/
-Nullable!Row queryRow(Connection conn, string sql, ColumnSpecialization[] csa = null)
+Nullable!Row queryRow(Connection conn, const(char[]) sql, ColumnSpecialization[] csa = null)
 {
 	return queryRowImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 ///ditto
-Nullable!Row queryRow(T...)(Connection conn, string sql, T args)
+Nullable!Row queryRow(T...)(Connection conn, const(char[]) sql, T args)
 	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization) && !is(T[0] == ColumnSpecialization[]))
 {
 	auto prepared = conn.prepare(sql);
@@ -461,7 +461,7 @@ Nullable!Row queryRow(T...)(Connection conn, string sql, T args)
 	return queryRow(conn, prepared);
 }
 ///ditto
-Nullable!Row queryRow(Connection conn, string sql, Variant[] args)
+Nullable!Row queryRow(Connection conn, const(char[]) sql, Variant[] args)
 {
 	auto prepared = conn.prepare(sql);
 	prepared.setArgs(args);
@@ -528,7 +528,7 @@ If the SQL command does not produce a result set (such as INSERT/CREATE/etc),
 then `mysql.exceptions.MYXNoResultRecieved` will be thrown. Use
 `exec` instead for such commands.
 
-Only use the `string sql` overload when you are not going to be using the same
+Only use the `const(char[]) sql` overload when you are not going to be using the same
 command repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise, consider using overload that takes a `Prepared`.
 
@@ -540,7 +540,7 @@ sql = The SQL command to be run.
 prepared = The prepared statement to be run.
 args = The variables, taken by reference, to receive the values.
 +/
-void queryRowTuple(T...)(Connection conn, string sql, ref T args)
+void queryRowTuple(T...)(Connection conn, const(char[]) sql, ref T args)
 {
 	return queryRowTupleImpl(conn, ExecQueryImplInfo(false, sql), args);
 }
@@ -627,7 +627,7 @@ will automatically be replaced with `args` (note, just like calling
 `mysql.prepared.Prepared.setArgs`, this will also remove all
 `mysql.prepared.ParameterSpecialization` that may have been applied).
 
-Only use the `string sql` overload that doesn't take `args`
+Only use the `const(char[]) sql` overload that doesn't take `args`
 when you are not going to be using the same
 command repeatedly and you are CERTAIN all the data you're sending is properly
 escaped. Otherwise, consider using overload that takes a `Prepared`.
@@ -672,12 +672,12 @@ delegate.
 csa = An optional array of `ColumnSpecialization` structs. If you need to
 use this with a prepared statement, please use `mysql.prepared.Prepared.columnSpecials`.
 +/
-Nullable!Variant queryValue(Connection conn, string sql, ColumnSpecialization[] csa = null)
+Nullable!Variant queryValue(Connection conn, const(char[]) sql, ColumnSpecialization[] csa = null)
 {
 	return queryValueImpl(csa, conn, ExecQueryImplInfo(false, sql));
 }
 ///ditto
-Nullable!Variant queryValue(T...)(Connection conn, string sql, T args)
+Nullable!Variant queryValue(T...)(Connection conn, const(char[]) sql, T args)
 	if(T.length > 0 && !is(T[0] == Variant[]) && !is(T[0] == ColumnSpecialization) && !is(T[0] == ColumnSpecialization[]))
 {
 	auto prepared = conn.prepare(sql);
@@ -685,7 +685,7 @@ Nullable!Variant queryValue(T...)(Connection conn, string sql, T args)
 	return queryValue(conn, prepared);
 }
 ///ditto
-Nullable!Variant queryValue(Connection conn, string sql, Variant[] args)
+Nullable!Variant queryValue(Connection conn, const(char[]) sql, Variant[] args)
 {
 	auto prepared = conn.prepare(sql);
 	prepared.setArgs(args);
@@ -761,7 +761,7 @@ unittest
 	
 	// Do the inserts, using exec
 	
-	// exec: string sql
+	// exec: const(char[]) sql
 	assert(cn.exec("INSERT INTO `execOverloads` VALUES (1, \"aa\")") == 1);
 	assert(cn.exec(prepareSQL, 2, "bb") == 1);
 	assert(cn.exec(prepareSQL, [Variant(3), Variant("cc")]) == 1);
