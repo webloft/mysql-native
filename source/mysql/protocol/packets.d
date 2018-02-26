@@ -7,6 +7,7 @@ import std.string;
 
 import mysql.commands : ColumnSpecialization, CSN;
 import mysql.exceptions;
+import mysql.protocol.comms;
 import mysql.protocol.constants;
 import mysql.protocol.extra_types;
 import mysql.protocol.sockets;

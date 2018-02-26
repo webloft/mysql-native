@@ -3,7 +3,6 @@ module mysql.connection;
 
 import std.algorithm;
 import std.conv;
-import std.digest.sha;
 import std.exception;
 import std.range;
 import std.socket;
@@ -437,104 +436,6 @@ package:
 		assert(_socketType != MySQLSocketType.vibed);
 	}
 
-	ubyte[] getPacket()
-	{
-		scope(failure) kill();
-
-		ubyte[4] header;
-		_socket.read(header);
-		// number of bytes always set as 24-bit
-		uint numDataBytes = (header[2] << 16) + (header[1] << 8) + header[0];
-		enforceEx!MYXProtocol(header[3] == pktNumber, "Server packet out of order");
-		bumpPacket();
-
-		ubyte[] packet = new ubyte[numDataBytes];
-		_socket.read(packet);
-		assert(packet.length == numDataBytes, "Wrong number of bytes read");
-		return packet;
-	}
-
-	void send(const(ubyte)[] packet)
-	in
-	{
-		assert(packet.length > 4); // at least 1 byte more than header
-	}
-	body
-	{
-		_socket.write(packet);
-	}
-
-	void send(const(ubyte)[] header, const(ubyte)[] data)
-	in
-	{
-		assert(header.length == 4 || header.length == 5/*command type included*/);
-	}
-	body
-	{
-		_socket.write(header);
-		if(data.length)
-			_socket.write(data);
-	}
-
-	void sendCmd(T)(CommandType cmd, const(T)[] data)
-	in
-	{
-		// Internal thread states. Clients shouldn't use this
-		assert(cmd != CommandType.SLEEP);
-		assert(cmd != CommandType.CONNECT);
-		assert(cmd != CommandType.TIME);
-		assert(cmd != CommandType.DELAYED_INSERT);
-		assert(cmd != CommandType.CONNECT_OUT);
-
-		// Deprecated
-		assert(cmd != CommandType.CREATE_DB);
-		assert(cmd != CommandType.DROP_DB);
-		assert(cmd != CommandType.TABLE_DUMP);
-
-		// cannot send more than uint.max bytes. TODO: better error message if we try?
-		assert(data.length <= uint.max);
-	}
-	out
-	{
-		// at this point we should have sent a command
-		assert(pktNumber == 1);
-	}
-	body
-	{
-		autoPurge();
-
-		scope(failure) kill();
-
-		_lastCommandID++;
-
-		if(!_socket.connected)
-		{
-			if(cmd == CommandType.QUIT)
-				return; // Don't bother reopening connection just to quit
-
-			_open = OpenState.notConnected;
-			connect(_clientCapabilities);
-		}
-
-		resetPacket();
-
-		ubyte[] header;
-		header.length = 4 /*header*/ + 1 /*cmd*/;
-		header.setPacketHeader(pktNumber, cast(uint)data.length +1/*cmd byte*/);
-		header[4] = cmd;
-		bumpPacket();
-
-		send(header, cast(const(ubyte)[])data);
-	}
-
-	OKErrorPacket getCmdResponse(bool asString = false)
-	{
-		auto okp = OKErrorPacket(getPacket());
-		enforcePacketOK(okp);
-		_serverStatus = okp.serverStatus;
-		return okp;
-	}
-
 	/// Get the next `mysql.result.Row` of a pending result set.
 	Row getNextRow()
 	{
@@ -547,7 +448,7 @@ package:
 		}
 		ubyte[] packet;
 		Row rr;
-		packet = getPacket();
+		packet = this.getPacket();
 		if (packet.isEOFPacket())
 		{
 			_rowsPending = _binaryPending = false;
@@ -559,59 +460,6 @@ package:
 			rr = Row(this, packet, _rsh, false);
 		//rr._valid = true;
 		return rr;
-	}
-
-	ubyte[] buildAuthPacket(ubyte[] token)
-	in
-	{
-		assert(token.length == 20);
-	}
-	body
-	{
-		ubyte[] packet;
-		packet.reserve(4/*header*/ + 4 + 4 + 1 + 23 + _user.length+1 + token.length+1 + _db.length+1);
-		packet.length = 4 + 4 + 4; // create room for the beginning headers that we set rather than append
-
-		// NOTE: we'll set the header last when we know the size
-
-		// Set the default capabilities required by the client
-		_cCaps.packInto(packet[4..8]);
-
-		// Request a conventional maximum packet length.
-		1.packInto(packet[8..12]);
-
-		packet ~= 33; // Set UTF-8 as default charSet
-
-		// There's a statutory block of zero bytes here - fill them in.
-		foreach(i; 0 .. 23)
-			packet ~= 0;
-
-		// Add the user name as a null terminated string
-		foreach(i; 0 .. _user.length)
-			packet ~= _user[i];
-		packet ~= 0; // \0
-
-		// Add our calculated authentication token as a length prefixed string.
-		assert(token.length <= ubyte.max);
-		if(_pwd.length == 0)  // Omit the token if the account has no password
-			packet ~= 0;
-		else
-		{
-			packet ~= cast(ubyte)token.length;
-			foreach(i; 0 .. token.length)
-				packet ~= token[i];
-		}
-
-		// Add the default database as a null terminated string
-		foreach(i; 0 .. _db.length)
-			packet ~= _db[i];
-		packet ~= 0; // \0
-
-		// The server sent us a greeting with packet number 0, so we send the auth packet
-		// back with the next number.
-		packet.setPacketHeader(pktNumber);
-		bumpPacket();
-		return packet;
 	}
 
 	void consumeServerInfo(ref ubyte[] packet)
@@ -632,7 +480,7 @@ package:
 	{
 		scope(failure) kill();
 
-		ubyte[] packet = getPacket();
+		ubyte[] packet = this.getPacket();
 
 		if (packet.length > 0 && packet[0] == ResultPacketMarker.error)
 		{
@@ -704,21 +552,6 @@ package:
 		}
 	}
 
-	ubyte[] makeToken(ubyte[] authBuf)
-	{
-		auto pass1 = sha1Of(cast(const(ubyte)[])_pwd);
-		auto pass2 = sha1Of(pass1);
-
-		SHA1 sha1;
-		sha1.start();
-		sha1.put(authBuf);
-		sha1.put(pass2);
-		auto result = sha1.finish();
-		foreach (size_t i; 0..20)
-			result[i] = result[i] ^ pass1[i];
-		return result.dup;
-	}
-
 	SvrCapFlags getCommonCapabilities(SvrCapFlags server, SvrCapFlags client) pure
 	{
 		SvrCapFlags common;
@@ -755,11 +588,11 @@ package:
 	}
 	body
 	{
-		auto token = makeToken(greeting);
-		auto authPacket = buildAuthPacket(token);
-		send(authPacket);
+		auto token = this.makeToken(greeting);
+		auto authPacket = this.buildAuthPacket(token);
+		this._socket.send(authPacket);
 
-		auto packet = getPacket();
+		auto packet = this.getPacket();
 		auto okp = OKErrorPacket(packet);
 		enforceEx!MYX(!okp.error, "Authentication failure: " ~ cast(string) okp.message);
 		_open = OpenState.authenticated;
@@ -865,11 +698,11 @@ package:
 
 		PreparedServerInfo info;
 		
-		sendCmd(CommandType.STMT_PREPARE, sql);
+		this.sendCmd(CommandType.STMT_PREPARE, sql);
 		_fieldCount = 0;
 
 		//TODO: All packet handling should be moved into the mysql.protocol package.
-		ubyte[] packet = getPacket();
+		ubyte[] packet = this.getPacket();
 		if(packet.front == ResultPacketMarker.ok)
 		{
 			packet.popFront();
@@ -1175,7 +1008,7 @@ public:
 	}
 	body
 	{
-		sendCmd(CommandType.QUIT, []);
+		this.sendCmd(CommandType.QUIT, []);
 		// No response is sent for a quit packet
 		_open = OpenState.connected;
 	}
@@ -1245,8 +1078,8 @@ public:
 	+/
 	void selectDB(string dbName)
 	{
-		sendCmd(CommandType.INIT_DB, dbName);
-		getCmdResponse();
+		this.sendCmd(CommandType.INIT_DB, dbName);
+		this.getCmdResponse();
 		_db = dbName;
 	}
 
@@ -1259,8 +1092,8 @@ public:
 	+/
 	OKErrorPacket pingServer()
 	{
-		sendCmd(CommandType.PING, []);
-		return getCmdResponse();
+		this.sendCmd(CommandType.PING, []);
+		return this.getCmdResponse();
 	}
 
 	/++
@@ -1272,8 +1105,8 @@ public:
 	+/
 	OKErrorPacket refreshServer(RefreshFlags flags)
 	{
-		sendCmd(CommandType.REFRESH, [flags]);
-		return getCmdResponse();
+		this.sendCmd(CommandType.REFRESH, [flags]);
+		return this.getCmdResponse();
 	}
 
 	/++
@@ -1300,7 +1133,7 @@ public:
 		{
 			for (size_t i = 0;; i++)
 			{
-				if (getPacket().isEOFPacket())
+				if (this.getPacket().isEOFPacket())
 				{
 					_headersPending = false;
 					break;
@@ -1313,7 +1146,7 @@ public:
 		{
 			for (;;  rows++)
 			{
-				if (getPacket().isEOFPacket())
+				if (this.getPacket().isEOFPacket())
 				{
 					_rowsPending = _binaryPending = false;
 					break;
@@ -1331,8 +1164,8 @@ public:
 	+/
 	string serverStats()
 	{
-		sendCmd(CommandType.STATISTICS, []);
-		return cast(string) getPacket();
+		this.sendCmd(CommandType.STATISTICS, []);
+		return cast(string) this.getPacket();
 	}
 
 	/++
@@ -1347,16 +1180,16 @@ public:
 	//TODO: Need to test this
 	void enableMultiStatements(bool on)
 	{
-		scope(failure) kill();
+		scope(failure) this.kill();
 
 		ubyte[] t;
 		t.length = 2;
 		t[0] = on ? 0 : 1;
 		t[1] = 0;
-		sendCmd(CommandType.STMT_OPTION, t);
+		this.sendCmd(CommandType.STMT_OPTION, t);
 
 		// For some reason this command gets an EOF packet as response
-		auto packet = getPacket();
+		auto packet = this.getPacket();
 		enforceEx!MYXProtocol(packet[0] == 254 && packet.length == 5, "Unexpected response to SET_OPTION command");
 	}
 

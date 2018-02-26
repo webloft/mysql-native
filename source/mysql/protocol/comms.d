@@ -16,6 +16,7 @@ containing the bulk of the MySQL/MariaDB-specific code. Hang on tight...
 +/
 module mysql.protocol.comms;
 
+import std.digest.sha;
 import std.exception;
 import std.range;
 import std.variant;
@@ -72,7 +73,6 @@ package struct ProtocolPrepared
 		return prefix;
 	}
 
-	//TODO: All low-level commms should be moved into the mysql.protocol package.
 	static ubyte[] analyseParams(Variant[] inParams, ParameterSpecialization[] psa,
 		out ubyte[] vals, out bool longData)
 	{
@@ -343,7 +343,6 @@ package struct ProtocolPrepared
 			uint cs = psn.chunkSize;
 			uint delegate(ubyte[]) dg = psn.chunkDelegate;
 
-			//TODO: All low-level commms should be moved into the mysql.protocol package.
 			ubyte[] chunk;
 			chunk.length = cs+11;
 			chunk.setPacketHeader(0 /*each chunk is separate cmd*/);
@@ -362,10 +361,10 @@ package struct ProtocolPrepared
 					chunk.length = chunk.length - (cs-sent);     // trim the chunk
 					sent += 7;        // adjust for non-payload bytes
 					packInto!(uint, true)(cast(uint)sent, chunk[0..3]);
-					conn.send(chunk);
+					conn._socket.send(chunk);
 					break;
 				}
-				conn.send(chunk);
+				conn._socket.send(chunk);
 			}
 		}
 	}
@@ -375,7 +374,6 @@ package struct ProtocolPrepared
 	{
 		conn.autoPurge();
 		
-		//TODO: All low-level commms should be moved into the mysql.protocol package.
 		ubyte[] packet;
 		conn.resetPacket();
 
@@ -400,7 +398,7 @@ package struct ProtocolPrepared
 		assert(packet.length <= uint.max);
 		packet.setPacketHeader(conn.pktNumber);
 		conn.bumpPacket();
-		conn.send(packet);
+		conn._socket.send(packet);
 	}
 }
 
@@ -493,7 +491,7 @@ package(mysql) void immediateReleasePrepared(Connection conn, uint statementId)
 	packet[4] = CommandType.STMT_CLOSE;
 	statementId.packInto(packet[5..9]);
 	conn.purgeResult();
-	conn.send(packet);
+	conn._socket.send(packet);
 	// It seems that the server does not find it necessary to send a response
 	// for this command.
 }
@@ -612,4 +610,172 @@ body
 			_values[i] = sqlValue.value;
 		}
 	}
+}
+
+////// Moved here from Connection /////////////////////////////////
+
+package(mysql) ubyte[] getPacket(Connection conn)
+{
+	scope(failure) conn.kill();
+
+	ubyte[4] header;
+	conn._socket.read(header);
+	// number of bytes always set as 24-bit
+	uint numDataBytes = (header[2] << 16) + (header[1] << 8) + header[0];
+	enforceEx!MYXProtocol(header[3] == conn.pktNumber, "Server packet out of order");
+	conn.bumpPacket();
+
+	ubyte[] packet = new ubyte[numDataBytes];
+	conn._socket.read(packet);
+	assert(packet.length == numDataBytes, "Wrong number of bytes read");
+	return packet;
+}
+
+package(mysql) void send(MySQLSocket _socket, const(ubyte)[] packet)
+in
+{
+	assert(packet.length > 4); // at least 1 byte more than header
+}
+body
+{
+	_socket.write(packet);
+}
+
+package(mysql) void send(MySQLSocket _socket, const(ubyte)[] header, const(ubyte)[] data)
+in
+{
+	assert(header.length == 4 || header.length == 5/*command type included*/);
+}
+body
+{
+	_socket.write(header);
+	if(data.length)
+		_socket.write(data);
+}
+
+void sendCmd(T)(Connection conn, CommandType cmd, const(T)[] data)
+in
+{
+	// Internal thread states. Clients shouldn't use this
+	assert(cmd != CommandType.SLEEP);
+	assert(cmd != CommandType.CONNECT);
+	assert(cmd != CommandType.TIME);
+	assert(cmd != CommandType.DELAYED_INSERT);
+	assert(cmd != CommandType.CONNECT_OUT);
+
+	// Deprecated
+	assert(cmd != CommandType.CREATE_DB);
+	assert(cmd != CommandType.DROP_DB);
+	assert(cmd != CommandType.TABLE_DUMP);
+
+	// cannot send more than uint.max bytes. TODO: better error message if we try?
+	assert(data.length <= uint.max);
+}
+out
+{
+	// at this point we should have sent a command
+	assert(conn.pktNumber == 1);
+}
+body
+{
+	conn.autoPurge();
+
+	scope(failure) conn.kill();
+
+	conn._lastCommandID++;
+
+	if(!conn._socket.connected)
+	{
+		if(cmd == CommandType.QUIT)
+			return; // Don't bother reopening connection just to quit
+
+		conn._open = conn.OpenState.notConnected;
+		conn.connect(conn._clientCapabilities);
+	}
+
+	conn.resetPacket();
+
+	ubyte[] header;
+	header.length = 4 /*header*/ + 1 /*cmd*/;
+	header.setPacketHeader(conn.pktNumber, cast(uint)data.length +1/*cmd byte*/);
+	header[4] = cmd;
+	conn.bumpPacket();
+
+	conn._socket.send(header, cast(const(ubyte)[])data);
+}
+
+OKErrorPacket getCmdResponse(Connection conn, bool asString = false)
+{
+	auto okp = OKErrorPacket(conn.getPacket());
+	enforcePacketOK(okp);
+	conn._serverStatus = okp.serverStatus;
+	return okp;
+}
+
+ubyte[] buildAuthPacket(Connection conn, ubyte[] token)
+in
+{
+	assert(token.length == 20);
+}
+body
+{
+	ubyte[] packet;
+	packet.reserve(4/*header*/ + 4 + 4 + 1 + 23 + conn._user.length+1 + token.length+1 + conn._db.length+1);
+	packet.length = 4 + 4 + 4; // create room for the beginning headers that we set rather than append
+
+	// NOTE: we'll set the header last when we know the size
+
+	// Set the default capabilities required by the client
+	conn._cCaps.packInto(packet[4..8]);
+
+	// Request a conventional maximum packet length.
+	1.packInto(packet[8..12]);
+
+	packet ~= 33; // Set UTF-8 as default charSet
+
+	// There's a statutory block of zero bytes here - fill them in.
+	foreach(i; 0 .. 23)
+		packet ~= 0;
+
+	// Add the user name as a null terminated string
+	foreach(i; 0 .. conn._user.length)
+		packet ~= conn._user[i];
+	packet ~= 0; // \0
+
+	// Add our calculated authentication token as a length prefixed string.
+	assert(token.length <= ubyte.max);
+	if(conn._pwd.length == 0)  // Omit the token if the account has no password
+		packet ~= 0;
+	else
+	{
+		packet ~= cast(ubyte)token.length;
+		foreach(i; 0 .. token.length)
+			packet ~= token[i];
+	}
+
+	// Add the default database as a null terminated string
+	foreach(i; 0 .. conn._db.length)
+		packet ~= conn._db[i];
+	packet ~= 0; // \0
+
+	// The server sent us a greeting with packet number 0, so we send the auth packet
+	// back with the next number.
+	packet.setPacketHeader(conn.pktNumber);
+	conn.bumpPacket();
+	return packet;
+}
+
+ubyte[] makeToken(Connection conn, ubyte[] authBuf)
+{
+	auto pass1 = sha1Of(cast(const(ubyte)[])conn._pwd);
+	auto pass2 = sha1Of(pass1);
+
+	SHA1 sha1;
+	sha1.start();
+	sha1.put(authBuf);
+	sha1.put(pass2);
+	auto result = sha1.finish();
+	foreach (size_t i; 0..20)
+		result[i] = result[i] ^ pass1[i];
+	return result.dup;
 }
