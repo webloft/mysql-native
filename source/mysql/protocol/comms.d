@@ -294,7 +294,12 @@ package struct ProtocolPrepared
 				case "const(std.datetime.TimeOfDay)":
 				case "immutable(std.datetime.TimeOfDay)":
 				case "shared(immutable(std.datetime.TimeOfDay))":
-				
+
+				case "std.datetime.date.TimeOfDay":
+				case "const(std.datetime.date.TimeOfDay)":
+				case "immutable(std.datetime.date.TimeOfDay)":
+				case "shared(immutable(std.datetime.date.TimeOfDay))":
+
 				case "std.datetime.Time":
 				case "const(std.datetime.Time)":
 				case "immutable(std.datetime.Time)":
@@ -312,7 +317,7 @@ package struct ProtocolPrepared
 				case "const(std.datetime.date.DateTime)":
 				case "immutable(std.datetime.date.DateTime)":
 				case "shared(immutable(std.datetime.date.DateTime))":
-				
+
 				case "std.datetime.DateTime":
 				case "const(std.datetime.DateTime)":
 				case "immutable(std.datetime.DateTime)":
