@@ -1,13 +1,20 @@
-TBD - TBD
+v2.2.0 - 2018-03-03
 =====================
+
+Maintenance release.
+
 - **Fixed:** [#165](https://github.com/mysql-d/mysql-native/issues/165):
-	MySQLPool should automatically reopen any closed connections. (@Abscissa)
+	MySQLPool should automatically reopen any closed connections.
+	(Not as big of a deal as it sounds because closed connections
+	automatically reconnect upon use anyway. This just makes it eager
+	instead of lazy and ensures there's no confusion from the pool handing
+	out a "closed" connection.) (@Abscissa)
 - **Fixed:** [#167](https://github.com/mysql-d/mysql-native/issues/167):
 	ResultRange doesn't get invalidated upon reconnect. (@Abscissa)
 - **Fixed:** Remove unnecessary precondition that connection must be
 	closed before calling `Connection.connect`. (@Abscissa)
 - **Fixed:** [#121](https://github.com/mysql-d/mysql-native/issues/121):
-	Use `const(char[])` instead `string` for queries. (@Abscissa)
+	Use `const(char[])` instead of `string` for queries. (@Abscissa)
 - **Fixed:** [#13](https://github.com/mysql-d/mysql-native/issues/13):
 	No support for type modifiers in prepared statement parameters. (@Abscissa)
 - **Tests:** Add tests for reconnecting. (@Abscissa)
