@@ -81,7 +81,7 @@ matrix:
           
         # Test with all dependencies updated
         # (dub.selections.json is deliberately kept old)
-        - d: dmd-2.078.2
+        - d: dmd-2.079.0
           services:
             - mysql
           script:

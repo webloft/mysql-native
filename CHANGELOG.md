@@ -8,7 +8,6 @@ Bugfix.
 - **Fixed:** `MySQLPool.lockedConnection` returns `Connection` instead
 	of the intended `LockedConnection!Connection` as per the spec. (@s-ludwig)
 
-
 v2.2.0 - 2018-03-03
 =====================
 
