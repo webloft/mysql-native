@@ -169,9 +169,9 @@ version(IncludeMySQLPool)
 		register/release may actually occur upon the first command sent via
 		the connection.)
 		+/
-		auto lockConnection()
+		LockedConnection!Connection lockConnection()
 		{
-			Connection conn = m_pool.lockConnection();
+			auto conn = m_pool.lockConnection();
 			if(conn.closed)
 				conn.reconnect();
 

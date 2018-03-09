@@ -1,3 +1,14 @@
+v2.2.1 - 2018-03-08
+=====================
+
+Bugfix.
+
+- **Fixed:** [#170](https://github.com/mysql-d/mysql-native/issues/170):
+	Assertion when concurrently using multiple LockedConnection. (@s-ludwig)
+- **Fixed:** `MySQLPool.lockedConnection` returns `Connection` instead
+	of the intended `LockedConnection!Connection` as per the spec. (@s-ludwig)
+
+
 v2.2.0 - 2018-03-03
 =====================
 

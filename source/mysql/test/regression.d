@@ -276,6 +276,41 @@ unittest
 	}
 }
 
+/+
+Issue #170: Assertion when concurrently using multiple LockedConnection.
+
+The root problem here was that `MySQLPool.lockConnection` was accidentally
+returning a `Connection` instead of a `LockedConnection!Connection`.
+This meant the `LockedConnection` went out-of-scope and returned the
+connection to the pool as soon as `MySQLPool.lockConnection` returned.
+So the `Connection` returned was no longer locked and got handed out
+to the next fiber which requested it, even if the first fiber was
+still using it.
+
+So, this test ensures lockConnection doesn't return a connection that's already in use.
++/
+@("issue170")
+version(Have_vibe_d_core)
+debug(MYSQLN_TESTS)
+unittest
+{
+	import mysql.commands;
+	import mysql.pool;
+	int count=0;
+
+	auto pool = new MySQLPool(testConnectionStr);
+	pool.onNewConnection = (Connection conn) { count++; };
+	assert(count == 0);
+
+	auto cn1 = pool.lockConnection();
+	assert(count == 1);
+
+	auto cn2 = pool.lockConnection();
+	assert(count == 2);
+
+	assert(cn1 != cn2);
+}
+
 // 
 @("timestamp")
 debug(MYSQLN_TESTS)
