@@ -756,8 +756,6 @@ out
 }
 body
 {
-	conn.autoPurge();
-
 	scope(failure) conn.kill();
 
 	conn._lastCommandID++;
@@ -771,6 +769,8 @@ body
 		conn.connect(conn._clientCapabilities);
 	}
 
+	conn.autoPurge();
+ 
 	conn.resetPacket();
 
 	ubyte[] header;

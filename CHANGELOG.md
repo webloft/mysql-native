@@ -1,7 +1,7 @@
 v2.2.1 - 2018-03-08
 =====================
 
-Bugfix.
+Bugfixes.
 
 - **Fixed:** [#170](https://github.com/mysql-d/mysql-native/issues/170):
 	Assertion when concurrently using multiple LockedConnection. (@s-ludwig, @Abscissa)
@@ -9,6 +9,8 @@ Bugfix.
 	of the intended `LockedConnection!Connection` as per the spec. (@s-ludwig)
 - **Fixed:** Assert failure on closed connections on `vibe-core` (used by
 	default in vibe.d as of vibe.d v0.8.3). (@Abscissa)
+- **Fixed:** Program crash upon auto-purge on a closed connection when using
+	`vibe-core` (used by default in vibe.d as of vibe.d v0.8.3). (@Abscissa)
 
 v2.2.0 - 2018-03-03
 =====================
