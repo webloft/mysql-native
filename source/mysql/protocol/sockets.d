@@ -62,7 +62,7 @@ class MySQLSocketPhobos : MySQLSocket
 
 	invariant()
 	{
-		assert(!!socket);
+		assert(socket !is null);
 	}
 
 	void close()
@@ -118,7 +118,11 @@ version(Have_vibe_d_core) {
 
 		invariant()
 		{
-			assert(!!socket);
+			// vibe-core (used by default as of vibe.d v0.8.3) changed
+			// TCPConnection from an interface to a struct, so checking
+			// for null is no longer needed.
+			static if(is(socket == interface))
+				assert(socket !is null);
 		}
 
 		void close()
