@@ -1,4 +1,4 @@
-v2.2.1 - 2018-03-08
+v2.2.1 - 2018-03-09
 =====================
 
 Bugfixes.
@@ -11,6 +11,9 @@ Bugfixes.
 	default in vibe.d as of vibe.d v0.8.3). (@Abscissa)
 - **Fixed:** Program crash upon auto-purge on a closed connection when using
 	`vibe-core` (used by default in vibe.d as of vibe.d v0.8.3). (@Abscissa)
+- **Tests:** [#163](https://github.com/mysql-d/mysql-native/issues/163):
+	Travis should treat sporadic dub outages as a "job error" not
+	"tests failed" (@Abscissa)
 
 v2.2.0 - 2018-03-03
 =====================

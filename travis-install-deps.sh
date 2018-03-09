@@ -4,3 +4,10 @@ if ! [ command -v rdmd ]; then
 	wget http://downloads.dlang.org/releases/2017/$DMD_ZIP
 	unzip -d local-dmd $DMD_ZIP
 fi
+
+# Download & resolve deps now so intermittent failures are more likely
+# to be correctly marked as "job error" rather than "tests failed".
+dub upgrade --missing-only
+cd examples/homePage
+dub upgrade --missing-only
+cd ../..
