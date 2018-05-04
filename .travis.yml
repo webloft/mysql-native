@@ -42,6 +42,7 @@ before_install:
     - "if [ ${TRAVIS_OS_NAME} = 'osx' ]; then brew install mysql && brew services start mysql; fi"
 
 before_script:
+    - echo DC=$DC
     - mysql -u root -e 'SHOW VARIABLES LIKE "%version%";'
     - mysql -u root -e 'CREATE DATABASE mysqln_testdb;'
     - echo 'host=127.0.0.1;port=3306;user=root;pwd=;db=mysqln_testdb' > testConnectionStr.txt

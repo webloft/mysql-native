@@ -5,8 +5,6 @@ if ! [ command -v rdmd ]; then
 	unzip -d local-dmd $DMD_ZIP
 fi
 
-echo DC=$DC
-
 # Download & resolve deps now so intermittent failures are more likely
 # to be correctly marked as "job error" rather than "tests failed".
 dub upgrade --missing-only
