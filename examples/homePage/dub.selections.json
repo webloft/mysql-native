@@ -7,7 +7,7 @@
 		"memutils": "0.4.7",
 		"mysql-native": {"path":"../.."},
 		"openssl": "1.1.4+1.0.1g",
-		"unit-threaded": "0.7.37",
+		"unit-threaded": "0.7.45",
 		"vibe-d": "0.7.32"
 	}
 }
