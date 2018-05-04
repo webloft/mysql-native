@@ -2,18 +2,21 @@ language: d
 sudo: false
 
 d:
-  - dmd-2.078.0
+  - dmd-2.080.0
+  - dmd-2.079.1
+  - dmd-2.078.3
   - dmd-2.077.1
   - dmd-2.076.1
   - dmd-2.075.1
   - dmd-2.074.1
   - dmd-2.073.1
-  - dmd-2.073.0
   - dmd-2.072.2
   - dmd-2.071.2
   - dmd-2.070.2
   - dmd-2.069.2
   - dmd-2.068.2
+  - ldc-1.9.0
+  - ldc-1.8.0
   - ldc-1.7.0
   - ldc-1.6.0
   - ldc-1.5.0
@@ -65,11 +68,11 @@ matrix:
           env: DB=mysql-default
 
         # on Mac just test latest & oldest supported dmd and ldc
-        - d: dmd-2.078.2
+        - d: dmd-2.080.0
           os: osx
           osx_image: xcode9 # use OSX 10.13
 
-        - d: ldc-1.7.0
+        - d: ldc-1.9.0
           os: osx
           osx_image: xcode9 # use OSX 10.13
 
@@ -78,10 +81,10 @@ matrix:
 
         - d: ldc-0.17.0
           os: osx
-          
+
         # Test with all dependencies updated
         # (dub.selections.json is deliberately kept old)
-        - d: dmd-2.079.0
+        - d: dmd-2.080.0
           services:
             - mysql
           script:
