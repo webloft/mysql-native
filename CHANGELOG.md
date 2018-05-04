@@ -1,3 +1,15 @@
+v2.2.2 - 2018-05-03
+=====================
+
+Minor updates.
+
+- **Fixed:** [#177](https://github.com/mysql-d/mysql-native/issues/177):
+	Update unit-threaded, and don't lock mysql-native to a specific version
+	of unit-threaded. (@ghost91)
+- **Fixed:** [#178](https://github.com/mysql-d/mysql-native/issues/178),
+	[#179](https://github.com/mysql-d/mysql-native/issues/179):
+	Fix deprecation message in DMD v2.080.0: Replace enforceEx by enforce (@ghost91)
+
 v2.2.1 - 2018-03-09
 =====================
 
