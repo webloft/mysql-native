@@ -1,3 +1,2 @@
 #!/bin/sh
-echo "In run tests: DUB_UPGRADE=$DUB_UPGRADE"
 echo Doing Phobos-socket tests... && ./run-phobos-tests && echo Doing Vibe-socket tests... && ./run-vibe-tests

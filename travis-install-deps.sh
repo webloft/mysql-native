@@ -9,8 +9,6 @@ fi
 cp "dub.selections.${DUB_SELECT}.json" dub.selections.json 2>/dev/null
 cp "examples/homePage/dub.selections.${DUB_SELECT}.json" examples/homePage/dub.selections.json 2>/dev/null
 
-echo "In install: DUB_UPGRADE=$DUB_UPGRADE"
-
 if [ "$DUB_UPGRADE" = "true" ]; then
 	# Update all dependencies
 	dub upgrade
@@ -25,4 +23,15 @@ else
 	cd examples/homePage
 	dub upgrade --missing-only
 	cd ../..
+fi
+
+# Setup DB
+mysql -u root -e 'SHOW VARIABLES LIKE "%version%";'
+mysql -u root -e 'CREATE DATABASE mysqln_testdb;'
+echo 'host=127.0.0.1;port=3306;user=root;pwd=;db=mysqln_testdb' > testConnectionStr.txt
+
+# MySQL is not installed by default on OSX build agents
+if [ ${TRAVIS_OS_NAME} = 'osx' ]; then
+	brew update
+	brew install mysql && brew services start mysql
 fi
