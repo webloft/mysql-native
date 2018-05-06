@@ -13,3 +13,7 @@ if [ -z "$RDMD" ]; then
 	    command -v $RDMD >/dev/null 2>&1 || RDMD=local-dmd/dmd2/${TRAVIS_OS_NAME}/bin64/rdmd
 	fi
 fi
+
+if [ -z "$DMD" ]; then
+	DMD=dmd
+fi

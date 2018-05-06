@@ -2,10 +2,6 @@
 
 . ./find-rdmd.sh
 
-if [ -z "$DMD" ]; then
-	DMD=dmd
-fi
-
 echo Using:
 echo "  RDMD=$RDMD"
 echo "  DMD=$DMD"
