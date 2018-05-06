@@ -6,6 +6,19 @@ addons:
   apt:
     packages: [ libevent-dev ]
 
+# MySQL is not installed by default on OSX build agents
+before_install:
+    - "if [ ${TRAVIS_OS_NAME} = 'osx' ]; then brew update; fi"
+    - "if [ ${TRAVIS_OS_NAME} = 'osx' ]; then brew install mysql && brew services start mysql; fi"
+
+before_script:
+    - mysql -u root -e 'SHOW VARIABLES LIKE "%version%";'
+    - mysql -u root -e 'CREATE DATABASE mysqln_testdb;'
+    - echo 'host=127.0.0.1;port=3306;user=root;pwd=;db=mysqln_testdb' > testConnectionStr.txt
+
+install: ./travis-install-deps.sh
+script: ./run-tests
+
 matrix:
   include:
     - d: dmd-2.080.0
@@ -93,16 +106,3 @@ matrix:
     # See: https://github.com/vibe-d/vibe.d/issues/2155
     - d: dmd-2.080.0
       os: osx
-
-# MySQL is not installed by default on OSX build agents
-before_install:
-    - "if [ ${TRAVIS_OS_NAME} = 'osx' ]; then brew update; fi"
-    - "if [ ${TRAVIS_OS_NAME} = 'osx' ]; then brew install mysql && brew services start mysql; fi"
-
-before_script:
-    - mysql -u root -e 'SHOW VARIABLES LIKE "%version%";'
-    - mysql -u root -e 'CREATE DATABASE mysqln_testdb;'
-    - echo 'host=127.0.0.1;port=3306;user=root;pwd=;db=mysqln_testdb' > testConnectionStr.txt
-
-install: ./travis-install-deps.sh
-script: ./run-tests
