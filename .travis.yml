@@ -72,6 +72,14 @@ matrix:
           os: osx
           osx_image: xcode9 # use OSX 10.13
 
+        - d: dmd-2.079.1
+          os: osx
+          osx_image: xcode9 # use OSX 10.13
+
+        - d: dmd-2.078.3
+          os: osx
+          osx_image: xcode9 # use OSX 10.13
+
         - d: ldc-1.9.0
           os: osx
           osx_image: xcode9 # use OSX 10.13
