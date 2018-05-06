@@ -9,6 +9,9 @@ dependency "vibe-d:core" version=">=0.7.32 <0.9.0-0" optional=true
 sourcePaths "source/"
 importPaths "source/"
 
+// Needed on OSX with DMD 2.079+: https://github.com/vibe-d/vibe.d/issues/2155
+versions "VibeLibeventDriver" platform="osx"
+
 configuration "application" {
 	targetType "executable"
 	versions "VibeCustomMain"
@@ -17,9 +20,6 @@ configuration "application" {
 configuration "library" {
 	targetType "library"
 	excludedSourceFiles "source/app.d"
-	
-	// Needed on OSX with DMD 2.079+: https://github.com/vibe-d/vibe.d/issues/2155
-	versions "VibeLibeventDriver" platform="osx"
 }
 
 // Do not use this. Use "run-tests" insetad.
@@ -42,9 +42,6 @@ configuration "unittest-vibe" {
 
 	mainSourceFile "source/mysql/package.d"
 	debugVersions "MYSQLN_TESTS"
-
-	// Needed on OSX with DMD 2.079+: https://github.com/vibe-d/vibe.d/issues/2155
-	versions "VibeLibeventDriver" platform="osx"
 }
 
 // Run with: dub run -c unittest-vibe-ut -- -t
@@ -66,7 +63,4 @@ configuration "unittest-vibe-ut" {
 	versions "unitUnthreaded"
 
 	preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"
-
-	// Needed on OSX with DMD 2.079+: https://github.com/vibe-d/vibe.d/issues/2155
-	versions "VibeLibeventDriver" platform="osx"
 }
