@@ -1,6 +1,11 @@
 language: d
 sudo: false
 
+addons:
+  mariadb: '10.1'
+  apt:
+    packages: [ libevent-dev ]
+
 matrix:
   include:
     - d: dmd-2.080.0
@@ -88,11 +93,6 @@ matrix:
     # See: https://github.com/vibe-d/vibe.d/issues/2155
     - d: dmd-2.080.0
       os: osx
-
-addons:
-  mariadb: '10.1'
-  apt:
-    packages: [ libevent-dev ]
 
 # MySQL is not installed by default on OSX build agents
 before_install:

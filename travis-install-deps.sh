@@ -9,7 +9,9 @@ fi
 cp "dub.selections.${DUB_SELECT}.json" dub.selections.json 2>/dev/null
 cp "examples/homePage/dub.selections.${DUB_SELECT}.json" examples/homePage/dub.selections.json 2>/dev/null
 
-if [ $DUB_UPGRADE == 'true' ]; then
+echo "In install: DUB_UPGRADE=$DUB_UPGRADE"
+
+if [ "$DUB_UPGRADE" = "true" ]; then
 	# Update all dependencies
 	dub upgrade
 	cd examples/homePage
