@@ -109,3 +109,10 @@ matrix:
     allow_failures:
         # Doesn't appear to exist on travis: https://github.com/travis-ci/travis-ci/issues/8849
         - d: gdc-6.3.0
+
+        # Having trouble opening TCP connection on OSX with vibe.d 0.8.3 (required by DMDFE 2.079+)
+        # See: https://github.com/vibe-d/vibe.d/issues/2155
+        - d: dmd-2.080.0
+          os: osx
+        - d: dmd-2.079.1
+          os: osx
