@@ -25,13 +25,13 @@ else
 	cd ../..
 fi
 
-# Setup DB
-mysql -u root -e 'SHOW VARIABLES LIKE "%version%";'
-mysql -u root -e 'CREATE DATABASE mysqln_testdb;'
-echo 'host=127.0.0.1;port=3306;user=root;pwd=;db=mysqln_testdb' > testConnectionStr.txt
-
 # MySQL is not installed by default on OSX build agents
 if [ ${TRAVIS_OS_NAME} = 'osx' ]; then
 	brew update
 	brew install mysql && brew services start mysql
 fi
+
+# Setup DB
+mysql -u root -e 'SHOW VARIABLES LIKE "%version%";'
+mysql -u root -e 'CREATE DATABASE mysqln_testdb;'
+echo 'host=127.0.0.1;port=3306;user=root;pwd=;db=mysqln_testdb' > testConnectionStr.txt
