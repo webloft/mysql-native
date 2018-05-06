@@ -6,7 +6,7 @@ addons:
   apt:
     packages: [ libevent-dev ]
 
-install: . ./travis-install-deps.sh
+install: ./travis-install-deps.sh
 script: ./run-tests
 
 after_success:

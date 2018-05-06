@@ -3,4 +3,10 @@
 # GDC doesn't autocreate the dir (and git doesn't beleive in empty dirs)
 mkdir -p bin
 
+# Code coverage
+if [ "$DUB_UPGRADE" = "true" ]; then
+	export DFLAGS="$DFLAGS -cov"
+	export DRT_COVOPT=merge:1
+fi
+
 dub test -c unittest-vibe

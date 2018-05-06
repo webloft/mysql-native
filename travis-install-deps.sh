@@ -35,9 +35,3 @@ fi
 mysql -u root -e 'SHOW VARIABLES LIKE "%version%";'
 mysql -u root -e 'CREATE DATABASE mysqln_testdb;'
 echo 'host=127.0.0.1;port=3306;user=root;pwd=;db=mysqln_testdb' > testConnectionStr.txt
-
-# Code coverage
-if [ "$DUB_UPGRADE" = "true" ]; then
-	export DFLAGS="$DFLAGS -cov"
-	export DRT_COVOPT=merge:1
-fi

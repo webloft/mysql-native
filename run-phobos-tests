@@ -9,5 +9,11 @@ echo "  DMD=$DMD"
 # GDC doesn't autocreate the dir (and git doesn't beleive in empty dirs)
 mkdir -p bin
 
+# Code coverage
+if [ "$DUB_UPGRADE" = "true" ]; then
+	export DFLAGS="$DFLAGS -cov"
+	export DRT_COVOPT=merge:1
+fi
+
 echo Compiling Phobos-socket tests...
 $RDMD --compiler=$DMD --build-only -g -unittest -debug=MYSQLN_TESTS -ofbin/mysqln-tests-phobos -Isource source/mysql/package.d && echo Running Phobos-socket tests... && bin/mysqln-tests-phobos
