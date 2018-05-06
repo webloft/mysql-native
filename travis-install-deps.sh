@@ -5,6 +5,12 @@ if ! [ $(which rdmd) ]; then
 	unzip -d local-dmd $DMD_ZIP
 fi
 
+# MySQL is not installed by default on OSX build agents
+if [ ${TRAVIS_OS_NAME} = 'osx' ]; then
+	brew update
+	brew install mysql && brew services start mysql
+fi
+
 # If an alternate dub.selections.json was requested, use it.
 cp "dub.selections.${DUB_SELECT}.json" dub.selections.json 2>/dev/null
 cp "examples/homePage/dub.selections.${DUB_SELECT}.json" examples/homePage/dub.selections.json 2>/dev/null
@@ -23,12 +29,6 @@ else
 	cd examples/homePage
 	dub upgrade --missing-only
 	cd ../..
-fi
-
-# MySQL is not installed by default on OSX build agents
-if [ ${TRAVIS_OS_NAME} = 'osx' ]; then
-	brew update
-	brew install mysql && brew services start mysql
 fi
 
 # Setup DB
