@@ -47,7 +47,7 @@ matrix:
 
     # Test alternative db versions, but only on one compiler version
     - d: dmd-2.070.2
-      addons:
+      addons: # Remove "mariadb: ..." from default addons, but keep "libevent-dev"
         mariadb: '5.5'
         apt:
           packages: [ libevent-dev ]
@@ -56,6 +56,9 @@ matrix:
     - d: dmd-2.070.2
       services:
         - mysql
+      addons: # Remove "mariadb: ..." from default addons, but keep "libevent-dev"
+        apt:
+          packages: [ libevent-dev ]
       env: DB=mysql-default
 
     # on Mac just test latest & oldest supported dmd and ldc
