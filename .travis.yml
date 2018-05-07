@@ -61,21 +61,21 @@ matrix:
           packages: [ libevent-dev ]
       env: DB=mariadb-5.5
 
-    - d: dmd-2.070.2
+    - d: dmd-2.078.3
       addons:
         mariadb: '10.0'
         apt:
           packages: [ libevent-dev ]
       env: DB=mariadb-10.0
 
-    - d: dmd-2.070.2
+    - d: dmd-2.078.3
       addons:
         mariadb: '10.2'
         apt:
           packages: [ libevent-dev ]
       env: DB=mariadb-10.2
 
-    - d: dmd-2.070.2
+    - d: dmd-2.078.3
       addons:
         mariadb: '10.3'
         apt:
@@ -127,5 +127,13 @@ matrix:
     - d: dmd-2.080.0
       os: osx
 
-    # Occasional failures are expected here.
+    # Occasional failures are expected here
     - d: dmd-beta
+
+    # Not currently working on Maria DB 10.2 and up
+    - d: dmd-2.078.3
+      addons:
+        mariadb: '10.2'
+    - d: dmd-2.078.3
+      addons:
+        mariadb: '10.3'
