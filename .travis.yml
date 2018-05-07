@@ -122,11 +122,6 @@ matrix:
     # Doesn't appear to exist on travis: https://github.com/travis-ci/travis-ci/issues/8849
     - d: gdc-6.3.0
 
-    # Not working here, but vibe.d doesn't officially support DMD 2.080 yet anyway.
-    # See: https://github.com/vibe-d/vibe.d/issues/2155
-    - d: dmd-2.080.0
-      os: osx
-
     # Occasional failures are expected here
     - d: dmd-beta
 
