@@ -1,0 +1,13 @@
+#!/bin/sh
+
+. ./find-rdmd.sh
+
+echo Using:
+echo "  RDMD=$RDMD"
+echo "  DMD=$DMD"
+
+# GDC doesn't autocreate the dir (and git doesn't beleive in empty dirs)
+mkdir -p bin
+
+echo 'Compiling Phobos-socket tests (core tests only)...'
+$RDMD --compiler=$DMD --build-only -g -unittest -debug=MYSQLN_CORE_TESTS -ofbin/mysqln-tests-phobos -Isource source/mysql/package.d && echo 'Running Phobos-socket tests (core tests only)...' && bin/mysqln-tests-phobos

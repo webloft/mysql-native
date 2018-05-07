@@ -26,10 +26,16 @@ import mysql.test.common;
 
 alias indexOf = std.string.indexOf; // Needed on DMD 2.064.2
 
+debug(MYSQLN_TESTS)      version = DoCoreTests;
+debug(MYSQLN_CORE_TESTS) version = DoCoreTests;
+
 @("connect")
-debug(MYSQLN_TESTS)
+version(DoCoreTests)
 unittest
 {
+	import std.stdio;
+	writeln("Basic connect test...");
+
 	// Test connect/disconnect
 	mixin(scopedCn);
 }

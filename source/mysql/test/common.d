@@ -30,7 +30,10 @@ To enable these tests, you have to add the MYSQLN_TESTS
 debug specifier. The reason it uses debug and not version is because dub
 doesn't allow adding version specifiers on the command-line.
 +/
-debug(MYSQLN_TESTS)
+debug(MYSQLN_TESTS)      version = DoCoreTests;
+debug(MYSQLN_CORE_TESTS) version = DoCoreTests;
+
+version(DoCoreTests)
 {
 	public import std.stdio;
 	import std.conv;

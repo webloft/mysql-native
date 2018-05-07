@@ -1,9 +1,14 @@
 v2.3.0 - TBD
 =====================
 
-- **Internal:** Rework travis config and scripts, including cleanup, testing
-	on more versions of MariaDB server and support for per-job
-	`dub.selections.json` overrides (needed for testing on DMD 2.079+).
+- **Internal:** Rework travis config and scripts, including:
+	- General cleanup.
+	- Testing on more versions of MariaDB server.
+	- [#173](https://github.com/mysql-d/mysql-native/issues/173):
+		Support for per-job `dub.selections.json` overrides (needed for testing on DMD 2.079+).
+	- [#184](https://github.com/mysql-d/mysql-native/issues/184):
+		Speed up full Phobos+Vibe testing by skipping redundant tests between
+		both Phobos and Vibe builds.
 
 v2.2.2 - 2018-05-03
 =====================
