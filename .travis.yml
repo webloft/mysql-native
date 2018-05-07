@@ -134,6 +134,10 @@ matrix:
     - d: dmd-2.078.3
       addons:
         mariadb: '10.2'
+        apt:
+          packages: [ libevent-dev ]
     - d: dmd-2.078.3
       addons:
         mariadb: '10.3'
+        apt:
+          packages: [ libevent-dev ]
