@@ -1,3 +1,10 @@
+v2.3.0 - TBD
+=====================
+
+- **Internal:** Rework travis config and scripts, including cleanup and
+	support for per-job `dub.selections.json` overrides (needed for testing on
+	DMD 2.079+).
+
 v2.2.2 - 2018-05-03
 =====================
 
