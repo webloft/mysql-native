@@ -21,7 +21,7 @@ if [ "$USE_UNIT_THREADED" = "true" ]; then
 	MSG_SUFFIX="$MSG_SUFFIX (unit-threaded)"
 	UT_VER=0.7.45
 	UT_SUFFIX='-ut'
-	UT_ARGS=-version=MYSQLN_TESTS_NO_MAIN -version=Have_unit_threaded -Iunit-threaded-${UT_VER}/unit-threaded/source/ --extra-file=unit-threaded-${UT_VER}/unit-threaded/libunit-threaded.a --exclude=unit_threaded
+	UT_ARGS="-version=MYSQLN_TESTS_NO_MAIN -version=Have_unit_threaded -Iunit-threaded-${UT_VER}/unit-threaded/source/ --extra-file=unit-threaded-${UT_VER}/unit-threaded/libunit-threaded.a --exclude=unit_threaded"
 	D_FILE=bin/ut.d
 
 	# Setup unit-threaded
