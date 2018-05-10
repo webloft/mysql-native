@@ -3,4 +3,8 @@
 # GDC doesn't autocreate the dir (and git doesn't beleive in empty dirs)
 mkdir -p bin
 
-dub test -c unittest-vibe
+if [ "$USE_UNIT_THREADED" = "true" ]; then
+	dub run -c unittest-vibe-ut -- "$@"
+else
+	dub test -c unittest-vibe
+fi
