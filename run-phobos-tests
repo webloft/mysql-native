@@ -9,5 +9,13 @@ echo "  DMD=$DMD"
 # GDC doesn't autocreate the dir (and git doesn't beleive in empty dirs)
 mkdir -p bin
 
-echo Compiling Phobos-socket tests...
-$RDMD --compiler=$DMD --build-only -g -unittest -debug=MYSQLN_TESTS -ofbin/mysqln-tests-phobos -Isource source/mysql/package.d && echo Running Phobos-socket tests... && bin/mysqln-tests-phobos
+if [ "$CORE_PHOBOS_TESTS_ONLY" = "true" ]; then
+	MSG_SUFFIX=' (core tests only)'
+	DEBUG_TESTS_ID=MYSQLN_CORE_TESTS
+else
+	MSG_SUFFIX=''
+	DEBUG_TESTS_ID=MYSQLN_TESTS
+fi
+
+echo Compiling Phobos-socket tests${MSG_SUFFIX}...
+$RDMD --compiler=$DMD --build-only -g -unittest -debug=$DEBUG_TESTS_ID -ofbin/mysqln-tests-phobos -Isource source/mysql/package.d && echo Running Phobos-socket tests${MSG_SUFFIX}... && bin/mysqln-tests-phobos
