@@ -47,6 +47,7 @@ unittest
 
 	auto stmt = cn.prepare("SELECT `bit`, `date` FROM `issue24` ORDER BY `date` DESC");
 	auto results = cn.query(stmt).array;
+	//FIXME: This assert fails, results.length is 1
 	assert(results.length == 2);
 	assert(results[0][0] == true);
 	assert(results[0][1] == Date(1970, 1, 1));
@@ -164,7 +165,7 @@ unittest
 	mixin(scopedCn);
 	cn.exec("DROP TABLE IF EXISTS `issue56`");
 	cn.exec("CREATE TABLE `issue56` (a datetime DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-	
+
 	cn.exec("INSERT INTO `issue56` VALUES
 		('2015-03-28 00:00:00')
 		,('2015-03-29 00:00:00')
@@ -178,6 +179,10 @@ unittest
 		,('2015-04-04 00:00:00')");
 
 	auto stmt = cn.prepare("SELECT a FROM `issue56`");
+	//FIXME: This line fails. It first produces two corrupted rows:
+	// Row([2015-Mar-28 00:00:00], [false])
+	// Row([2015-Mar-31 00:00:00], [false])
+	// And then it hangs.
 	auto res = cn.query(stmt).array;
 	assert(res.length == 10);
 }

@@ -155,17 +155,17 @@ Params: a = slice of a protocol packet beginning at the length byte for a
             chunk of Date data.
 Returns: A populated or default initialized `std.datetime.Date` struct.
 +/
-Date toDate(in ubyte[] a) pure
+MySQLDate toDate(in ubyte[] a) pure
 {
 	enforce!MYXProtocol(a.length, "Supplied byte array is zero length");
 	if (a[0] == 0)
-		return Date(0,0,0);
+		return MySQLDate(0,0,0);
 
 	enforce!MYXProtocol(a[0] >= 4, "Binary date representation is too short");
 	int year    = (a[2]  << 8) + a[1];
 	int month   = cast(int) a[3];
 	int day     = cast(int) a[4];
-	return Date(year, month, day);
+	return MySQLDate(year, month, day);
 }
 
 /++
@@ -176,14 +176,14 @@ Text representations of a Date are as in 2011-11-11
 Params: s = A string representation of the time difference.
 Returns: A populated or default initialized `std.datetime.Date` struct.
 +/
-Date toDate(string s)
+MySQLDate toDate(string s)
 {
 	int year = parse!(ushort)(s);
 	enforce!MYXProtocol(s.skipOver("-"), `Expected: "-"`);
 	int month = parse!(ubyte)(s);
 	enforce!MYXProtocol(s.skipOver("-"), `Expected: "-"`);
 	int day = parse!(ubyte)(s);
-	return Date(year, month, day);
+	return MySQLDate(year, month, day);
 }
 
 /++
@@ -225,20 +225,20 @@ Params: a = slice of a protocol packet beginning at the length byte for a
             chunk of DateTime data
 Returns: A populated or default initialized `std.datetime.DateTime` struct.
 +/
-DateTime toDateTime(in ubyte[] a) pure
+MySQLDateTime toDateTime(in ubyte[] a) pure
 {
 	enforce!MYXProtocol(a.length, "Supplied byte array is zero length");
 	if (a[0] == 0)
-		return DateTime();
+		return MySQLDateTime();  //TODO: Is this right??
 
 	enforce!MYXProtocol(a[0] >= 4, "Supplied ubyte[] is not long enough");
 	int year    = (a[2] << 8) + a[1];
 	int month   =  a[3];
 	int day     =  a[4];
-	DateTime dt;
+	MySQLDateTime dt;
 	if (a[0] == 4)
 	{
-		dt = DateTime(year, month, day);
+		dt = MySQLDateTime(year, month, day);
 	}
 	else
 	{
@@ -246,7 +246,7 @@ DateTime toDateTime(in ubyte[] a) pure
 		int hour    = a[5];
 		int minute  = a[6];
 		int second  = a[7];
-		dt = DateTime(year, month, day, hour, minute, second);
+		dt = MySQLDateTime(year, month, day, hour, minute, second);
 	}
 	return dt;
 }
@@ -259,7 +259,7 @@ Text representations of a DateTime are as in 2011-11-11 12:20:02
 Params: s = A string representation of the time difference.
 Returns: A populated or default initialized `std.datetime.DateTime` struct.
 +/
-DateTime toDateTime(string s)
+MySQLDateTime toDateTime(string s)
 {
 	int year = parse!(ushort)(s);
 	enforce!MYXProtocol(s.skipOver("-"), `Expected: "-"`);
@@ -272,7 +272,7 @@ DateTime toDateTime(string s)
 	int minute = parse!(ubyte)(s);
 	enforce!MYXProtocol(s.skipOver(":"), `Expected: ":"`);
 	int second = parse!(ubyte)(s);
-	return DateTime(year, month, day, hour, minute, second);
+	return MySQLDateTime(year, month, day, hour, minute, second);
 }
 
 /++
@@ -283,7 +283,7 @@ This is used to support the TimeStamp  struct.
 Params: x = A ulong e.g. 20111111122002UL.
 Returns: A populated `std.datetime.DateTime` struct.
 +/
-DateTime toDateTime(ulong x)
+MySQLDateTime toDateTime(ulong x)
 {
 	int second = cast(int) (x%100);
 	x /= 100;
@@ -300,7 +300,7 @@ DateTime toDateTime(ulong x)
 	enforce!MYXProtocol(year >= 1970 &&  year < 2039, "Date/time out of range for 2 bit timestamp");
 	enforce!MYXProtocol(year != 2038 || (month < 1 && day < 19 && hour < 3 && minute < 14 && second < 7),
 			"Date/time out of range for 2 bit timestamp");
-	return DateTime(year, month, day, hour, minute, second);
+	return MySQLDateTime(year, month, day, hour, minute, second);
 }
 
 /++
@@ -422,7 +422,7 @@ body
 	return tod;
 }
 
-Date consume(T:Date, ubyte N=T.sizeof)(ref ubyte[] packet) pure
+MySQLDate consume(T:MySQLDate, ubyte N=T.sizeof)(ref ubyte[] packet) pure
 in
 {
 	static assert(N == T.sizeof);
@@ -432,7 +432,7 @@ body
 	return toDate(packet.consume(5));
 }
 
-DateTime consume(T:DateTime, ubyte N=T.sizeof)(ref ubyte[] packet) pure
+MySQLDateTime consume(T:MySQLDateTime, ubyte N=T.sizeof)(ref ubyte[] packet) pure
 in
 {
 	assert(packet.length);
@@ -442,7 +442,7 @@ body
 {
 	auto numBytes = packet.consume!ubyte();
 	if(numBytes == 0)
-		return DateTime();
+		return MySQLDateTime();  //TODO: Is this right??
 
 	enforce!MYXProtocol(numBytes >= 4, "Supplied packet is not large enough to store DateTime");
 
@@ -459,9 +459,31 @@ body
 		minute  = packet.consume!ubyte();
 		second  = packet.consume!ubyte();
 	}
-	return DateTime(year, month, day, hour, minute, second);
+	return MySQLDateTime(year, month, day, hour, minute, second);
 }
 
+/+
+// Make sure the dummy functions below actually do get chosen by the compiler
+// and correctly halt compilation.
+void foo()
+{
+	ubyte[] pak;
+	auto a = consume!Date(pak);
+	auto b = consume!DateTime(pak);
+	auto c = consumeIfComplete!Date(pak, false, false);
+	auto d = consumeIfComplete!DateTime(pak, false, false);
+	
+}+/
+// Make sure consume doesn't get called with Date/DateTime,
+// it should only get called with MySQLDate/MySQLDateTime
+Date consume(T:Date, ubyte N=T.sizeof)(ref ubyte[] packet) pure
+{
+	static assert(false, "consume!Date");
+}
+DateTime consume(T:DateTime, ubyte N=T.sizeof)(ref ubyte[] packet) pure
+{
+	static assert(false, "consume!DateTime");
+}
 
 @property bool hasEnoughBytes(T, ubyte N=T.sizeof)(in ubyte[] packet) pure
 in
@@ -531,12 +553,18 @@ body
 
 T myto(T)(string value)
 {
-	static if(is(T == DateTime))
+	static if(is(T == MySQLDateTime))
 		return toDateTime(value);
-	else static if(is(T == Date))
+	else static if(is(T == MySQLDate))
 		return toDate(value);
 	else static if(is(T == TimeOfDay))
 		return toTimeOfDay(value);
+	// Make sure myto doesn't get called with Date/DateTime,
+	// it should only get called with MySQLDate/MySQLDateTime
+	else static if(is(T == Date))
+		static assert(false, "myto!Date");
+	else static if(is(T == DateTime))
+		static assert(false, "myto!DateTime");
 	else
 		return to!T(value);
 }
@@ -656,6 +684,19 @@ SQLValue consumeIfComplete(T, int N=T.sizeof)(ref ubyte[] packet, bool binary, b
 		: packet.consumeNonBinaryValueIfComplete!T(unsigned);
 }
 
+// Make sure consumeIfComplete doesn't get called with Date/DateTime,
+// it should only get called with MySQLDate/MySQLDateTime
+SQLValue consumeIfComplete(T)(ref ubyte[] packet, bool binary, bool unsigned)
+	if(is(T==Date))
+{
+	static assert(false, "consumeIfComplete!Date");
+}
+SQLValue consumeIfComplete(T)(ref ubyte[] packet, bool binary, bool unsigned)
+	if(is(T==DateTime))
+{
+	static assert(false, "consumeIfComplete!DateTime");
+}
+
 SQLValue consumeIfComplete()(ref ubyte[] packet, SQLType sqlType, bool binary, bool unsigned, ushort charSet)
 {
 	switch(sqlType)
@@ -681,15 +722,15 @@ SQLValue consumeIfComplete()(ref ubyte[] packet, SQLType sqlType, bool binary, b
 		case SQLType.DOUBLE:
 			return packet.consumeIfComplete!double(binary, unsigned);
 		case SQLType.TIMESTAMP:
-			return packet.consumeIfComplete!DateTime(binary, unsigned);
+			return packet.consumeIfComplete!MySQLDateTime(binary, unsigned);
 		case SQLType.TIME:
 			return packet.consumeIfComplete!TimeOfDay(binary, unsigned);
 		case SQLType.YEAR:
 			return packet.consumeIfComplete!ushort(binary, unsigned);
 		case SQLType.DATE:
-			return packet.consumeIfComplete!Date(binary, unsigned);
+			return packet.consumeIfComplete!MySQLDate(binary, unsigned);
 		case SQLType.DATETIME:
-			return packet.consumeIfComplete!DateTime(binary, unsigned);
+			return packet.consumeIfComplete!MySQLDateTime(binary, unsigned);
 		case SQLType.VARCHAR:
 		case SQLType.ENUM:
 		case SQLType.SET:

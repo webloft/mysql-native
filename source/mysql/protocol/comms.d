@@ -31,6 +31,7 @@ import mysql.connection;
 import mysql.exceptions;
 import mysql.prepared;
 import mysql.result;
+import mysql.types;
 
 import mysql.protocol.constants;
 import mysql.protocol.extra_types;
@@ -338,7 +339,7 @@ package struct ProtocolPrepared
 					types[ct++] = SQLType.TIMESTAMP;
 					types[ct++] = SIGNED;
 					Timestamp tms = isRef? *(v.get!(const(Timestamp*))): v.get!(const(Timestamp));
-					DateTime dt = mysql.protocol.packet_helpers.toDateTime(tms.rep);
+					DateTime dt = mysql.protocol.packet_helpers.toDateTime(tms.rep).getDateTime;
 					ubyte[] da = pack(dt);
 					size_t l = da.length;
 					reAlloc(l);
@@ -685,6 +686,14 @@ body
 		}
 		else
 		{
+			// Convert MySQLDate to Phobos Date
+			if(MySQLDate* myDate = sqlValue.value.peek!MySQLDate)
+				sqlValue.value = myDate.getDate();
+
+			// Convert MySQLDateTime to Phobos DateTime
+			if(MySQLDateTime* myDateTime = sqlValue.value.peek!MySQLDateTime)
+				sqlValue.value = myDateTime.getDateTime();
+
 			_values[i] = sqlValue.value;
 		}
 	}

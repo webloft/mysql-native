@@ -2,6 +2,7 @@
 module mysql.exceptions;
 
 import std.algorithm;
+import mysql.types;
 import mysql.protocol.packets;
 
 /++
@@ -184,4 +185,29 @@ unittest
 	assertThrown!MYXResultRecieved(cn.exec(preparedSelect));
 	assertThrown!MYXNoResultRecieved(cn.query(preparedInsert).each());
 	assertThrown!MYXNoResultRecieved(cn.queryRowTuple(preparedInsert, queryTupleResult));
+}
+
+/++
+Thrown when an invalid date is received.
+
+In certain situations, MySQL supports storing and retrieving invalid dates.
+But, by default, mysql-native stores dates using Phobos's Date and DateTime,
+which do not support invalid dates. So if an invalid date is received, it
+cannot be stored in a Date or DateTime, so this is thrown.
++/
+class MYXInvalidatedDate: MYX
+{
+	MySQLDate date;
+	
+	this(MySQLDate date, string file = __FILE__, size_t line = __LINE__) pure
+	{
+		this.date = date;
+		super(
+			"Cannot convert invalid date ("~date.toString~") to Date or DataTime. "~
+			"By default, mysql-native stores dates using Phobos's Date and DateTime, "~
+			"which do not support invalid dates like certain configurations of MySQL "~
+			"do. If you need to support invalid dates...",
+			file, line
+		);
+	}
 }

@@ -117,7 +117,7 @@ version(DoCoreTests)
 	}
 
 	/// Convert a Timestamp to DateTime
-	DateTime toDateTime(Timestamp value) pure
+	MySQLDateTime toDateTime(Timestamp value) pure
 	{
 		auto x = value.rep;
 		int second = cast(int) (x%100);
@@ -132,6 +132,6 @@ version(DoCoreTests)
 		x /= 100;
 		int year   = cast(int) (x%10000);
 
-		return DateTime(year, month, day, hour, minute, second);
+		return MySQLDateTime(year, month, day, hour, minute, second);
 	}
 }
