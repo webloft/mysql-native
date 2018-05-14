@@ -7,7 +7,7 @@ addons:
     packages: [ libevent-dev ]
 
 #install: ./travis-setup.sh
-install: dmd -of=ci_setup ci_setup.d && ./ci_setup
+install: $DMD -of=ci_setup ci_setup.d && ./ci_setup
 script: ./run-tests
 
 matrix:
