@@ -470,6 +470,37 @@ unittest
 	assert(count == 2);
 
 	ColumnInfo[] ca = md.columns("basetest");
+writeln("ca[0]:\n", ca[0]);
+writeln("ca[0].schema: ", ca[0].schema);
+writeln("schemaName: ", schemaName);
+writeln("ca[0].table: ", ca[0].table);
+writeln("ca[0].name: ", ca[0].name);
+writeln("ca[0].index: ", ca[0].index);
+writeln("ca[0].defaultNull: ", ca[0].defaultNull);
+writeln("ca[0].nullable: ", ca[0].nullable);
+writeln("ca[0].type: ", ca[0].type);
+writeln("ca[0].charsMax: ", ca[0].charsMax);
+writeln("ca[0].octetsMax: ", ca[0].octetsMax);
+writeln("ca[0].numericPrecision: ", ca[0].numericPrecision);
+writeln("ca[0].numericScale: ", ca[0].numericScale);
+writeln("ca[0].charSet: ", ca[0].charSet);
+writeln("ca[0].collation: ", ca[0].collation);
+writeln("ca[0].colType: ", ca[0].colType);
+	assert( ca[0].schema == schemaName);
+	assert( ca[0].table == "basetest");
+	assert( ca[0].name == "boolcol");
+	assert( ca[0].index == 0);
+	assert( ca[0].defaultNull);
+	assert( ca[0].nullable);
+	assert( ca[0].type == "bit");
+	assert( ca[0].charsMax == -1);
+	assert( ca[0].octetsMax == -1);
+	assert( ca[0].numericPrecision == 1);
+	assert( ca[0].numericScale == -1 );
+	assert( ca[0].charSet == "<NULL>" );
+	assert( ca[0].collation == "<NULL>");
+	assert( ca[0].colType == "bit(1)");
+
 	assert( ca[0].schema == schemaName && ca[0].table == "basetest" && ca[0].name == "boolcol" && ca[0].index == 0 &&
 			ca[0].defaultNull && ca[0].nullable && ca[0].type == "bit" && ca[0].charsMax == -1 && ca[0].octetsMax == -1 &&
 			ca[0].numericPrecision == 1 && ca[0].numericScale == -1 && ca[0].charSet == "<NULL>" && ca[0].collation == "<NULL>"  &&
