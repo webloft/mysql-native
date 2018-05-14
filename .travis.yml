@@ -6,7 +6,8 @@ addons:
   apt:
     packages: [ libevent-dev ]
 
-install: ./travis-setup.sh
+#install: ./travis-setup.sh
+install: dmd -o ci-setup ci-setup.d && ./ci-setup
 script: ./run-tests
 
 matrix:
