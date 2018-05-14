@@ -129,15 +129,3 @@ matrix:
 
     # Occasional failures are expected here
     - d: dmd-beta
-
-    # Not currently working on Maria DB 10.2 and up
-    - d: dmd-2.078.3
-      addons:
-        mariadb: '10.2'
-        apt:
-          packages: [ libevent-dev ]
-    - d: dmd-2.078.3
-      addons:
-        mariadb: '10.3'
-        apt:
-          packages: [ libevent-dev ]
