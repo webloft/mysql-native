@@ -22,9 +22,30 @@ struct ColumnInfo
 	string name;
 	/// Zero based index of the column within a table row.
 	size_t index;
-	/// Is the default value NULL?
+	/++
+	Is the COLUMN_DEFAULT column (in the information schema's COLUMNS table) NULL?
+	
+	What this means:
+	
+	On MariaDB 10.2.7 and up:
+	- Does the column have a default value?
+	
+	On MySQL and MariaDB 10.2.6 and below:
+	- This can be true if the column doesn't have a default value OR
+	if NULL is the column's default value.
+	
+	See_also:
+	See COLUMN_DEFAULT description at
+	$(LINK https://mariadb.com/kb/en/library/information-schema-columns-table/)
+	+/
 	bool defaultNull;
-	/// The default value as a string if not NULL
+	/++
+	The default value as a string if not NULL.
+	
+	Depending on the database (see comments for `defaultNull` and the
+	related "see also" link there), this may be either `null` or `"NULL"`
+	if the column's default value is NULL.
+	+/
 	string defaultValue;
 	/// Can the column value be set to NULL
 	bool nullable;
