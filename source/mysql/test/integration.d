@@ -80,7 +80,7 @@ debug(MYSQLN_TESTS)
 		cn.exec("DROP TABLE IF EXISTS `basetest`");
 		cn.exec(
 			"CREATE TABLE `basetest` (
-			`boolcol` bit(1),
+			`boolcol` bit(1) default null,
 			`bytecol` tinyint(4),
 			`ubytecol` tinyint(3) unsigned,
 			`shortcol` smallint(6),
@@ -500,6 +500,9 @@ writeln("ca[0].colType: ", ca[0].colType);
 	assert( ca[0].charSet == "<NULL>" );
 	assert( ca[0].collation == "<NULL>");
 	assert( ca[0].colType == "bit(1)");
+
+writeln("ca[1].defaultNull: ", ca[1].defaultNull);
+writeln("ca[1].nullable: ", ca[1].nullable);
 
 	assert( ca[0].schema == schemaName && ca[0].table == "basetest" && ca[0].name == "boolcol" && ca[0].index == 0 &&
 			ca[0].defaultNull && ca[0].nullable && ca[0].type == "bit" && ca[0].charsMax == -1 && ca[0].octetsMax == -1 &&
