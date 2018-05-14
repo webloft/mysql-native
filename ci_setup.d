@@ -9,7 +9,7 @@ bool envBool(string name)
 	return environment[name] == "true";
 }
 
-bool envGet(string name)
+string envGet(string name)
 {
 	if(name !in environment)
 		return null;
