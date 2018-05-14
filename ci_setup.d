@@ -1,6 +1,14 @@
 import std.file;
 import std.process;
 
+bool envBool(string name)
+{
+	if(name !in environment)
+		return false;
+	
+	return environment[name] == "true";
+}
+
 void main()
 {
 	auto haveRdmd = executeShell("rdmd --help").status == 0;
@@ -22,7 +30,7 @@ void main()
 	copy("dub.selections."~environment["DUB_SELECT"]~".json", "dub.selections.json");
 	copy("examples/homePage/dub.selections."~environment["DUB_SELECT"]~".json", "examples/homePage/dub.selections.json");
 
-	if(environment["DUB_UPGRADE"])
+	if(envBool("DUB_UPGRADE"))
 	{
 		// Update all dependencies
 		spawnShell("dub upgrade").wait;
