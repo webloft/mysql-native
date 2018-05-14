@@ -36,4 +36,4 @@ else
 fi
 
 echo Compiling Phobos-socket tests${MSG_SUFFIX}...
-$RDMD --compiler=$DMD --build-only -g -unittest $UT_ARGS -debug=$DEBUG_TESTS_ID -ofbin/mysqln-tests-phobos${UT_SUFFIX} -Isource $D_FILE && echo Running Phobos-socket tests${MSG_SUFFIX}... && bin/mysqln-tests-phobos${UT_SUFFIX} "$@"
+$RDMD --compiler=$DMD --build-only -g -unittest $UT_ARGS -debug=$DEBUG_TESTS_ID -ofbin/mysqln-tests-phobos${UT_SUFFIX} -Isource $D_FILE && echo Running Phobos-socket tests${MSG_SUFFIX}... && bin/mysqln-tests-phobos${UT_SUFFIX} -t "$@"
