@@ -11,10 +11,7 @@ bool envBool(string name)
 
 string envGet(string name)
 {
-	if(name !in environment)
-		return null;
-	
-	return environment[name];
+	return environment.get(name, null);
 }
 
 void copyIfExists(string from, string to)
