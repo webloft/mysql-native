@@ -9,6 +9,14 @@ bool envBool(string name)
 	return environment[name] == "true";
 }
 
+bool envGet(string name)
+{
+	if(name !in environment)
+		return null;
+	
+	return environment[name];
+}
+
 void main()
 {
 	auto haveRdmd = executeShell("rdmd --help").status == 0;
@@ -27,8 +35,8 @@ void main()
 	}
 
 	// If an alternate dub.selections.json was requested, use it.
-	copy("dub.selections."~environment["DUB_SELECT"]~".json", "dub.selections.json");
-	copy("examples/homePage/dub.selections."~environment["DUB_SELECT"]~".json", "examples/homePage/dub.selections.json");
+	copy("dub.selections."~envGet("DUB_SELECT")~".json", "dub.selections.json");
+	copy("examples/homePage/dub.selections."~envGet("DUB_SELECT")~".json", "examples/homePage/dub.selections.json");
 
 	if(envBool("DUB_UPGRADE"))
 	{
