@@ -1,6 +1,8 @@
 v2.3.0 - TBD
 =====================
 
+- **Tests:** [#186](https://github.com/mysql-d/mysql-native/issues/186):
+	Fix metadata tests on MariaDB 10.2 and 10.3
 - **Internal:** Rework travis config and scripts, including:
 	- General cleanup.
 	- Testing on more versions of MariaDB server.
