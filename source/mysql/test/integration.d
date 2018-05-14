@@ -469,118 +469,91 @@ unittest
 	}
 	assert(count == 2);
 
+	/+
+	Don't check defaultNull or defaultValue here because, for columns
+	with a default value of NULL, their values could be different
+	depending on the server.
+
+	See "COLUMN_DEFAULT" at:
+		https://mariadb.com/kb/en/library/information-schema-columns-table/
+	+/
+	
 	ColumnInfo[] ca = md.columns("basetest");
-writeln("ca[0]:\n", ca[0]);
-writeln("ca[0].schema: ", ca[0].schema);
-writeln("schemaName: ", schemaName);
-writeln("ca[0].table: ", ca[0].table);
-writeln("ca[0].name: ", ca[0].name);
-writeln("ca[0].index: ", ca[0].index);
-writeln("ca[0].defaultNull: ", ca[0].defaultNull);
-writeln("ca[0].defaultValue: ", ca[0].defaultValue);
-writeln("ca[0].nullable: ", ca[0].nullable);
-writeln("ca[0].type: ", ca[0].type);
-writeln("ca[0].charsMax: ", ca[0].charsMax);
-writeln("ca[0].octetsMax: ", ca[0].octetsMax);
-writeln("ca[0].numericPrecision: ", ca[0].numericPrecision);
-writeln("ca[0].numericScale: ", ca[0].numericScale);
-writeln("ca[0].charSet: ", ca[0].charSet);
-writeln("ca[0].collation: ", ca[0].collation);
-writeln("ca[0].colType: ", ca[0].colType);
-writeln("ca[1].defaultNull: ", ca[1].defaultNull);
-writeln("ca[1].defaultValue: ", ca[1].defaultValue);
-writeln("ca[1].nullable: ", ca[1].nullable);
-	assert( ca[0].schema == schemaName);
-	assert( ca[0].table == "basetest");
-	assert( ca[0].name == "boolcol");
-	assert( ca[0].index == 0);
-//	assert( ca[0].defaultNull);
-	assert( ca[0].nullable);
-	assert( ca[0].type == "bit");
-	assert( ca[0].charsMax == -1);
-	assert( ca[0].octetsMax == -1);
-	assert( ca[0].numericPrecision == 1);
-	assert( ca[0].numericScale == -1 );
-	assert( ca[0].charSet == "<NULL>" );
-	assert( ca[0].collation == "<NULL>");
-	assert( ca[0].colType == "bit(1)");
-
-
-//	assert( ca[0].schema == schemaName && ca[0].table == "basetest" && ca[0].name == "boolcol" && ca[0].index == 0 &&
-//			ca[0].defaultNull && ca[0].nullable && ca[0].type == "bit" && ca[0].charsMax == -1 && ca[0].octetsMax == -1 &&
-//			ca[0].numericPrecision == 1 && ca[0].numericScale == -1 && ca[0].charSet == "<NULL>" && ca[0].collation == "<NULL>"  &&
-//			ca[0].colType == "bit(1)");
+	assert( ca[0].schema == schemaName && ca[0].table == "basetest" && ca[0].name == "boolcol" && ca[0].index == 0 &&
+			ca[0].nullable && ca[0].type == "bit" && ca[0].charsMax == -1 && ca[0].octetsMax == -1 &&
+			ca[0].numericPrecision == 1 && ca[0].numericScale == -1 && ca[0].charSet == "<NULL>" && ca[0].collation == "<NULL>"  &&
+			ca[0].colType == "bit(1)");
 	assert( ca[1].schema == schemaName && ca[1].table == "basetest" && ca[1].name == "bytecol" && ca[1].index == 1 &&
-			ca[1].defaultNull && ca[1].nullable && ca[1].type == "tinyint" && ca[1].charsMax == -1 && ca[1].octetsMax == -1 &&
+			ca[1].nullable && ca[1].type == "tinyint" && ca[1].charsMax == -1 && ca[1].octetsMax == -1 &&
 			ca[1].numericPrecision == 3 && ca[1].numericScale == 0 && ca[1].charSet == "<NULL>" && ca[1].collation == "<NULL>"  &&
 			ca[1].colType == "tinyint(4)");
 	assert( ca[2].schema == schemaName && ca[2].table == "basetest" && ca[2].name == "ubytecol" && ca[2].index == 2 &&
-			ca[2].defaultNull && ca[2].nullable && ca[2].type == "tinyint" && ca[2].charsMax == -1 && ca[2].octetsMax == -1 &&
+			ca[2].nullable && ca[2].type == "tinyint" && ca[2].charsMax == -1 && ca[2].octetsMax == -1 &&
 			ca[2].numericPrecision == 3 && ca[2].numericScale == 0 && ca[2].charSet == "<NULL>" && ca[2].collation == "<NULL>"  &&
 			ca[2].colType == "tinyint(3) unsigned");
 	assert( ca[3].schema == schemaName && ca[3].table == "basetest" && ca[3].name == "shortcol" && ca[3].index == 3 &&
-			ca[3].defaultNull && ca[3].nullable && ca[3].type == "smallint" && ca[3].charsMax == -1 && ca[3].octetsMax == -1 &&
+			ca[3].nullable && ca[3].type == "smallint" && ca[3].charsMax == -1 && ca[3].octetsMax == -1 &&
 			ca[3].numericPrecision == 5 && ca[3].numericScale == 0 && ca[3].charSet == "<NULL>" && ca[3].collation == "<NULL>"  &&
 			ca[3].colType == "smallint(6)");
 	assert( ca[4].schema == schemaName && ca[4].table == "basetest" && ca[4].name == "ushortcol" && ca[4].index == 4 &&
-			ca[4].defaultNull && ca[4].nullable && ca[4].type == "smallint" && ca[4].charsMax == -1 && ca[4].octetsMax == -1 &&
+			ca[4].nullable && ca[4].type == "smallint" && ca[4].charsMax == -1 && ca[4].octetsMax == -1 &&
 			ca[4].numericPrecision == 5 && ca[4].numericScale == 0 && ca[4].charSet == "<NULL>" && ca[4].collation == "<NULL>"  &&
 			ca[4].colType == "smallint(5) unsigned");
 	assert( ca[5].schema == schemaName && ca[5].table == "basetest" && ca[5].name == "intcol" && ca[5].index == 5 &&
-			ca[5].defaultNull && ca[5].nullable && ca[5].type == "int" && ca[5].charsMax == -1 && ca[5].octetsMax == -1 &&
+			ca[5].nullable && ca[5].type == "int" && ca[5].charsMax == -1 && ca[5].octetsMax == -1 &&
 			ca[5].numericPrecision == 10 && ca[5].numericScale == 0 && ca[5].charSet == "<NULL>" && ca[5].collation == "<NULL>"  &&
 			ca[5].colType == "int(11)");
 	assert( ca[6].schema == schemaName && ca[6].table == "basetest" && ca[6].name == "uintcol" && ca[6].index == 6 &&
-			ca[6].defaultNull && ca[6].nullable && ca[6].type == "int" && ca[6].charsMax == -1 && ca[6].octetsMax == -1 &&
+			ca[6].nullable && ca[6].type == "int" && ca[6].charsMax == -1 && ca[6].octetsMax == -1 &&
 			ca[6].numericPrecision == 10 && ca[6].numericScale == 0 && ca[6].charSet == "<NULL>" && ca[6].collation == "<NULL>"  &&
 			ca[6].colType == "int(10) unsigned");
 	assert( ca[7].schema == schemaName && ca[7].table == "basetest" && ca[7].name == "longcol" && ca[7].index == 7 &&
-			ca[7].defaultNull && ca[7].nullable && ca[7].type == "bigint" && ca[7].charsMax == -1 && ca[7].octetsMax == -1 &&
+			ca[7].nullable && ca[7].type == "bigint" && ca[7].charsMax == -1 && ca[7].octetsMax == -1 &&
 			ca[7].numericPrecision == 19 && ca[7].numericScale == 0 && ca[7].charSet == "<NULL>" && ca[7].collation == "<NULL>"  &&
 			ca[7].colType == "bigint(20)");
 	assert( ca[8].schema == schemaName && ca[8].table == "basetest" && ca[8].name == "ulongcol" && ca[8].index == 8 &&
-			ca[8].defaultNull && ca[8].nullable && ca[8].type == "bigint" && ca[8].charsMax == -1 && ca[8].octetsMax == -1 &&
+			ca[8].nullable && ca[8].type == "bigint" && ca[8].charsMax == -1 && ca[8].octetsMax == -1 &&
 			//TODO: I'm getting numericPrecision==19, figure it out later
 			/+ca[8].numericPrecision == 20 &&+/ ca[8].numericScale == 0 && ca[8].charSet == "<NULL>" && ca[8].collation == "<NULL>"  &&
 			ca[8].colType == "bigint(20) unsigned");
 	assert( ca[9].schema == schemaName && ca[9].table == "basetest" && ca[9].name == "charscol" && ca[9].index == 9 &&
-			ca[9].defaultNull && ca[9].nullable && ca[9].type == "char" && ca[9].charsMax == 10 && ca[9].octetsMax == 10 &&
+			ca[9].nullable && ca[9].type == "char" && ca[9].charsMax == 10 && ca[9].octetsMax == 10 &&
 			ca[9].numericPrecision == -1 && ca[9].numericScale == -1 && ca[9].charSet == "latin1" && ca[9].collation == "latin1_swedish_ci"  &&
 			ca[9].colType == "char(10)");
 	assert( ca[10].schema == schemaName && ca[10].table == "basetest" && ca[10].name == "stringcol" && ca[10].index == 10 &&
-			ca[10].defaultNull && ca[10].nullable && ca[10].type == "varchar" && ca[10].charsMax == 50 && ca[10].octetsMax == 50 &&
+			ca[10].nullable && ca[10].type == "varchar" && ca[10].charsMax == 50 && ca[10].octetsMax == 50 &&
 			ca[10].numericPrecision == -1 && ca[10].numericScale == -1 && ca[10].charSet == "latin1" && ca[10].collation == "latin1_swedish_ci"  &&
 			ca[10].colType == "varchar(50)");
 	assert( ca[11].schema == schemaName && ca[11].table == "basetest" && ca[11].name == "bytescol" && ca[11].index == 11 &&
-			ca[11].defaultNull && ca[11].nullable && ca[11].type == "tinyblob" && ca[11].charsMax == 255 && ca[11].octetsMax == 255 &&
+			ca[11].nullable && ca[11].type == "tinyblob" && ca[11].charsMax == 255 && ca[11].octetsMax == 255 &&
 			ca[11].numericPrecision == -1 && ca[11].numericScale == -1 && ca[11].charSet == "<NULL>" && ca[11].collation == "<NULL>"  &&
 			ca[11].colType == "tinyblob");
 	assert( ca[12].schema == schemaName && ca[12].table == "basetest" && ca[12].name == "datecol" && ca[12].index == 12 &&
-			ca[12].defaultNull && ca[12].nullable && ca[12].type == "date" && ca[12].charsMax == -1 && ca[12].octetsMax == -1 &&
+			ca[12].nullable && ca[12].type == "date" && ca[12].charsMax == -1 && ca[12].octetsMax == -1 &&
 			ca[12].numericPrecision == -1 && ca[12].numericScale == -1 && ca[12].charSet == "<NULL>" && ca[12].collation == "<NULL>"  &&
 			ca[12].colType == "date");
 	assert( ca[13].schema == schemaName && ca[13].table == "basetest" && ca[13].name == "timecol" && ca[13].index == 13 &&
-			ca[13].defaultNull && ca[13].nullable && ca[13].type == "time" && ca[13].charsMax == -1 && ca[13].octetsMax == -1 &&
+			ca[13].nullable && ca[13].type == "time" && ca[13].charsMax == -1 && ca[13].octetsMax == -1 &&
 			ca[13].numericPrecision == -1 && ca[13].numericScale == -1 && ca[13].charSet == "<NULL>" && ca[13].collation == "<NULL>"  &&
 			ca[13].colType == "time");
 	assert( ca[14].schema == schemaName && ca[14].table == "basetest" && ca[14].name == "dtcol" && ca[14].index == 14 &&
-			ca[14].defaultNull && ca[14].nullable && ca[14].type == "datetime" && ca[14].charsMax == -1 && ca[14].octetsMax == -1 &&
+			ca[14].nullable && ca[14].type == "datetime" && ca[14].charsMax == -1 && ca[14].octetsMax == -1 &&
 			ca[14].numericPrecision == -1 && ca[14].numericScale == -1 && ca[14].charSet == "<NULL>" && ca[14].collation == "<NULL>"  &&
 			ca[14].colType == "datetime");
 	assert( ca[15].schema == schemaName && ca[15].table == "basetest" && ca[15].name == "doublecol" && ca[15].index == 15 &&
-			ca[15].defaultNull && ca[15].nullable && ca[15].type == "double" && ca[15].charsMax == -1 && ca[15].octetsMax == -1 &&
+			ca[15].nullable && ca[15].type == "double" && ca[15].charsMax == -1 && ca[15].octetsMax == -1 &&
 			ca[15].numericPrecision == 22 && ca[15].numericScale == -1 && ca[15].charSet == "<NULL>" && ca[15].collation == "<NULL>"  &&
 			ca[15].colType == "double");
 	assert( ca[16].schema == schemaName && ca[16].table == "basetest" && ca[16].name == "floatcol" && ca[16].index == 16 &&
-			ca[16].defaultNull && ca[16].nullable && ca[16].type == "float" && ca[16].charsMax == -1 && ca[16].octetsMax == -1 &&
+			ca[16].nullable && ca[16].type == "float" && ca[16].charsMax == -1 && ca[16].octetsMax == -1 &&
 			ca[16].numericPrecision == 12 && ca[16].numericScale == -1 && ca[16].charSet == "<NULL>" && ca[16].collation == "<NULL>"  &&
 			ca[16].colType == "float");
 	assert( ca[17].schema == schemaName && ca[17].table == "basetest" && ca[17].name == "nullcol" && ca[17].index == 17 &&
-			ca[17].defaultNull && ca[17].nullable && ca[17].type == "int" && ca[17].charsMax == -1 && ca[17].octetsMax == -1 &&
+			ca[17].nullable && ca[17].type == "int" && ca[17].charsMax == -1 && ca[17].octetsMax == -1 &&
 			ca[17].numericPrecision == 10 && ca[17].numericScale == 0 && ca[17].charSet == "<NULL>" && ca[17].collation == "<NULL>"  &&
 			ca[17].colType == "int(11)");
 	assert( ca[18].schema == schemaName && ca[18].table == "basetest" && ca[18].name == "decimalcol" && ca[18].index == 18 &&
-			ca[18].defaultNull && ca[18].nullable && ca[18].type == "decimal" && ca[18].charsMax == -1 && ca[18].octetsMax == -1 &&
+			ca[18].nullable && ca[18].type == "decimal" && ca[18].charsMax == -1 && ca[18].octetsMax == -1 &&
 			ca[18].numericPrecision == 11 && ca[18].numericScale == 4 && ca[18].charSet == "<NULL>" && ca[18].collation == "<NULL>"  &&
 			ca[18].colType == "decimal(11,4)");
 	MySQLProcedure[] pa = md.functions();
