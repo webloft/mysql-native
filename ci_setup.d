@@ -17,6 +17,12 @@ string envGet(string name)
 	return environment[name];
 }
 
+void copyIfExists(string from, string to)
+{
+	if(exists(from) && isFile(from))
+		copy(from, to);
+}
+
 void main()
 {
 	auto haveRdmd = executeShell("rdmd --help").status == 0;
@@ -35,8 +41,8 @@ void main()
 	}
 
 	// If an alternate dub.selections.json was requested, use it.
-	copy("dub.selections."~envGet("DUB_SELECT")~".json", "dub.selections.json");
-	copy("examples/homePage/dub.selections."~envGet("DUB_SELECT")~".json", "examples/homePage/dub.selections.json");
+	copyIfExists("dub.selections."~envGet("DUB_SELECT")~".json", "dub.selections.json");
+	copyIfExists("examples/homePage/dub.selections."~envGet("DUB_SELECT")~".json", "examples/homePage/dub.selections.json");
 
 	if(envBool("DUB_UPGRADE"))
 	{
