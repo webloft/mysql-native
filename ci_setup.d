@@ -23,7 +23,7 @@ void main()
 	if(!haveRdmd)
 	{
 		auto dmdZip = "dmd.2.076.0."~environment["TRAVIS_OS_NAME"]~".zip";
-		spawnShell("http://downloads.dlang.org/releases/2017/"~dmdZip).wait;
+		spawnShell("wget http://downloads.dlang.org/releases/2017/"~dmdZip).wait;
 		spawnShell("unzip -d local-dmd "~dmdZip).wait;
 	}
 
