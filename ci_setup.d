@@ -3,7 +3,7 @@ import std.process;
 
 bool envBool(string name)
 {
-	return environment.get(name, "true") == "true";
+	return environment.get(name, null) == "true";
 }
 
 string envGet(string name)
