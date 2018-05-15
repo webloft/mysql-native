@@ -9,7 +9,10 @@ addons:
 #install: ./travis-setup.sh
 install:
     - echo DMD=$DMD
-    - $DMD -of=ci_setup ci_setup.d && ./ci_setup
+    - $DMD
+    - $DMD -of=ci_setup ci_setup.d
+    - ls -la
+    - ./ci_setup
 script: ./run-tests
 
 matrix:
