@@ -41,6 +41,10 @@ void main()
 	if(envBool("DUB_UPGRADE"))
 	{
 		// Update all dependencies
+		//
+		// As a bonus, this downloads & resolves deps now so intermittent
+		// failures are more likely to be correctly marked as "job error"
+		// rather than "tests failed".
 		spawnShell("dub upgrade").wait;
 		chdir("examples/homePage");
 		spawnShell("dub upgrade").wait;
@@ -49,6 +53,7 @@ void main()
 	else
 	{
 		// Don't upgrade dependencies.
+		//
 		// But download & resolve deps now so intermittent failures are more likely
 		// to be correctly marked as "job error" rather than "tests failed".
 		spawnShell("dub upgrade --missing-only").wait;
