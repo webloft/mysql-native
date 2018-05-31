@@ -24,7 +24,7 @@ void main()
 	{
 		auto dmdZip = "dmd.2.076.0."~environment["TRAVIS_OS_NAME"]~".zip";
 		spawnShell("wget http://downloads.dlang.org/releases/2017/"~dmdZip).wait;
-		spawnShell("unzip -dq local-dmd "~dmdZip).wait;
+		spawnShell("unzip -q -d local-dmd "~dmdZip).wait;
 	}
 
 	// MySQL is not installed by default on OSX build agents
