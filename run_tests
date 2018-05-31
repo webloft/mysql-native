@@ -6,4 +6,4 @@ if [ -z "$DMD" ]; then
 fi
 
 echo "DMD=$DMD"
-$DMD -ofbin/run_tests run_tests.d && bin/run_tests "$@"
+$DMD -ofbin/run_tests_bin run_tests.d && bin/run_tests_bin "$@"
