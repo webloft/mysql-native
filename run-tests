@@ -1,3 +1,0 @@
-#!/bin/sh
-echo Doing Phobos and Vibe socket tests...
-echo 'Doing Phobos-socket tests (core tests only)...' && ./run-core-phobos-tests && echo Doing Vibe-socket tests... && ./run-vibe-tests

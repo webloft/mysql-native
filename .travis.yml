@@ -7,7 +7,7 @@ addons:
     packages: [ libevent-dev ]
 
 install: $DMD -ofci_setup ci_setup.d && ./ci_setup
-script: ./run-tests
+script: ./run_tests --mode=combined
 
 matrix:
   include:

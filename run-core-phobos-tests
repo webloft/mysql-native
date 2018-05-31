@@ -1,4 +1,0 @@
-#!/bin/sh
-
-export CORE_PHOBOS_TESTS_ONLY=true
-./run-phobos-tests

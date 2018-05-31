@@ -5,6 +5,7 @@ v2.3.0 - TBD
 	Fix metadata tests on MariaDB 10.2 and 10.3
 - **Internal:** Rework travis config and scripts, including:
 	- General cleanup.
+	- Convert test scripts from bash/batch to D.
 	- Testing on more versions of MariaDB server.
 	- [#173](https://github.com/mysql-d/mysql-native/issues/173):
 		Support for per-job `dub.selections.json` overrides (needed for testing on DMD 2.079+).
