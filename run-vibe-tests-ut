@@ -1,4 +1,0 @@
-#!/bin/sh
-
-export USE_UNIT_THREADED=true
-./run-vibe-tests "$@"
