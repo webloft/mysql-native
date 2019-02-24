@@ -129,3 +129,34 @@ matrix:
 
     # Occasional failures are expected here
     - d: dmd-beta
+
+    # These are currently failing because mysql-native does not yet
+    # support MySQL v8.0.4's new default authentication mechanism: caching_sha2_password
+    # See issue #189: https://github.com/mysql-d/mysql-native/issues/189
+    - d: dmd-2.080.0
+      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      os: osx
+      osx_image: xcode9 # use OSX 10.13
+
+    - d: dmd-2.079.1
+      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      os: osx
+      osx_image: xcode9 # use OSX 10.13
+
+    - d: dmd-2.078.3
+      os: osx
+      osx_image: xcode9 # use OSX 10.13
+
+    - d: ldc-1.9.0
+      os: osx
+      osx_image: xcode9 # use OSX 10.13
+
+    - d: ldc-1.8.0
+      os: osx
+      osx_image: xcode9 # use OSX 10.13
+
+    - d: dmd-2.068.2
+      os: osx
+
+    - d: ldc-0.17.0
+      os: osx
