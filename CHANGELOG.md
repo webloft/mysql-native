@@ -1,6 +1,8 @@
 v2.3.0 - TBD
 =====================
 
+- **New:** [#188](https://github.com/mysql-d/mysql-native/issues/188):
+	Expose column names in Row struct. (@jpf91)
 - **Tests:** [#186](https://github.com/mysql-d/mysql-native/issues/186):
 	Fix metadata tests on MariaDB 10.2 and 10.3
 - **Tests:** Rework travis config and scripts, including:
