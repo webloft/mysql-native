@@ -118,7 +118,7 @@ int main(string[] args)
 				"Runs the mysql-native test suite with Phobos sockets, Vibe.d sockets, or combined.\n"~
 				"\n"~
 				"Usage:\n"~
-				"  run_tests --mode=(phobos|vibe|all) [OPTIONS] [-- [UNIT-THREADED OPTIONS]]\n"~
+				"  run_tests --mode=(phobos|vibe|combined) [OPTIONS] [-- [UNIT-THREADED OPTIONS]]\n"~
 				"\n"~
 				"Examples:\n"~
 				"  run_tests --mode=combined\n"~
