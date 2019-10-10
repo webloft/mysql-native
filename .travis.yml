@@ -322,6 +322,15 @@ matrix:
         - mysql
       env: DUB_UPGRADE=true DB=mysql-default
 
+    # Currently failing on travis:
+    # https://github.com/mysql-d/mysql-native/issues/208
+    - d: dmd-2.078.3
+      addons:
+        mariadb: '10.4'
+        apt:
+          packages: [ libevent-dev ]
+      env: DB=mariadb-10.4 USE_UNIT_THREADED=true
+
     # These are currently failing because mysql-native does not yet
     # support MySQL v8.0.4's new default authentication mechanism: caching_sha2_password
     # See issue #189: https://github.com/mysql-d/mysql-native/issues/189
