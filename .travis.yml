@@ -1,5 +1,10 @@
 language: d
 
+# Use Ubuntu 12.04 because travis has a bug installing MariaDB on
+# later versions (xenial and bionic)
+# See: https://travis-ci.community/t/failures-installing-mariadb-10-2-on-xenial/5284
+dist: trusty
+
 addons:
   mariadb: '10.1'
   apt:
