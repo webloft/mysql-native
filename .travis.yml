@@ -1,3 +1,127 @@
+############################################################################
+#
+# Testing and Official Compatibility:
+# -----------------------------------
+#
+# All testing configurations not marked as "allow_failures" in the master
+# branch are considered officially supported. If any of these configurations
+# fail in travis, then the commit/branch is considered broken.
+#
+# Test configurations marked "allow_failures" are NOT officially supported.
+# Typically, this will be due to one of the following reasons:
+#
+# - There is a known bug using that configuration which has not yet
+# been fixed. There should be ticket(s) filed in GitHub for these.
+#
+# - The test is automatically monitoring compatibility with new versions of
+# dependencies as they are released. These tests are expected to periodically
+# fail as mysql-native encounters new dependency versions it has not yet
+# previously encountered. These are deliberately "allow_failures" BECAUSE
+# they are previously untested and therefore we cannot guarantee compatibility.
+#
+# Once travis greenlights a new configuration, a NEW entry should be added for
+# it which does NOT use "latest available" markers such as `dmd`, `dmd-beta` or
+# `DUB_UPGRADE=true`.
+#
+# Test Failures and Deprecations:
+# -------------------------------
+#
+# To the extent possible, care should be taken to ensure the master branch
+# is always greenlit in travis. This means:
+#
+# - Work-in progress should be done in a separate branch.
+#
+# - Only branches greenlit in travis should be merged to master.
+#
+# - In the event a broken configuration cannot be immediately fixed, it
+# should be filed in GitHub as a known issue, temporarily removed from official
+# support, and marked as "allow_failures" so as to not block additional
+# work in the meantime.
+#
+# Official compatibility for any dependency (including compiler and
+# database server) should ONLY be dropped when it has become broken and
+# is no longer trivial to fix. (Though exceptions may be granted in special
+# circumstances, given strong enough reason to support/deprecate a
+# particular dependency version.)
+#
+# Selecting Configurations to Test:
+# ---------------------------------
+#
+# It would be impractical (and likely an abuse of travis's free infrastructure)
+# to test every possible combination of OS, compiler, DB server and
+# dub dependency (ie, vibe-d and its dependencies.) So we have to be strategic
+# about selecting configurations to test. Here are guidelines:
+#
+# - For DMD, only the latest patch release for each major.minor version needs
+# tested. (Example: DMD v2.081.x goes up to v2.081.2. Therefore, v2.081.2
+# should be tested, but v2.081.0 and v2.081.1 can be omitted.)
+#
+# - Each compiler version should be tested at least once. And at least
+# one of these tests for each compiler version should be against the oldest
+# version of vibe-d which can be supported for the given compiler. (Otherwise,
+# it would not be possible to reliably ensure ANY particular minimum version of
+# vibe-d.)
+#
+# - There should be at least one test for the oldest supported vibe-d and
+# at least one for the newest supported vibe-d. Additional tests for more
+# versions in-between would be better.
+#
+# - To the extent possible, each DB server version should be tested at least
+# once. And at least one of these tests for each DB server version should be
+# on a compiler and vibe-d that are NOT generically "use whatever is the
+# latest version available". This helps avoid any question as to whether
+# a failure is due to the specific DB server or due to breakage on a new
+# compiler/vibe.
+#
+# - When possible, there should be at least one test that IS generically
+# for "use whatever is the latest version available of XYZ" (for any XYZ).
+# But, these tests must be marked "allow_failures" to ensure reproducable
+# builds (at least to the extent possible) and to ensure new versions of
+# dependencies get properly tested before being allowed to break the build
+# or to become officially supported.
+#
+# - These guidelines are largely relaxed on OSX because:
+#     - Travis's OSX infrastructure is smaller and so OSX builds
+#     are considerably slower.
+#     - Quick obsolescence is deeply ingrained on the OSX ecosystem anyway.
+#     - I know little about doing OSX builds, so better support would
+#     need to come from a volunteer more experienced in OSX.
+#
+# Vibe-d and Other Dub Dependencies:
+# ----------------------------------
+#
+# The repository should always include a `dub.selections.json`. This should
+# have no effect on projects depending on mysql-native, but it will help
+# ensure no tests accidentally pull in a new untested version of a dependency
+# when they didn't intend to. Developers working on mysql-native itself can
+# always do a "dub upgrade" on their own working copy or work on whatever
+# dependency versions they wish. Just remember not to check in the changes
+# to `dub.selections.json`.
+#
+# Currently, the default `dub.selections.json` is intentionally set to the
+# oldest supported versions. Alternate sets of dependencies can be tested
+# on travis by creating an alternate `dub.selections.WHATEVER.json` and
+# setting the `DUB_SELECT=WHATEVER` environment variable.
+#
+# Alternatively, the environment variable `DUB_UPGRADE=true` can be used
+# to test on the latest available versions of all dub dependencies. But
+# please only do this on `allowed_failures` tests, to help ensure
+# reproducable builds.
+#
+# `USE_UNIT_THREADED=true` causes tests to be run via unit-threaded
+# instead of the Phobos test runner.
+#
+# Run Tests Locally:
+# ------------------
+#
+# ./run_tests --mode=(phobos|vibe|combined) [--help] [OPTIONS] [-- [UNIT-THREADED OPTIONS]]
+#
+# After first run (which will fail), you will need to edit the
+# generated `testConnectionStr.txt` to match the correct connection
+# and login settings for your DB server.
+#
+############################################################################
+
 language: d
 
 # Use Ubuntu 12.04 because travis has a bug installing MariaDB on
@@ -13,10 +137,17 @@ addons:
 install: $DMD -ofci_setup ci_setup.d && ./ci_setup
 script: ./run_tests --mode=combined
 
+# DMDFE 2.079+ doesn't support vibe.d v0.7.32 (the last version of v0.7.x),
+# so all builds using dmd-2.079.0 and up (or ldc-1.9.0 and up) must use at
+# least vibe.d v0.8.3 (The minimum supported version of v0.8.x).
+#
+# This is done via `DUB_SELECT=vibe-0.8.3`, which makes the tests
+# use the matching `dub.selections.vibe-0.8.3.json` file.)
+
 matrix:
   include:
     - d: dmd-2.088.0
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env: DUB_SELECT=vibe-0.8.3
     - d: dmd-2.087.1
       env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
     - d: dmd-2.086.1
@@ -49,7 +180,7 @@ matrix:
     - d: dmd-2.069.2
     - d: dmd-2.068.2
     - d: ldc-1.17.0
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env: DUB_SELECT=vibe-0.8.3
     - d: ldc-1.16.0
       env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
     - d: ldc-1.15.0
@@ -84,13 +215,13 @@ matrix:
     - d: gdc-6.3.0
     - d: gdc-4.8.5
     - d: dmd
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env: DUB_SELECT=vibe-0.8.3
     - d: dmd-beta
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env: DUB_SELECT=vibe-0.8.3
     - d: ldc
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env: DUB_SELECT=vibe-0.8.3
     - d: ldc-beta
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env: DUB_SELECT=vibe-0.8.3
 
     # Test alternative db versions, but only on one compiler version
     - d: dmd-2.078.3
@@ -138,17 +269,17 @@ matrix:
 
     # on Mac just test latest & oldest supported dmd and ldc
     - d: dmd-2.088.0
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env: DUB_SELECT=vibe-0.8.3
       os: osx
       osx_image: xcode11 # use OSX 10.14
 
     - d: dmd-2.080.0
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env: DUB_SELECT=vibe-0.8.3
       os: osx
       osx_image: xcode9 # use OSX 10.13
 
     - d: dmd-2.079.1
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env: DUB_SELECT=vibe-0.8.3
       os: osx
       osx_image: xcode9 # use OSX 10.13
 
@@ -195,12 +326,12 @@ matrix:
     # support MySQL v8.0.4's new default authentication mechanism: caching_sha2_password
     # See issue #189: https://github.com/mysql-d/mysql-native/issues/189
     - d: dmd-2.080.0
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env: DUB_SELECT=vibe-0.8.3
       os: osx
       osx_image: xcode9 # use OSX 10.13
 
     - d: dmd-2.079.1
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env: DUB_SELECT=vibe-0.8.3
       os: osx
       osx_image: xcode9 # use OSX 10.13
 
