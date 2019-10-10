@@ -15,8 +15,24 @@ script: ./run_tests --mode=combined
 
 matrix:
   include:
-    - d: dmd-2.080.0
+    - d: dmd-2.088.0
       env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+    - d: dmd-2.087.1
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: dmd-2.086.1
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: dmd-2.085.1
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: dmd-2.084.1
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: dmd-2.083.1
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: dmd-2.082.1
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: dmd-2.081.2
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: dmd-2.080.1
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
     - d: dmd-2.079.1
       env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
     - d: dmd-2.078.3
@@ -32,8 +48,24 @@ matrix:
     - d: dmd-2.070.2
     - d: dmd-2.069.2
     - d: dmd-2.068.2
-    - d: ldc-1.9.0
+    - d: ldc-1.17.0
       env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+    - d: ldc-1.16.0
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: ldc-1.15.0
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: ldc-1.14.0
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: ldc-1.13.0
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: ldc-1.12.0
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: ldc-1.11.0
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: ldc-1.10.0
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+    - d: ldc-1.9.0
+      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
     - d: ldc-1.8.0
       env: USE_UNIT_THREADED=true
     - d: ldc-1.7.0
@@ -51,7 +83,13 @@ matrix:
     - d: ldc-0.17.0
     - d: gdc-6.3.0
     - d: gdc-4.8.5
+    - d: dmd
+      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
     - d: dmd-beta
+      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+    - d: ldc
+      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+    - d: ldc-beta
       env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
 
     # Test alternative db versions, but only on one compiler version
@@ -91,7 +129,19 @@ matrix:
           packages: [ libevent-dev ]
       env: DB=mariadb-10.3 USE_UNIT_THREADED=true
 
+    - d: dmd-2.078.3
+      addons:
+        mariadb: '10.4'
+        apt:
+          packages: [ libevent-dev ]
+      env: DB=mariadb-10.4 USE_UNIT_THREADED=true
+
     # on Mac just test latest & oldest supported dmd and ldc
+    - d: dmd-2.088.0
+      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      os: osx
+      osx_image: xcode11 # use OSX 10.14
+
     - d: dmd-2.080.0
       env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
       os: osx
@@ -120,9 +170,9 @@ matrix:
     - d: ldc-0.17.0
       os: osx
 
-    # Test with all dependencies updated
+    # Test with all dub dependencies fully updated
     # (dub.selections.json is deliberately kept old)
-    - d: dmd-2.080.0
+    - d: dmd-2.088.0
       services:
         - mysql
       env: DUB_UPGRADE=true DB=mysql-default
@@ -132,7 +182,14 @@ matrix:
     - d: gdc-6.3.0
 
     # Occasional failures are expected here
+    - d: dmd
     - d: dmd-beta
+    - d: ldc
+    - d: ldc-beta
+    - d: dmd-2.088.0 # All dub dependencies fully updated
+      services:
+        - mysql
+      env: DUB_UPGRADE=true DB=mysql-default
 
     # These are currently failing because mysql-native does not yet
     # support MySQL v8.0.4's new default authentication mechanism: caching_sha2_password
