@@ -1,5 +1,4 @@
 language: d
-sudo: false
 
 addons:
   mariadb: '10.1'
