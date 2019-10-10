@@ -29,10 +29,11 @@ void main()
 	}
 
 	// MySQL is not installed by default on OSX build agents
-	if(environment["TRAVIS_OS_NAME"] == "osx")
+    if(environment["TRAVIS_OS_NAME"] == "osx")
 	{
 		spawnShell("brew update").wait;
-		spawnShell("brew install mysql && brew services start mysql").wait;
+		spawnShell("brew install libevent").wait;
+		spawnShell("brew install mysql@5.6 && brew services start mysql56").wait;
 	}
 
 	// If an alternate dub.selections.json was requested, use it.
