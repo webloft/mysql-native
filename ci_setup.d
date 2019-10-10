@@ -29,11 +29,13 @@ void main()
 	}
 
 	// MySQL is not installed by default on OSX build agents
+	auto mysqlPrefix = "";
     if(environment["TRAVIS_OS_NAME"] == "osx")
 	{
 		spawnShell("brew update").wait;
 		spawnShell("brew install libevent").wait;
 		spawnShell("brew install mysql@5.6 && brew services start mysql56").wait;
+		mysqlPrefix = "/usr/local/opt/mysql@5.6/bin/";
 	}
 
 	// If an alternate dub.selections.json was requested, use it.
@@ -69,7 +71,7 @@ void main()
 	}
 
 	// Setup DB
-	spawnShell(`mysql -u root -e 'SHOW VARIABLES LIKE "%version%";'`).wait;
-	spawnShell(`mysql -u root -e 'CREATE DATABASE mysqln_testdb;'`).wait;
+	spawnShell(mysqlPrefix~`mysql -u root -e 'SHOW VARIABLES LIKE "%version%";'`).wait;
+	spawnShell(mysqlPrefix~`mysql -u root -e 'CREATE DATABASE mysqln_testdb;'`).wait;
 	write("testConnectionStr.txt", "host=127.0.0.1;port=3306;user=root;pwd=;db=mysqln_testdb");
 }
