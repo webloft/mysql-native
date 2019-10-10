@@ -133,6 +133,8 @@ addons:
   mariadb: '10.1'
   apt:
     packages: [ libevent-dev ]
+  homebrew:
+    brewfile: true
 
 install: $DMD -ofci_setup ci_setup.d && ./ci_setup
 script: ./run_tests --mode=combined
