@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/mysql-d/mysql-native.svg)](https://travis-ci.org/mysql-d/mysql-native)
+[![Build Status](https://travis-ci.org/mysql-d/mysql-native.svg?branch=master)](https://travis-ci.org/mysql-d/mysql-native)
 
 A [Boost-licensed](http://www.boost.org/LICENSE_1_0.txt) native [D](http://dlang.org)
 client driver for MySQL and MariaDB.
