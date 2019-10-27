@@ -36,7 +36,6 @@ string flagMode(Mode mode)
 	case Mode.vibe:     return " --mode=vibe";
 	case Mode.combined: return " --mode=combined";
 	}
-	return coreTestsOnly? " --core" : "";
 }
 
 string fixSlashes(string path)
