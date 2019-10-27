@@ -4,7 +4,7 @@ license     "BSL-1.0"
 copyright   "Copyright (c) 2011-2018 Steve Teale, James W. Oliphant, Simen Endsjø, Sönke Ludwig, Sergey Shamov, and Nick Sabalausky"
 authors     "Steve Teale" "James W. Oliphant" "Simen Endsjø" "Sönke Ludwig" "Sergey Shamov" "Nick Sabalausky"
 
-dependency "vibe-d:core" version=">=0.7.32 <0.9.0-0" optional=true
+dependency "vibe-core" version="~>1.7.0" optional=true
 
 sourcePaths "source/"
 importPaths "source/"
@@ -35,7 +35,7 @@ configuration "unittest-vibe" {
 	targetName "mysqln-tests-vibe"
 	excludedSourceFiles "source/app.d"
 
-	dependency "vibe-d:core" version=">=0.7.32 <0.9.0-0" optional=false
+	dependency "vibe-core" version="~>1.7.0" optional=false
 
 	mainSourceFile "source/mysql/package.d"
 	debugVersions "MYSQLN_TESTS"
@@ -51,7 +51,7 @@ configuration "unittest-vibe-ut" {
 	importPaths "bin/"
 	buildOptions "unittests"
 
-	dependency "vibe-d:core" version=">=0.7.32 <0.9.0-0" optional=false
+	dependency "vibe-core" version="~>1.7.0" optional=false
 	
 	dependency "unit-threaded" version="~>0.7.45"
 
