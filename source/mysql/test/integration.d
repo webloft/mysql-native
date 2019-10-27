@@ -1166,8 +1166,9 @@ unittest
 // Test example.d
 // Note: This always tests example.d using Vibe sockets, regardless of
 // what kind of sockets the unittests are using. Once DUB Issue #1089
-// is fixed, this will always test example.d using Phobos sockets.
+// is fixed, this should be changed to always test example.d using Phobos sockets.
 @("example")
+version(Have_vibe_core)
 debug(MYSQLN_TESTS)
 unittest
 {

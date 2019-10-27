@@ -6,7 +6,7 @@ import std.socket;
 
 import mysql.exceptions;
 
-version(Have_vibe_d_core)
+version(Have_vibe_core)
 {
 	static if(__traits(compiles, (){ import vibe.core.net; } ))
 		import vibe.core.net;
@@ -16,7 +16,7 @@ version(Have_vibe_d_core)
 
 /// Phobos/Vibe.d type aliases
 alias PlainPhobosSocket = std.socket.TcpSocket;
-version(Have_vibe_d_core)
+version(Have_vibe_core)
 {
 	static import vibe.core.net;
 	alias PlainVibeDSocket = vibe.core.net.TCPConnection; ///ditto
@@ -102,7 +102,7 @@ class MySQLSocketPhobos : MySQLSocket
 	bool amOwner() { return true; }
 }
 
-version(Have_vibe_d_core) {
+version(Have_vibe_core) {
 	/// Wraps a Vibe.d socket with the common interface
 	class MySQLSocketVibeD : MySQLSocket
 	{
