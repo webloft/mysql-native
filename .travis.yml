@@ -140,103 +140,103 @@ script: ./run_tests --mode=travis
 matrix:
   include:
     - d: dmd-2.088.0
-                      env: DB=mariadb-10.1
+      env:             DB=mariadb-10.1
     - d: dmd-2.088.0
-                      env: DB=mariadb-10.1
+      env:             DB=mariadb-10.1
     - d: dmd-2.087.1
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.086.1
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.085.1
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.084.1
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.083.1
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.082.1
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.081.2
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.080.1
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.079.1
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.078.3
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.077.1
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.076.1
-                      env: DB=mariadb-10.1
+      env:             DB=mariadb-10.1
     - d: dmd-2.075.1
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.074.1
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.073.1
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.072.2
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.071.2
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.070.2
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.069.2
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.068.2
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.17.0
-                      env: DB=mariadb-10.1
+      env:             DB=mariadb-10.1
     - d: ldc-1.16.0
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.15.0
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.14.0
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.13.0
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.12.0
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.11.0
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.10.0
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.9.0
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.8.0
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.7.0
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.6.0
-                      env: DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.5.0
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.4.0
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.3.0
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.2.0
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.1.1
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.0.0
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-0.17.5
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-0.17.1
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-0.17.0
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: gdc-6.3.0
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: gdc-4.8.5
-                      env: DB=mariadb-10.1 NO_VIBE=true
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd
-                      env: DB=mariadb-10.1
+      env:             DB=mariadb-10.1
     - d: dmd-beta
-                      env: DB=mariadb-10.1
+      env:             DB=mariadb-10.1
     - d: ldc
-                      env: DB=mariadb-10.1
+      env:             DB=mariadb-10.1
     - d: ldc-beta
-                      env: DB=mariadb-10.1
+      env:             DB=mariadb-10.1
 
     # Test alternative db versions, but only on one compiler version
     - d: dmd-2.078.3
@@ -355,13 +355,13 @@ matrix:
 
     # Occasional failures are expected here
     - d: dmd
-                      env: DB=mariadb-10.1
+      env:            DB=mariadb-10.1
     - d: dmd-beta
-                      env: DB=mariadb-10.1
+      env:            DB=mariadb-10.1
     - d: ldc
-                      env: DB=mariadb-10.1
+      env:            DB=mariadb-10.1
     - d: ldc-beta
-                      env: DB=mariadb-10.1
+      env:            DB=mariadb-10.1
     - d: dmd-2.088.0 # All dub dependencies fully updated
       services:
         - mysql
