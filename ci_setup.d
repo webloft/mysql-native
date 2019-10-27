@@ -35,14 +35,12 @@ int main()
         if(envGet("DB") == "mysql-5.6")
         {
             spawnShell("brew update").wait;
-            spawnShell("brew install libevent").wait; // Is libevent still needed on OSX?
             spawnShell("brew install mysql@5.6 && brew services start mysql56").wait;
             mysqlPrefix = "/usr/local/opt/mysql@5.6/bin/";
         }
         else if(envGet("DB") == "mysql-latest")
         {
             spawnShell("brew update").wait;
-            spawnShell("brew install libevent").wait; // Is libevent still needed on OSX?
             spawnShell("brew install mysql && brew services start mysql").wait;
         }
         else
