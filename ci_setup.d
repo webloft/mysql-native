@@ -18,7 +18,7 @@ void copyIfExists(string from, string to)
 		copy(from, to);
 }
 
-void main()
+int main()
 {
 	auto haveRdmd = executeShell("rdmd --help").status == 0;
 	if(!haveRdmd)
@@ -32,10 +32,24 @@ void main()
 	auto mysqlPrefix = "";
     if(environment["TRAVIS_OS_NAME"] == "osx")
 	{
-		spawnShell("brew update").wait;
-		spawnShell("brew install libevent").wait;
-		spawnShell("brew install mysql@5.6 && brew services start mysql56").wait;
-		mysqlPrefix = "/usr/local/opt/mysql@5.6/bin/";
+        if(envGet("DB") == "mysql-5.6")
+        {
+            spawnShell("brew update").wait;
+            spawnShell("brew install libevent").wait; // Is libevent still needed on OSX?
+            spawnShell("brew install mysql@5.6 && brew services start mysql56").wait;
+            mysqlPrefix = "/usr/local/opt/mysql@5.6/bin/";
+        }
+        else if(envGet("DB") == "mysql-latest")
+        {
+            spawnShell("brew update").wait;
+            spawnShell("brew install libevent").wait; // Is libevent still needed on OSX?
+            spawnShell("brew install mysql && brew services start mysql").wait;
+        }
+        else
+        {
+            writeln("Envar 'DB' must be 'mysql-5.6' or 'mysql-latest', not '", envGet("DB"), "'");
+            return 1;
+        }
 	}
 
 	// If an alternate dub.selections.json was requested, use it.
@@ -74,4 +88,6 @@ void main()
 	spawnShell(mysqlPrefix~`mysql -u root -e 'SHOW VARIABLES LIKE "%version%";'`).wait;
 	spawnShell(mysqlPrefix~`mysql -u root -e 'CREATE DATABASE mysqln_testdb;'`).wait;
 	write("testConnectionStr.txt", "host=127.0.0.1;port=3306;user=root;pwd=;db=mysqln_testdb");
+	
+	return 0;
 }
