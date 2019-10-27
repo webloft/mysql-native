@@ -10,8 +10,10 @@ Update from `vibe-d:core` to `vibe-core`, and various CI improvements.
     Always selects `vibe-d:core`, cannot select `vibe-core`.
 - **Tests:** Add NO_VIBE option for travis-ci (DMDFE 2.075.x and below don't work with vibe-core).
 - **Tests:** [#197](https://github.com/mysql-d/mysql-native/issues/197):
-    Travis-ci build issues on various compiler versions.
-- **Tests:** Fixed: 
+    Travis-ci build issues on various compiler versions. (@SingingBush, @Abscissa)
+- **Tests:** Fixed: USE_UNIT_THREADED envar doen't actually use unit-threaded.
+- **Tests:** Better diagnostics when using alternate `dub.selections.json`. (@SingingBush)
+- **Docs:** Add documentation and CI-related policies to `.travis.yml`.
 
 v2.3.0 - 2019-02-23
 =====================
