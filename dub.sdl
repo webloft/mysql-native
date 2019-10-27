@@ -19,11 +19,11 @@ configuration "library" {
 	excludedSourceFiles "source/app.d"
 }
 
-// Do not use this. Use "run-tests" insetad.
+// Do not use this. Use "run_tests" insetad.
 configuration "unittest" {
 	excludedSourceFiles "source/app.d"
 	preBuildCommands \
-		"echo \"ERROR: Don't use 'dub test' to test mysql-native. Use 'run-tests' instead.\"" \
+		"echo \"ERROR: Don't use 'dub test' to test mysql-native. Use 'run_tests' instead.\"" \
 		"echo Bailing..." \
 		"mkdir" // Generate error to halt build
 }
