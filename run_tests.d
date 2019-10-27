@@ -287,8 +287,8 @@ void runCombinedTests()
 
 void runTravisTests()
 {
-    useUnitThreaded = envGet["USE_UNIT_THREADED"] == "true";
-    auto noVibe     = envGet["NO_VIBE"]           == "true";
+    useUnitThreaded = envGet("USE_UNIT_THREADED") == "true";
+    auto noVibe     = envGet("NO_VIBE")           == "true";
     
     if(noVibe)
     {
