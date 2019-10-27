@@ -1,3 +1,18 @@
+v3.0.0 - TBD
+=====================
+
+Update from `vibe-d:core` to `vibe-core`, and various CI improvements.
+
+- **Change:** Switched from outdated `vibe-d:core` to modern `vibe-core`.
+- **Fixed:** [#199](https://github.com/mysql-d/mysql-native/issues/199):
+    It is immposible to use this package anymore without libevent.
+- **Fixed:** [#201](https://github.com/mysql-d/mysql-native/issues/201):
+    Always selects `vibe-d:core`, cannot select `vibe-core`.
+- **Tests:** Add NO_VIBE option for travis-ci (DMDFE 2.075.x and below don't work with vibe-core).
+- **Tests:** [#197](https://github.com/mysql-d/mysql-native/issues/197):
+    Travis-ci build issues on various compiler versions.
+- **Tests:** Fixed: 
+
 v2.3.0 - 2019-02-23
 =====================
 
