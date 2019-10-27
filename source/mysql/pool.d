@@ -21,12 +21,12 @@ debug(MYSQLN_TESTS)
 	import mysql.test.common;
 }
 
-version(Have_vibe_d_core) version = IncludeMySQLPool;
-version(MySQLDocs)        version = IncludeMySQLPool;
+version(Have_vibe_core) version = IncludeMySQLPool;
+version(MySQLDocs)      version = IncludeMySQLPool;
 
 version(IncludeMySQLPool)
 {
-	version(Have_vibe_d_core)
+	version(Have_vibe_core)
 		import vibe.core.connectionpool;
 	else version(MySQLDocs)
 	{

@@ -290,7 +290,7 @@ still using it.
 So, this test ensures lockConnection doesn't return a connection that's already in use.
 +/
 @("issue170")
-version(Have_vibe_d_core)
+version(Have_vibe_core)
 debug(MYSQLN_TESTS)
 unittest
 {

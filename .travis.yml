@@ -1,5 +1,133 @@
+############################################################################
+#
+# Testing and Official Compatibility:
+# -----------------------------------
+#
+# All testing configurations not marked as "allow_failures" in the master
+# branch are considered officially supported. If any of these configurations
+# fail in travis, then the commit/branch is considered broken.
+#
+# Test configurations marked "allow_failures" are NOT officially supported.
+# Typically, this will be due to one of the following reasons:
+#
+# - There is a known bug using that configuration which has not yet
+# been fixed. There should be ticket(s) filed in GitHub for these.
+#
+# - The test is automatically monitoring compatibility with new versions of
+# dependencies as they are released. These tests are expected to periodically
+# fail as mysql-native encounters new dependency versions it has not yet
+# previously encountered. These are deliberately "allow_failures" BECAUSE
+# they are previously untested and therefore we cannot guarantee compatibility.
+#
+# Once travis greenlights a new configuration, a NEW entry should be added for
+# it which does NOT use "latest available" markers such as `dmd`, `dmd-beta` or
+# `DUB_UPGRADE=true`.
+#
+# Test Failures and Deprecations:
+# -------------------------------
+#
+# To the extent possible, care should be taken to ensure the master branch
+# is always greenlit in travis. This means:
+#
+# - Work-in progress should be done in a separate branch.
+#
+# - Only branches greenlit in travis should be merged to master.
+#
+# - In the event a broken configuration cannot be immediately fixed, it
+# should be filed in GitHub as a known issue, temporarily removed from official
+# support, and marked as "allow_failures" so as to not block additional
+# work in the meantime.
+#
+# Official compatibility for any dependency (including compiler and
+# database server) should ONLY be dropped when it has become broken and
+# is no longer trivial to fix. (Though exceptions may be granted in special
+# circumstances, given strong enough reason to support/deprecate a
+# particular dependency version.)
+#
+# Selecting Configurations to Test:
+# ---------------------------------
+#
+# It would be impractical (and likely an abuse of travis's free infrastructure)
+# to test every possible combination of OS, compiler, DB server and
+# dub dependency (ie, vibe-d and its dependencies.) So we have to be strategic
+# about selecting configurations to test. Here are guidelines:
+#
+# - For DMD, only the latest patch release for each major.minor version needs
+# tested. (Example: DMD v2.081.x goes up to v2.081.2. Therefore, v2.081.2
+# should be tested, but v2.081.0 and v2.081.1 can be omitted.)
+#
+# - Each compiler version should be tested at least once. And at least
+# one of these tests for each compiler version should be against the oldest
+# version of vibe-d which can be supported for the given compiler. (Otherwise,
+# it would not be possible to reliably ensure ANY particular minimum version of
+# vibe-d.)
+#
+# - There should be at least one test for the oldest supported vibe-d and
+# at least one for the newest supported vibe-d. Additional tests for more
+# versions in-between would be better.
+#
+# - To the extent possible, each DB server version should be tested at least
+# once. And at least one of these tests for each DB server version should be
+# on a compiler and vibe-d that are NOT generically "use whatever is the
+# latest version available". This helps avoid any question as to whether
+# a failure is due to the specific DB server or due to breakage on a new
+# compiler/vibe.
+#
+# - When possible, there should be at least one test that IS generically
+# for "use whatever is the latest version available of XYZ" (for any XYZ).
+# But, these tests must be marked "allow_failures" to ensure reproducable
+# builds (at least to the extent possible) and to ensure new versions of
+# dependencies get properly tested before being allowed to break the build
+# or to become officially supported.
+#
+# - These guidelines are largely relaxed on OSX because:
+#     - Travis's OSX infrastructure is smaller and so OSX builds
+#     are considerably slower.
+#     - Quick obsolescence is deeply ingrained on the OSX ecosystem anyway.
+#     - I know little about doing OSX builds, so better support would
+#     need to come from a volunteer more experienced in OSX.
+#
+# Vibe-d and Other Dub Dependencies:
+# ----------------------------------
+#
+# The repository should always include a `dub.selections.json`. This should
+# have no effect on projects depending on mysql-native, but it will help
+# ensure no tests accidentally pull in a new untested version of a dependency
+# when they didn't intend to. Developers working on mysql-native itself can
+# always do a "dub upgrade" on their own working copy or work on whatever
+# dependency versions they wish. Just remember not to check in the changes
+# to `dub.selections.json`.
+#
+# Currently, the default `dub.selections.json` is intentionally set to the
+# oldest supported versions. Alternate sets of dependencies can be tested
+# on travis by creating an alternate `dub.selections.WHATEVER.json` and
+# setting the `DUB_SELECT=WHATEVER` environment variable.
+#
+# Alternatively, the environment variable `DUB_UPGRADE=true` can be used
+# to test on the latest available versions of all dub dependencies. But
+# please only do this on `allowed_failures` tests, to help ensure
+# reproducable builds.
+#
+# `USE_UNIT_THREADED=true` causes tests to be run via unit-threaded
+# instead of the Phobos test runner.
+#
+# Run Tests Locally:
+# ------------------
+#
+# ./run_tests --mode=(phobos|vibe|combined) [--help] [OPTIONS] [-- [UNIT-THREADED OPTIONS]]
+#
+# After first run (which will fail), you will need to edit the
+# generated `testConnectionStr.txt` to match the correct connection
+# and login settings for your DB server.
+#
+############################################################################
+
 language: d
-sudo: false
+
+# Use Ubuntu 12.04 because travis has a bug installing MariaDB on
+# later versions (xenial and bionic)
+# See: https://travis-ci.community/t/failures-installing-mariadb-10-2-on-xenial/5284
+dist: trusty
 
 addons:
   mariadb: '10.1'
@@ -7,48 +135,108 @@ addons:
     packages: [ libevent-dev ]
 
 install: $DMD -ofci_setup ci_setup.d && ./ci_setup
-script: ./run_tests --mode=combined
+script: ./run_tests --mode=travis
 
 matrix:
   include:
-    - d: dmd-2.080.0
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1
+    - d: dmd-2.087.1
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: dmd-2.086.1
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: dmd-2.085.1
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: dmd-2.084.1
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: dmd-2.083.1
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: dmd-2.082.1
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: dmd-2.081.2
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: dmd-2.080.1
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.079.1
-      env: USE_UNIT_THREADED=true DUB_SELECT=vibe-0.8.3
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.078.3
-      env: USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.077.1
-      env: USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: dmd-2.076.1
+      env:             DB=mariadb-10.1
     - d: dmd-2.075.1
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.074.1
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.073.1
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.072.2
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.071.2
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.070.2
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.069.2
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: dmd-2.068.2
+      env:             DB=mariadb-10.1 NO_VIBE=true
+    - d: ldc-1.17.0
+      env:             DB=mariadb-10.1
+    - d: ldc-1.16.0
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: ldc-1.15.0
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: ldc-1.14.0
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: ldc-1.13.0
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: ldc-1.12.0
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: ldc-1.11.0
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+    - d: ldc-1.10.0
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.9.0
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.8.0
-      env: USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.7.0
-      env: USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.6.0
-      env: USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
     - d: ldc-1.5.0
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.4.0
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.3.0
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.2.0
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.1.1
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.0.0
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-0.17.5
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-0.17.1
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-0.17.0
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: gdc-6.3.0
+      env:             DB=mariadb-10.1 NO_VIBE=true
     - d: gdc-4.8.5
+      env:             DB=mariadb-10.1 NO_VIBE=true
+    - d: dmd
+      env:             DB=mariadb-10.1
     - d: dmd-beta
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+      env:             DB=mariadb-10.1
+    - d: ldc
+      env:             DB=mariadb-10.1
+    - d: ldc-beta
+      env:             DB=mariadb-10.1
 
     # Test alternative db versions, but only on one compiler version
     - d: dmd-2.078.3
@@ -87,76 +275,122 @@ matrix:
           packages: [ libevent-dev ]
       env: DB=mariadb-10.3 USE_UNIT_THREADED=true
 
+    - d: dmd-2.078.3
+      addons:
+        mariadb: '10.4'
+        apt:
+          packages: [ libevent-dev ]
+      env: DB=mariadb-10.4 USE_UNIT_THREADED=true
+
     # on Mac just test latest & oldest supported dmd and ldc
-    - d: dmd-2.080.0
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+    # Note, vibe-core isn't fully supported on osx yet (https://github.com/vibe-d/vibe-core/pull/183)
+    # so only test with phobos sockets.
+    - d: dmd-2.088.0
       os: osx
-      osx_image: xcode9 # use OSX 10.13
+      osx_image: xcode11.2 # use OSX 10.14
+      env: DB=mysql-5.6 NO_VIBE=true
+
+    - d: dmd-2.080.0
+      os: osx
+      osx_image: xcode9.4 # use OSX 10.13
+      env: DB=mysql-5.6 NO_VIBE=true
 
     - d: dmd-2.079.1
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
       os: osx
-      osx_image: xcode9 # use OSX 10.13
+      osx_image: xcode9.4 # use OSX 10.13
+      env: DB=mysql-5.6 NO_VIBE=true
 
     - d: dmd-2.078.3
       os: osx
-      osx_image: xcode9 # use OSX 10.13
+      osx_image: xcode9.4 # use OSX 10.13
+      env: DB=mysql-5.6 NO_VIBE=true
 
     - d: ldc-1.9.0
       os: osx
-      osx_image: xcode9 # use OSX 10.13
+      osx_image: xcode9.4 # use OSX 10.13
+      env: DB=mysql-5.6 NO_VIBE=true
 
     - d: ldc-1.8.0
       os: osx
-      osx_image: xcode9 # use OSX 10.13
+      osx_image: xcode9.4 # use OSX 10.13
+      env: DB=mysql-5.6 NO_VIBE=true
 
     - d: dmd-2.068.2
       os: osx
+      osx_image: xcode9.4 # use OSX 10.13
+      env: DB=mysql-5.6 NO_VIBE=true
 
     - d: ldc-0.17.0
       os: osx
+      osx_image: xcode9.4 # use OSX 10.13
+      env: DB=mysql-5.6 NO_VIBE=true
 
-    # Test with all dependencies updated
+    # Test with all dub dependencies fully updated
     # (dub.selections.json is deliberately kept old)
-    - d: dmd-2.080.0
+    - d: dmd-2.088.0
       services:
         - mysql
-      env: DUB_UPGRADE=true DB=mysql-default
+      env: DB=mysql-default DUB_UPGRADE=true
+    - d: dmd-2.088.0
+      os: osx
+      osx_image: xcode11.2 # use OSX 10.14
+      env: DB=mysql-5.6 DUB_UPGRADE=true
+
+    # Test with latest mysql server available in OSX brew
+    - d: dmd-2.088.0
+      os: osx
+      osx_image: xcode11.2 # use OSX 10.14
+      env: DB=mysql-latest
+    
+    # Test vibe sockets on OSX. Not yet working. (https://github.com/vibe-d/vibe-core/pull/183)
+    - d: dmd-2.088.0
+      os: osx
+      osx_image: xcode11.2 # use OSX 10.14
+      env: DB=mysql-5.6
 
   allow_failures:
     # Doesn't appear to exist on travis: https://github.com/travis-ci/travis-ci/issues/8849
     - d: gdc-6.3.0
+      env: DB=mariadb-10.1 NO_VIBE=true
 
     # Occasional failures are expected here
+    - d: dmd
+      env:            DB=mariadb-10.1
     - d: dmd-beta
+      env:            DB=mariadb-10.1
+    - d: ldc
+      env:            DB=mariadb-10.1
+    - d: ldc-beta
+      env:            DB=mariadb-10.1
+    - d: dmd-2.088.0 # All dub dependencies fully updated
+      services:
+        - mysql
+      env: DB=mysql-default DUB_UPGRADE=true
+    - d: dmd-2.088.0 # All dub dependencies fully updated
+      os: osx
+      osx_image: xcode11.2 # use OSX 10.14
+      env: DB=mysql-5.6 DUB_UPGRADE=true
 
-    # These are currently failing because mysql-native does not yet
+    # Currently failing on travis:
+    # https://github.com/mysql-d/mysql-native/issues/208
+    - d: dmd-2.078.3
+      addons:
+        mariadb: '10.4'
+        apt:
+          packages: [ libevent-dev ]
+      env: DB=mariadb-10.4 USE_UNIT_THREADED=true
+
+    # Test with latest mysql server available in OSX brew
+    # Currently failing because mysql-native does not yet
     # support MySQL v8.0.4's new default authentication mechanism: caching_sha2_password
     # See issue #189: https://github.com/mysql-d/mysql-native/issues/189
-    - d: dmd-2.080.0
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+    - d: dmd-2.088.0
       os: osx
-      osx_image: xcode9 # use OSX 10.13
+      osx_image: xcode11.2 # use OSX 10.14
+      env: DB=mysql-latest
 
-    - d: dmd-2.079.1
-      env: DUB_SELECT=vibe-0.8.3 # DMDFE 2.079+ doesn't support vibe.d v0.7.32
+    # Test vibe sockets on OSX. Not yet working. (https://github.com/vibe-d/vibe-core/pull/183)
+    - d: dmd-2.088.0
       os: osx
-      osx_image: xcode9 # use OSX 10.13
-
-    - d: dmd-2.078.3
-      os: osx
-      osx_image: xcode9 # use OSX 10.13
-
-    - d: ldc-1.9.0
-      os: osx
-      osx_image: xcode9 # use OSX 10.13
-
-    - d: ldc-1.8.0
-      os: osx
-      osx_image: xcode9 # use OSX 10.13
-
-    - d: dmd-2.068.2
-      os: osx
-
-    - d: ldc-0.17.0
-      os: osx
+      osx_image: xcode11.2 # use OSX 10.14
+      env: DB=mysql-5.6

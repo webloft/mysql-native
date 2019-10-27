@@ -9,7 +9,7 @@ import std.string;
 // Commandline args
 bool useUnitThreaded;
 bool coreTestsOnly;
-enum Mode { phobos, vibe, combined };
+enum Mode { phobos, vibe, combined, travis };
 Mode mode;
 string[] unitThreadedArgs;
 
@@ -18,25 +18,25 @@ int exitCode=0;
 
 // Utils ///////////////////////////////////////////////
 
-string flagUseUnitThreaded(bool on)
+pure string flagUseUnitThreaded(bool on)
 {
 	return on? " --ut" : "";
 }
 
-string flagCoreTestsOnly(bool on)
+pure string flagCoreTestsOnly(bool on)
 {
 	return on? " --core" : "";
 }
 
-string flagMode(Mode mode)
+pure string flagMode(Mode mode)
 {
 	final switch(mode)
 	{
 	case Mode.phobos:   return " --mode=phobos";
 	case Mode.vibe:     return " --mode=vibe";
 	case Mode.combined: return " --mode=combined";
+	case Mode.travis:   return " --mode=travis";
 	}
-	return coreTestsOnly? " --core" : "";
 }
 
 string fixSlashes(string path)
@@ -44,6 +44,11 @@ string fixSlashes(string path)
 	version(Windows)    return path.replace(`/`, `\`);
 	else version(Posix) return path.replace(`\`, `/`);
 	else static assert(0);
+}
+
+string envGet(string name)
+{
+	return environment.get(name, null);
 }
 
 void tryMkdir(string dir)
@@ -109,7 +114,7 @@ int main(string[] args)
 			"ut",     "Use unit-threaded (Always includes ut's --trace)", &useUnitThreaded,
 			"core",   "Only run basic core tests (Can only be used with --mode=phobos)", &coreTestsOnly,
 			std.getopt.config.required,
-			"m|mode", "'-m=phobos': Run Phobos tests | '-m=vibe': Run Vibe.d tests | '-m=combined': Run core-only Phobos tests and all Vibe.d tests", &mode,
+			"m|mode", "'-m=phobos': Run Phobos tests | '-m=vibe': Run Vibe.d tests | '-m=combined': Run core-only Phobos tests and all Vibe.d tests | '-m=travis': Travis-CI mode (autodetect settings from envvars)", &mode,
 		);
 
 		if(argsHelp.helpWanted)
@@ -118,7 +123,7 @@ int main(string[] args)
 				"Runs the mysql-native test suite with Phobos sockets, Vibe.d sockets, or combined.\n"~
 				"\n"~
 				"Usage:\n"~
-				"  run_tests --mode=(phobos|vibe|all) [OPTIONS] [-- [UNIT-THREADED OPTIONS]]\n"~
+				"  run_tests --mode=(phobos|vibe|combined|travis) [OPTIONS] [-- [UNIT-THREADED OPTIONS]]\n"~
 				"\n"~
 				"Examples:\n"~
 				"  run_tests --mode=combined\n"~
@@ -156,6 +161,13 @@ int main(string[] args)
 		return 1;
 	}
 
+	if(mode==Mode.travis && (coreTestsOnly || useUnitThreaded))
+	{
+		stderr.writeln("Cannot use --mode=travis together with any other option.");
+		stderr.writeln("For help: run_tests --help");
+		return 1;
+	}
+
 	unitThreadedArgs = args[1..$];
 	runTests();
 	return exitCode;
@@ -175,6 +187,7 @@ void runTests()
 	case Mode.phobos:   runPhobosTests();   break;
 	case Mode.vibe:     runVibeTests();     break;
 	case Mode.combined: runCombinedTests(); break;
+	case Mode.travis:   runTravisTests();   break;
 	}
 }
 
@@ -270,4 +283,25 @@ void runCombinedTests()
 		flagUseUnitThreaded(useUnitThreaded)
 	);
 	exitCode = vibeStatus;
+}
+
+void runTravisTests()
+{
+    useUnitThreaded = envGet("USE_UNIT_THREADED") == "true";
+    auto noVibe     = envGet("NO_VIBE")           == "true";
+    
+    if(noVibe)
+    {
+        auto phobosStatus = runFromCurrentDir(
+            "run_tests"~
+            flagMode(Mode.phobos)~
+            flagCoreTestsOnly(false)~
+            flagUseUnitThreaded(useUnitThreaded)
+        );
+        exitCode = phobosStatus;
+    }
+    else
+    {
+        runCombinedTests();
+    }
 }
