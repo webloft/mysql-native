@@ -330,7 +330,7 @@ matrix:
     - d: dmd-2.088.0
       services:
         - mysql
-      env: DB=mysql-defaultDUB_UPGRADE=true
+      env: DB=mysql-default DUB_UPGRADE=true
     - d: dmd-2.088.0
       os: osx
       osx_image: xcode11.2 # use OSX 10.14
