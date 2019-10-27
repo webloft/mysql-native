@@ -46,6 +46,11 @@ string fixSlashes(string path)
 	else static assert(0);
 }
 
+string envGet(string name)
+{
+	return environment.get(name, null);
+}
+
 void tryMkdir(string dir)
 {
 	if(!exists(dir))
@@ -282,8 +287,8 @@ void runCombinedTests()
 
 void runTravisTests()
 {
-    useUnitThreaded = environment["USE_UNIT_THREADED"] == "true";
-    auto noVibe     = environment["NO_VIBE"]           == "true";
+    useUnitThreaded = envGet["USE_UNIT_THREADED"] == "true";
+    auto noVibe     = envGet["NO_VIBE"]           == "true";
     
     if(noVibe)
     {
