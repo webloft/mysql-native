@@ -281,11 +281,6 @@ matrix:
       osx_image: xcode11.2 # use OSX 10.14
       env: DB=mysql-5.6
 
-    - d: dmd-2.088.0
-      os: osx
-      osx_image: xcode11.2 # use OSX 10.14
-      env: DB=mysql-5.6
-
     - d: dmd-2.080.0
       os: osx
       osx_image: xcode9.4 # use OSX 10.13
