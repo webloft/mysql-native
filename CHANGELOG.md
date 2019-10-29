@@ -6,6 +6,9 @@ Update from `vibe-d:core` to `vibe-core`, and various CI improvements.
 - **Change:** Switched from outdated `vibe-d:core` to modern `vibe-core`.
 - **Fixed:** [#199](https://github.com/mysql-d/mysql-native/issues/199):
     It is immposible to use this package anymore without libevent.
+- **Fixed:** [#200](https://github.com/mysql-d/mysql-native/issues/200),
+    [#210](https://github.com/mysql-d/mysql-native/issues/210):
+    Expose vibe.d connection pool's removeUnused function. (@schveiguy)
 - **Fixed:** [#201](https://github.com/mysql-d/mysql-native/issues/201):
     Always selects `vibe-d:core`, cannot select `vibe-core`.
 - **Fixed:** [#205](https://github.com/mysql-d/mysql-native/issues/205),
