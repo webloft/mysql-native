@@ -11,6 +11,9 @@ Update from `vibe-d:core` to `vibe-core`, and various CI improvements.
     Expose vibe.d connection pool's removeUnused function. (@schveiguy)
 - **Fixed:** [#201](https://github.com/mysql-d/mysql-native/issues/201):
     Always selects `vibe-d:core`, cannot select `vibe-core`.
+- **Fixed:** [#204](https://github.com/mysql-d/mysql-native/issues/204),
+    [#211](https://github.com/mysql-d/mysql-native/issues/211):
+    Fix nullable deprecations (@schveiguy)
 - **Fixed:** [#205](https://github.com/mysql-d/mysql-native/issues/205),
     [#209](https://github.com/mysql-d/mysql-native/issues/209):
     Deprecation: foreach: loop index implicitly converted from size_t to ushort. (@SingingBush)
