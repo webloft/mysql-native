@@ -21,8 +21,17 @@ debug(MYSQLN_TESTS)
 	import mysql.test.common;
 }
 
-version(Have_vibe_core) version = IncludeMySQLPool;
-version(MySQLDocs)      version = IncludeMySQLPool;
+version(Have_vibe_core)
+{
+	version = IncludeMySQLPool;
+	static if(is(typeof(ConnectionPool!Connection.init.removeUnused((c){}))))
+		version = HaveCleanupFunction;
+}
+version(MySQLDocs)
+{
+	version = IncludeMySQLPool;
+	version = HaveCleanupFunction;
+}
 
 version(IncludeMySQLPool)
 {
@@ -50,6 +59,10 @@ version(IncludeMySQLPool)
 
 			/// See: $(LINK http://vibed.org/api/vibe.core.connectionpool/ConnectionPool.maxConcurrency)
 			uint maxConcurrency;
+
+			/// See: $(LINK https://github.com/vibe-d/vibe-core/blob/24a83434e4c788ebb9859dfaecbe60ad0f6e9983/source/vibe/core/connectionpool.d#L113)
+			void removeUnused(scope void delegate(Connection conn) @safe nothrow disconnect_callback)
+			{}
 		}
 
 		/++
@@ -94,6 +107,7 @@ version(IncludeMySQLPool)
 			{
 				bool queuedForRelease = false;
 			}
+
 		}
 
 		/// Sets up a connection pool with the provided connection settings.
@@ -426,6 +440,30 @@ version(IncludeMySQLPool)
 		void clearAllRegistrations()
 		{
 			preparedRegistrations.clear();
+		}
+
+		version(HaveCleanupFunction)
+		{
+			/++
+			Removes all unused connections from the pool. This can
+			be used to clean up before exiting the program to
+			ensure the event core driver can be properly shut down.
+
+			Note: this is only available if vibe-core 1.7.0 or later is being
+			used.
+			+/
+			void removeUnusedConnections() @safe
+			{
+				// Note: we squelch all exceptions here, because vibe-core
+				// requires the function be nothrow, and because an exception
+				// thrown while closing is probably not important enough to
+				// interrupt cleanup.
+				m_pool.removeUnused((conn) @trusted nothrow {
+					try {
+						conn.close();
+					} catch(Exception) {}
+				});
+			}
 		}
 	}
 	 
