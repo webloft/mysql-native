@@ -23,6 +23,8 @@ Update from `vibe-d:core` to `vibe-core`, and various CI improvements.
 - **Tests:** Fixed: USE_UNIT_THREADED envar doen't actually use unit-threaded.
 - **Tests:** Better diagnostics when using alternate `dub.selections.json`. (@SingingBush)
 - **Docs:** Add documentation and CI-related policies to `.travis.yml`.
+- **Internal:** [#212](https://github.com/mysql-d/mysql-native/issues/212):
+    Add [.editorconfig](https://editorconfig.org/) file. (@schveiguy)
 
 v2.3.0 - 2019-02-23
 =====================
