@@ -149,12 +149,85 @@ matrix:
       env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.5.0
     - d: dmd-2.088.0
       env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.7
-    - d: dmd-2.088.0
+
+    - d: dmd-2.087.1
       env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.086.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.085.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.084.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.083.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.082.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.081.2
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.080.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.079.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.078.3
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.077.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.076.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.075.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.074.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.073.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.072.2
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.071.2
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.070.2
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+
     - d: dmd-2.088.0
       env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.0
-    - d: dmd-2.088.0
+
+    - d: dmd-2.087.1
       env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.086.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.085.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.084.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.083.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.082.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.081.2
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.080.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.079.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.078.3
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.077.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.076.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.075.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.074.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.073.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.072.2
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.071.2
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.070.2
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+
+
     - d: dmd-2.088.0
       env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.2.0
     - d: dmd-2.088.0
