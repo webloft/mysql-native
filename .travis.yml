@@ -140,7 +140,28 @@ script: ./run_tests --mode=travis
 matrix:
   include:
     - d: dmd-2.088.0
-      env:             DB=mariadb-10.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.7.0
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.6.2
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.6.0
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.5.0
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.7
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.0
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.2.0
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.1.1
+    - d: dmd-2.088.0
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0
+
     - d: dmd-2.088.0
       env:             DB=mariadb-10.1
     - d: dmd-2.087.1
