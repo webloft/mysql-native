@@ -181,15 +181,15 @@ matrix:
       env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.0 USE_UNIT_THREADED=true
     # vibecore-1.3.0 fails above dmd-2.078.3: https://travis-ci.org/mysql-d/mysql-native/jobs/614396160
     - d: dmd-2.078.3
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
     - d: dmd-2.078.3
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.2.0 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.2.0
     - d: dmd-2.078.3
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.1.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.1.1
     - d: dmd-2.078.3
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0
     - d: dmd-2.077.1
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0
     - d: dmd-2.076.1
       env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0
     # vibe-core doesn't support dmd-2.075 and below.
