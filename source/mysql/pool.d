@@ -1,13 +1,14 @@
 ﻿/++
-Connect to a MySQL/MariaDB database using vibe.d's
-$(LINK2 http://vibed.org/api/vibe.core.connectionpool/ConnectionPool, ConnectionPool).
-
-You have to include vibe.d in your project to be able to use this class.
-If you don't want to, refer to `mysql.connection.Connection`.
+Connect to a MySQL/MariaDB database using a connection pool.
 
 This provides various benefits over creating a new connection manually,
 such as automatically reusing old connections, and automatic cleanup (no need to close
 the connection when done).
+
+Internally, this is based on vibe.d's
+$(LINK2 http://vibed.org/api/vibe.core.connectionpool/ConnectionPool, ConnectionPool).
+You have to include vibe.d in your project to be able to use this class.
+If you don't want to, refer to `mysql.connection.Connection`.
 +/
 module mysql.pool;
 
@@ -30,7 +31,6 @@ version(Have_vibe_core)
 version(MySQLDocs)
 {
 	version = IncludeMySQLPool;
-	version = HaveCleanupFunction;
 }
 
 version(IncludeMySQLPool)
@@ -78,16 +78,16 @@ version(IncludeMySQLPool)
 	}
 
 	/++
-	A lightweight convenience interface to a MySQL/MariaDB database using vibe.d's
-	$(LINK2 http://vibed.org/api/vibe.core.connectionpool/ConnectionPool, ConnectionPool).
+	Connect to a MySQL/MariaDB database using a connection pool.
 
+	This provides various benefits over creating a new connection manually,
+	such as automatically reusing old connections, and automatic cleanup (no need to close
+	the connection when done).
+
+	Internally, this is based on vibe.d's
+	$(LINK2 http://vibed.org/api/vibe.core.connectionpool/ConnectionPool, ConnectionPool).
 	You have to include vibe.d in your project to be able to use this class.
 	If you don't want to, refer to `mysql.connection.Connection`.
-
-	If, for any reason, this class doesn't suit your needs, it's easy to just
-	use vibe.d's $(LINK2 http://vibed.org/api/vibe.core.connectionpool/ConnectionPool, ConnectionPool)
-	directly. Simply provide it with a delegate that creates a new `mysql.connection.Connection`
-	and does any other custom processing if needed.
 	+/
 	class MySQLPool
 	{
@@ -176,7 +176,7 @@ version(IncludeMySQLPool)
 		There is no need to close, release or unlock this connection. It is
 		reference-counted and will automatically be returned to the pool once
 		your fiber is done with it.
-		
+
 		If you have passed any prepared statements to  `autoRegister`
 		or `autoRelease`, then those statements will automatically be
 		registered/released on the connection. (Currently, this automatic
@@ -201,7 +201,7 @@ version(IncludeMySQLPool)
 			{
 				auto registeredOnPool = !info.queuedForRelease;
 				auto registeredOnConnection = conn.isRegistered(sql);
-				
+
 				if(registeredOnPool && !registeredOnConnection) // Need to register?
 					conn.register(sql);
 				else if(!registeredOnPool && registeredOnConnection) // Need to release?
@@ -250,7 +250,7 @@ version(IncludeMySQLPool)
 			assert(poolA.onNewConnection == &callback);
 			assert(poolB.onNewConnection is null);
 			assert(poolNoCallback.onNewConnection is null);
-			
+
 			poolB.onNewConnection = &callback;
 			assert(poolB.onNewConnection == &callback);
 			assert(count == 0);
@@ -260,7 +260,7 @@ version(IncludeMySQLPool)
 				auto connA = poolA.lockConnection();
 				assert(!connA.closed);
 				assert(count == 1);
-				
+
 				auto connB = poolB.lockConnection();
 				assert(!connB.closed);
 				assert(count == 2);
@@ -307,11 +307,11 @@ version(IncludeMySQLPool)
 		if it isn't already registered on the connection. This single
 		registration safely persists after the connection is reclaimed by the
 		pool and locked again by another Vibe.d task.
-		
+
 		Note, due to the way Vibe.d works, it is not possible to eagerly
 		register or release a statement on all connections already sitting
 		in the pool. This can only be done when locking a connection.
-		
+
 		You can stop the pool from continuing to auto-register the statement
 		by calling either `autoRelease` or `clearAuto`.
 		+/
@@ -339,7 +339,7 @@ version(IncludeMySQLPool)
 		Once this has been called, obtaining a connection via `lockConnection`
 		will automatically release the prepared statement from the connection
 		if it isn't already releases from the connection.
-		
+
 		Note, due to the way Vibe.d works, it is not possible to eagerly
 		register or release a statement on all connections already sitting
 		in the pool. This can only be done when locking a connection.
@@ -431,10 +431,10 @@ version(IncludeMySQLPool)
 		{
 			preparedRegistrations.directLookup.remove(sql);
 		}
-		
+
 		/++
 		Removes ALL prepared statement `autoRegister` and `autoRelease` which have been set.
-		
+
 		This releases all relevent memory for potential garbage collection.
 		+/
 		void clearAllRegistrations()
@@ -442,7 +442,7 @@ version(IncludeMySQLPool)
 			preparedRegistrations.clear();
 		}
 
-		version(HaveCleanupFunction)
+		version(MySQLDocs)
 		{
 			/++
 			Removes all unused connections from the pool. This can
@@ -452,6 +452,10 @@ version(IncludeMySQLPool)
 			Note: this is only available if vibe-core 1.7.0 or later is being
 			used.
 			+/
+			void removeUnusedConnections() @safe {}
+		}
+		else version(HaveCleanupFunction)
+		{
 			void removeUnusedConnections() @safe
 			{
 				// Note: we squelch all exceptions here, because vibe-core
@@ -466,7 +470,7 @@ version(IncludeMySQLPool)
 			}
 		}
 	}
-	 
+
 	@("registration")
 	debug(MYSQLN_TESTS)
 	unittest
@@ -560,7 +564,7 @@ version(IncludeMySQLPool)
 	{
 		MySQLPool cctPool;
 		int cctCount=0;
-		
+
 		void cctStart()
 		{
 			import std.array;

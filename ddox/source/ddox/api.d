@@ -247,7 +247,7 @@ string getAttributeString(Declaration decl, AttributeStringKind kind)
 
 enum AttributeStringKind { normal, functionPrefix, functionSuffix }
 
-string[] declStyleClasses(Declaration decl)
+auto declStyleClasses(Declaration decl)
 {
 	string[] ret;
 	ret ~= decl.protection.to!string().toLower();
@@ -257,7 +257,7 @@ string[] declStyleClasses(Declaration decl)
 		if (tdecl.type.attributes.canFind("@property")) ret ~= "property";
 		if (tdecl.type.attributes.canFind("static")) ret ~= "static";
 	}
-	return ret;
+	return ret.join(" ");
 }
 
 string formatType()(CachedType type, scope string delegate(in Entity) link_to, bool include_code_tags = true)
@@ -380,6 +380,10 @@ void renderTemplateArgs(R)(ref R output, Declaration decl, scope string delegate
 			output.put(' ');
 		}
 		output.put(arg.name);
+		if (arg.specValue.length) {
+			output.highlightDCode(" : ");
+			output.highlightDCode(arg.specValue);
+		}
 		if (arg.defaultValue.length) {
 			output.highlightDCode(" = ");
 			output.highlightDCode(arg.defaultValue);

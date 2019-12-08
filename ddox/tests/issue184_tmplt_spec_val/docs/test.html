@@ -2,10 +2,10 @@
 <html>
 	<head>
 		<meta charset="UTF-8"/>
-		<title>Interface IBase</title>
-		<link rel="stylesheet" type="text/css" href="../styles/ddox.css"/>
-		<link rel="stylesheet" href="../prettify/prettify.css" type="text/css"/>
-		<script type="text/javascript" src="../scripts/jquery.js">/**/</script><script type="text/javascript" src="../scripts/ddox.js">/**/</script>
+		<title>Module test</title>
+		<link rel="stylesheet" type="text/css" href="./styles/ddox.css"/>
+		<link rel="stylesheet" href="./prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="./scripts/jquery.js">/**/</script><script type="text/javascript" src="./scripts/ddox.js">/**/</script>
 	</head>
 	<body onload="setupDdox();">
 		<nav id="main-nav">
@@ -16,46 +16,41 @@
 				<form action="#" method="GET">
 					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
 				</form>
-				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../";
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="./symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "./";
 $('#symbolSearchPane').show();</script>
 			</div>
 			<ul class="tree-view">
 				<li>
 					<div class="module selected">
-						<a href="../test.html">test</a>
+						<a href="./test.html">test</a>
 					</div>
 				</li>
 			</ul>
 		</nav>
 		<div id="main-contents">
-			<h1>Interface IBase</h1><p>IBase
-</p>
-			<div class="prototype">
-				<code class="lang-d">
-					<div class="single-prototype">
-			<span class="kwd">interface</span> <span class="typ">IBase</span>(T)
-			<span class="pun">;</span>
-					</div>
-				</code>
-			</div>
-			
-			<section><h2>Methods</h2>
+			<h1>Module test</h1><p></p>
+			<section></section>
+			<section>
+				<h2>Aliases</h2>
 				<table>
 					<col class="caption"/>
 					<tr>
-						<th>Name</th><th>Description</th>
+						<th>Name</th><th>Type</th><th>Description</th>
 					</tr>
 					<tr>
 						<td>
-							<a href="../test/IBase.func.html" class="public">
-								<code>func</code>
+							<a id="Type" class="public" href="./test/Type.html">
+								<code>Type</code>
 							</a>
 						</td>
-						<td></td>
+						<td>
+							<code class="prettyprint lang-d"><span class="typ">int</span></code>
+						</td>
+						<td>templates with specialization and default values
+</td>
 					</tr>
 				</table>
 			</section>
-			
 			<footer>
 				<table class="license-info">
 					<tr>

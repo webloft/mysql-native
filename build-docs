@@ -1,4 +1,13 @@
 #!/bin/sh
+
+# Please use DMD 2.077.1 or below when building the documentation.
+#
+# DMD 2.078.0 and up causes lots of duplicated symbols in the documentation.
+# (See: https://github.com/rejectedsoftware/ddox/issues/208 )
+#
+# DMD 2.086.0 and up cause errors when building the docs because
+# gen-package-version and Scriptlike need updated.
+
 rdmd --build-only -c -Isource -Dddocs_tmp -X -Xfdocs/docs.json -version=MySQLDocs --force source/mysql/package.d
 rm -rf docs_tmp
 rm source/mysql/package.o
