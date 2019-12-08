@@ -1,5 +1,14 @@
 ############################################################################
 #
+# Run Tests Locally:
+# ------------------
+#
+# ./run_tests --mode=(phobos|vibe|combined) [--help] [OPTIONS] [-- [UNIT-THREADED OPTIONS]]
+#
+# After first run (which will fail), you will need to edit the
+# generated `testConnectionStr.txt` to match the correct connection
+# and login settings for your DB server.
+#
 # Testing and Official Compatibility:
 # -----------------------------------
 #
@@ -54,7 +63,9 @@
 #
 # - For DMD, only the latest patch release for each major.minor version needs
 # tested. (Example: DMD v2.081.x goes up to v2.081.2. Therefore, v2.081.2
-# should be tested, but v2.081.0 and v2.081.1 can be omitted.)
+# should be tested, but v2.081.0 and v2.081.1 can be omitted.) This is
+# reasonable because patch releases to DMD are expected to be highly
+# backwards-compatible with regression fixes only.
 #
 # - Each compiler version should be tested at least once. And at least
 # one of these tests for each compiler version should be against the oldest
@@ -92,33 +103,30 @@
 #
 # The repository should always include a `dub.selections.json`. This should
 # have no effect on projects depending on mysql-native, but it will help
-# ensure no tests accidentally pull in a new untested version of a dependency
-# when they didn't intend to. Developers working on mysql-native itself can
-# always do a "dub upgrade" on their own working copy or work on whatever
-# dependency versions they wish. Just remember not to check in the changes
-# to `dub.selections.json`.
+# ensure developers don't run into problems unexpectedly building against
+# new dependency versions that haven't yet been fully tested and verified
+# against mysql-native. Developers can always do a "dub upgrade" on their
+# own working copy or work if they so choose. Just remember not to check
+# in the changes to `dub.selections.json`.
 #
-# Currently, the default `dub.selections.json` is intentionally set to the
-# oldest supported versions. Alternate sets of dependencies can be tested
-# on travis by creating an alternate `dub.selections.WHATEVER.json` and
-# setting the `DUB_SELECT=WHATEVER` environment variable.
+# For travis-ci testing, all jobs are required to select a specific set of
+# dependency versions via one of the `dub.selections.WHATEVER.json` files.
+# This is done by setting the `DUB_SELECT=WHATEVER` environment variable.
+# The chosen selection will then be used as `dub.selections.json`.
 #
-# Alternatively, the environment variable `DUB_UPGRADE=true` can be used
-# to test on the latest available versions of all dub dependencies. But
-# please only do this on `allowed_failures` tests, to help ensure
-# reproducable builds.
+# Alternatively, one of the environment variable `DUB_UPGRADE=true` or
+# `NO_VIBE=true` can be used instead of `DUB_SELECT=...`:
 #
-# `USE_UNIT_THREADED=true` causes tests to be run via unit-threaded
-# instead of the Phobos test runner.
+# Using `DUB_UPGRADE=true` causes `dub upgrade` to be run in order to test
+# on the latest available versions of all dub dependencies. But please only
+# do this on `allowed_failures` tests, to help ensure reproducable builds.
 #
-# Run Tests Locally:
-# ------------------
+# Using `NO_VIBE=true` can be used to test ONLY with
+# Phobos threads and skip testing with vibe entirely (useful on platforms
+# and older compilers which don't work with the `vibe-core` package.)
 #
-# ./run_tests --mode=(phobos|vibe|combined) [--help] [OPTIONS] [-- [UNIT-THREADED OPTIONS]]
-#
-# After first run (which will fail), you will need to edit the
-# generated `testConnectionStr.txt` to match the correct connection
-# and login settings for your DB server.
+# Independent of the other settings, using `USE_UNIT_THREADED=true` causes
+# the tests to be run via unit-threaded instead of the Phobos test runner.
 #
 ############################################################################
 
@@ -139,7 +147,7 @@ script: ./run_tests --mode=travis
 
 matrix:
   include:
-    # -- Test against older vibe-core -----------------
+    # -- Test various DMD compilers -----------------
     - d: dmd-2.088.0
       env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.7.0
     - d: dmd-2.088.0
@@ -150,52 +158,38 @@ matrix:
       env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.5.0
     - d: dmd-2.088.0
       env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.7
+    - d: dmd-2.087.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.7 USE_UNIT_THREADED=true
     # vibecore-1.4.3 fails above dmd-2.086.1: https://travis-ci.org/mysql-d/mysql-native/jobs/614396133
     - d: dmd-2.086.1
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3
-    - d: dmd-2.088.0
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.0
-    # vibecore-1.4.3 fails above dmd-2.078.3: https://travis-ci.org/mysql-d/mysql-native/jobs/614396160
-    - d: dmd-2.078.3
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0
-    - d: dmd-2.078.3
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.2.0
-    - d: dmd-2.078.3
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.1.1
-    - d: dmd-2.078.3
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0
-    - d: dmd-2.077.1
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0
-    - d: dmd-2.076.1
-      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0
-
-    # -- Test various DMD compilers -----------------
-    - d: dmd-2.088.0
-      env:             DB=mariadb-10.1
-    - d: dmd-2.087.1
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
-    - d: dmd-2.086.1
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.3 USE_UNIT_THREADED=true
     - d: dmd-2.085.1
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.0 USE_UNIT_THREADED=true
     - d: dmd-2.084.1
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.0 USE_UNIT_THREADED=true
     - d: dmd-2.083.1
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.0 USE_UNIT_THREADED=true
     - d: dmd-2.082.1
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.0 USE_UNIT_THREADED=true
     - d: dmd-2.081.2
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.0 USE_UNIT_THREADED=true
     - d: dmd-2.080.1
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.0 USE_UNIT_THREADED=true
     - d: dmd-2.079.1
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.4.0 USE_UNIT_THREADED=true
+    # vibecore-1.3.0 fails above dmd-2.078.3: https://travis-ci.org/mysql-d/mysql-native/jobs/614396160
     - d: dmd-2.078.3
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.3.0 USE_UNIT_THREADED=true
+    - d: dmd-2.078.3
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.2.0 USE_UNIT_THREADED=true
+    - d: dmd-2.078.3
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.1.1 USE_UNIT_THREADED=true
+    - d: dmd-2.078.3
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: dmd-2.077.1
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: dmd-2.076.1
-      env:             DB=mariadb-10.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0
     # vibe-core doesn't support dmd-2.075 and below.
     - d: dmd-2.075.1
       env:             DB=mariadb-10.1 NO_VIBE=true
@@ -216,29 +210,29 @@ matrix:
     
     # -- Test various LDC compilers -----------------
     - d: ldc-1.17.0
-      env:             DB=mariadb-10.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0
     - d: ldc-1.16.0
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: ldc-1.15.0
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: ldc-1.14.0
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: ldc-1.13.0
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: ldc-1.12.0
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: ldc-1.11.0
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: ldc-1.10.0
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: ldc-1.9.0
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: ldc-1.8.0
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: ldc-1.7.0
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: ldc-1.6.0
-      env:             DB=mariadb-10.1 USE_UNIT_THREADED=true
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
     - d: ldc-1.5.0
       env:             DB=mariadb-10.1 NO_VIBE=true
     - d: ldc-1.4.0
@@ -266,13 +260,13 @@ matrix:
 
     # -- Test latest bleeding-edge compilers (allow failure) -----------------
     - d: dmd
-      env:             DB=mariadb-10.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.7.0
     - d: dmd-beta
-      env:             DB=mariadb-10.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.7.0
     - d: ldc
-      env:             DB=mariadb-10.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.7.0
     - d: ldc-beta
-      env:             DB=mariadb-10.1
+      env:             DB=mariadb-10.1 DUB_SELECT=vibecore-1.7.0
 
     # -- Test various DB server versions -----------------
     - d: dmd-2.078.3
@@ -281,42 +275,42 @@ matrix:
       addons: # Remove "mariadb: ..." from default addons, but keep "libevent-dev"
         apt:
           packages: [ libevent-dev ]
-      env: DB=mysql-default USE_UNIT_THREADED=true
+      env: DB=mysql-default DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
 
     - d: dmd-2.078.3
       addons:
         mariadb: '5.5'
         apt:
           packages: [ libevent-dev ]
-      env: DB=mariadb-5.5 USE_UNIT_THREADED=true
+      env: DB=mariadb-5.5 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
 
     - d: dmd-2.078.3
       addons:
         mariadb: '10.0'
         apt:
           packages: [ libevent-dev ]
-      env: DB=mariadb-10.0 USE_UNIT_THREADED=true
+      env: DB=mariadb-10.0 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
 
     - d: dmd-2.078.3
       addons:
         mariadb: '10.2'
         apt:
           packages: [ libevent-dev ]
-      env: DB=mariadb-10.2 USE_UNIT_THREADED=true
+      env: DB=mariadb-10.2 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
 
     - d: dmd-2.078.3
       addons:
         mariadb: '10.3'
         apt:
           packages: [ libevent-dev ]
-      env: DB=mariadb-10.3 USE_UNIT_THREADED=true
+      env: DB=mariadb-10.3 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
 
     - d: dmd-2.078.3
       addons:
         mariadb: '10.4'
         apt:
           packages: [ libevent-dev ]
-      env: DB=mariadb-10.4 USE_UNIT_THREADED=true
+      env: DB=mariadb-10.4 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
 
     # -- Test Mac OSX -----------------
     # on Mac just test latest & oldest supported dmd and ldc
@@ -366,13 +360,13 @@ matrix:
     - d: dmd-2.088.0
       os: osx
       osx_image: xcode11.2 # use OSX 10.14
-      env: DB=mysql-latest
+      env: DB=mysql-latest DUB_SELECT=vibecore-1.7.0
 
     # Test vibe sockets on OSX. Not yet working. <https://github.com/vibe-d/vibe-core/pull/183>
     - d: dmd-2.088.0
       os: osx
       osx_image: xcode11.2 # use OSX 10.14
-      env: DB=mysql-5.6
+      env: DB=mysql-5.6 DUB_SELECT=vibecore-1.7.0
 
     # -- Test with all dub dependencies fully updated -----------------
     # (dub.selections.json is deliberately kept old)
@@ -385,6 +379,10 @@ matrix:
       osx_image: xcode11.2 # use OSX 10.14
       env: DB=mysql-5.6 DUB_UPGRADE=true
 
+    # -- Test omitting DUB_SELECT/NO_VIBE (failure expected) -----------------
+    - d: dmd
+      env: DB=mysql-default
+
   allow_failures:
     # -- Test various GDC compilers -----------------
     # Doesn't appear to exist on travis: https://github.com/travis-ci/travis-ci/issues/8849
@@ -394,13 +392,13 @@ matrix:
     # -- Test latest bleeding-edge compilers (allow failure) -----------------
     # Occasional failures are expected here
     - d: dmd
-      env:            DB=mariadb-10.1
+      env:            DB=mariadb-10.1 DUB_SELECT=vibecore-1.7.0
     - d: dmd-beta
-      env:            DB=mariadb-10.1
+      env:            DB=mariadb-10.1 DUB_SELECT=vibecore-1.7.0
     - d: ldc
-      env:            DB=mariadb-10.1
+      env:            DB=mariadb-10.1 DUB_SELECT=vibecore-1.7.0
     - d: ldc-beta
-      env:            DB=mariadb-10.1
+      env:            DB=mariadb-10.1 DUB_SELECT=vibecore-1.7.0
 
     # -- Test with all dub dependencies fully updated -----------------
     # (dub.selections.json is deliberately kept old)
@@ -421,7 +419,7 @@ matrix:
         mariadb: '10.4'
         apt:
           packages: [ libevent-dev ]
-      env: DB=mariadb-10.4 USE_UNIT_THREADED=true
+      env: DB=mariadb-10.4 DUB_SELECT=vibecore-1.0.0 USE_UNIT_THREADED=true
 
     # Test with latest mysql server available in OSX brew
     # Currently failing because mysql-native does not yet
@@ -430,10 +428,14 @@ matrix:
     - d: dmd-2.088.0
       os: osx
       osx_image: xcode11.2 # use OSX 10.14
-      env: DB=mysql-latest
+      env: DB=mysql-latest DUB_SELECT=vibecore-1.7.0
 
     # Test vibe sockets on OSX. Not yet working. (https://github.com/vibe-d/vibe-core/pull/183)
     - d: dmd-2.088.0
       os: osx
       osx_image: xcode11.2 # use OSX 10.14
-      env: DB=mysql-5.6
+      env: DB=mysql-5.6 DUB_SELECT=vibecore-1.7.0
+
+    # -- Test omitting DUB_SELECT/NO_VIBE (failure expected) -----------------
+    - d: dmd
+      env: DB=mysql-default

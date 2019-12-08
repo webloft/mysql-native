@@ -2,14 +2,14 @@ import std.file;
 import std.process;
 import std.stdio : writeln;
 
-bool envBool(string name)
-{
-	return environment.get(name, null) == "true";
-}
-
 string envGet(string name)
 {
 	return environment.get(name, null);
+}
+
+bool envBool(string name)
+{
+	return environment.get(name, null) == "true";
 }
 
 void copyIfExists(string from, string to)
@@ -30,41 +30,51 @@ int main()
 
 	// MySQL is not installed by default on OSX build agents
 	auto mysqlPrefix = "";
-    if(environment["TRAVIS_OS_NAME"] == "osx")
+	if(environment["TRAVIS_OS_NAME"] == "osx")
 	{
-        if(envGet("DB") == "mysql-5.6")
-        {
-            spawnShell("brew update").wait;
-            spawnShell("brew install mysql@5.6 && brew services start mysql56").wait;
-            mysqlPrefix = "/usr/local/opt/mysql@5.6/bin/";
-        }
-        else if(envGet("DB") == "mysql-latest")
-        {
-            spawnShell("brew update").wait;
-            spawnShell("brew install mysql && brew services start mysql").wait;
-        }
-        else
-        {
-            writeln("Envar 'DB' must be 'mysql-5.6' or 'mysql-latest', not '", envGet("DB"), "'");
-            return 1;
-        }
+		if(envGet("DB") == "mysql-5.6")
+		{
+			spawnShell("brew update").wait;
+			spawnShell("brew install mysql@5.6 && brew services start mysql56").wait;
+			mysqlPrefix = "/usr/local/opt/mysql@5.6/bin/";
+		}
+		else if(envGet("DB") == "mysql-latest")
+		{
+			spawnShell("brew update").wait;
+			spawnShell("brew install mysql && brew services start mysql").wait;
+		}
+		else
+		{
+			writeln("Envar 'DB' must be 'mysql-5.6' or 'mysql-latest', not '", envGet("DB"), "'");
+			return 1;
+		}
 	}
 
-	// If an alternate dub.selections.json was requested, use it.
-    if(environment.get("DUB_SELECT") != null) {
+	// Use the requested version of dub.selections.json.
+	if(envGet("DUB_SELECT") != null)
+	{
 		string dubSelections = "dub.selections."~envGet("DUB_SELECT")~".json";
 		writeln("Using alternative dub dependencies file: ", dubSelections);
 		copy(dubSelections, "dub.selections.json");
 		copy("examples/homePage/dub.selections."~envGet("DUB_SELECT")~".json", "examples/homePage/dub.selections.json");
 	}
+	else if(!envBool("NO_VIBE") && !envBool("DUB_UPGRADE"))
+	{
+		writeln("ERROR: All travis jobs must specify one of the following environment variables:");
+		writeln("       DUB_SELECT=... *or* DUB_UPGRADE=true *or* NO_VIBE=true.");
+		return 1;
+	}
 
+	// Download (and maybe upgrade) DUB dependencies
+	//
+	// Doing this here, instead of when "dub test" is run later,
+	// ensures that any intermittent server
+	// failures are more likely to be correctly marked as "job error"
+	// rather than "tests failed".
 	if(envBool("DUB_UPGRADE"))
 	{
 		// Update all dependencies
-		//
-		// As a bonus, this downloads & resolves deps now so intermittent
-		// failures are more likely to be correctly marked as "job error"
-		// rather than "tests failed".
+		writeln("Updating all DUB dependencies...");
 		spawnShell("dub upgrade").wait;
 		chdir("examples/homePage");
 		spawnShell("dub upgrade").wait;
@@ -73,9 +83,7 @@ int main()
 	else
 	{
 		// Don't upgrade dependencies.
-		//
-		// But download & resolve deps now so intermittent failures are more likely
-		// to be correctly marked as "job error" rather than "tests failed".
+		writeln("Downloading dependencies WITHOUT upgrading them...");
 		spawnShell("dub upgrade --missing-only").wait;
 		chdir("examples/homePage");
 		spawnShell("dub upgrade --missing-only").wait;
