@@ -1,7 +1,7 @@
-v3.0.0 - TBD
+v3.0.0 - 2019-12-08
 =====================
 
-Update from `vibe-d:core` to `vibe-core`, and various CI improvements.
+Update from `vibe-d:core` to `vibe-core`, and various other improvements.
 
 - **Change:** Switched from outdated `vibe-d:core` to modern `vibe-core`.
 - **Fixed:** [#199](https://github.com/mysql-d/mysql-native/issues/199):
