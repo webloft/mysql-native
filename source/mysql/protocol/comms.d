@@ -25,6 +25,8 @@ import std.conv;
 import std.digest.sha;
 import std.exception;
 import std.range;
+import std.regex;
+import std.typecons;
 import std.variant;
 
 import mysql.connection;
@@ -810,7 +812,7 @@ body
 	// Request a conventional maximum packet length.
 	1.packInto(packet[8..12]);
 
-	packet ~= 33; // Set UTF-8 as default charSet
+	packet ~= getDefaultCollation(conn._serverVersion);
 
 	// There's a statutory block of zero bytes here - fill them in.
 	foreach(i; 0 .. 23)
@@ -1111,4 +1113,18 @@ package(mysql) void enableMultiStatements(Connection conn, bool on)
 	// For some reason this command gets an EOF packet as response
 	auto packet = conn.getPacket();
 	enforce!MYXProtocol(packet[0] == 254 && packet.length == 5, "Unexpected response to SET_OPTION command");
+}
+
+private ubyte getDefaultCollation(string serverVersion)
+{
+	static re = ctRegex!`^(\d{1,2})\.(\d{1,2})\.(\d{1,3})(.*)`;
+	auto captured = serverVersion.matchFirst(re);
+	auto major = captured[1].to!ushort;
+	auto minor = captured[2].to!ushort;
+	auto patch = captured[3].to!ushort;
+	auto mysqlServerVersion = tuple(major, minor, patch);
+
+	if (mysqlServerVersion >= tuple(5,5,3)) // MySQL >= 5.5.3 supports utf8mb4
+		return 45; // Set utf8mb4_general_ci as default
+	return 33; // Set utf8_general_ci as default
 }
