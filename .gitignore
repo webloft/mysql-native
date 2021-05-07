@@ -1,9 +1,12 @@
+# Ignore dub output (selections should not be committed)
+.dub/
+dub.selections.json
+
 *.[oa]
 *.so
 *.lib
 *.dll
 *.exe
-.dub
 /bin
 /testConnectionStr.txt
 
