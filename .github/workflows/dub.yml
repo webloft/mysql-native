@@ -1,0 +1,139 @@
+name: CI
+
+# Overall MySQL Native should work on the last 10 minor compiler releases (same as Vibe.d).
+# For simplicity and speed of the CI, the latest versions of dmd and ldc must are tested on
+# all platforms (Windows, Linux, and Mac) with older compilers only being tested on Windows/Linux.
+# The integration testing (via examples) is done on Linux against Mysql 5.7
+
+on:
+  schedule:
+    - cron: '30 7 1 * *'
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.compiler }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        compiler:
+          - dmd-latest
+          - ldc-latest
+          - dmd-2.096.1
+          - dmd-2.095.1
+          - dmd-2.094.2
+          - ldc-1.25.1 # eq to dmd v2.095.1
+          - ldc-1.24.0 # eq to dmd v2.094.1
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install D ${{ matrix.compiler }}
+        uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+
+      # - name: Install dependencies on Ubuntu
+      #   if: startsWith(matrix.os, 'ubuntu')
+      #   run: sudo apt-get update && sudo apt-get install libev-dev libpq-dev libevent-dev libsqlite3-dev -y
+
+      # - name: Install dependencies on Mac OSX
+      #   if: startsWith(matrix.os, 'macos')
+      #   run: brew bundle
+
+      - name: Upgrade dub dependencies
+        uses: WebFreak001/dub-upgrade@v0.1
+
+      - name: Ensure project builds
+        run: dub build
+        
+      # - name: Run Tests (phobos)
+      #   run: ./run_tests --mode=phobos
+        
+      # - name: Run Tests (vibe)
+      #   run: ./run_tests --mode=vibe
+
+      # cache
+      - uses: WebFreak001/dub-upgrade@v0.1
+        if: startsWith(matrix.os, 'windows')
+        with: { store: true }
+
+  # Older compiler versions
+  test-older:
+    name: ${{ matrix.compiler }} on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ] # don't bother with macos-latest
+        compiler:
+          - dmd-2.093.1
+          - dmd-2.092.1
+          - dmd-2.091.1
+          - dmd-2.090.1
+          - dmd-2.089.1
+          - ldc-1.23.0 # eq to dmd v2.093.1
+          - ldc-1.22.0 # eq to dmd v2.092.1
+          - ldc-1.21.0 # eq to dmd v2.091.1
+          - ldc-1.20.1 # eq to dmd v2.090.1
+          - ldc-1.19.0 # eq to dmd v2.089.1
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install D ${{ matrix.compiler }}
+        uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+
+      # - name: Install dependencies on Ubuntu
+      #   if: startsWith(matrix.os, 'ubuntu')
+      #   run: sudo apt-get update && sudo apt-get install libev-dev libpq-dev libevent-dev libsqlite3-dev -y
+
+      - name: Upgrade dub dependencies
+        uses: WebFreak001/dub-upgrade@v0.1
+
+      - name: Ensure project builds
+        run: dub build
+
+      # cache
+      - uses: WebFreak001/dub-upgrade@v0.1
+        with: { store: true }
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-20.04
+
+    services:
+      mysql:
+        image: mysql:5.7
+        ports: [3306]
+        env:
+          MYSQL_ROOT_PASSWORD: f48dfhw3Hd!Asah7i2aZ
+          MYSQL_DATABASE: testdb
+          MYSQL_USER: testuser
+          MYSQL_PASSWORD: passw0rd
+        # Set health checks to wait until mysql service has started
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 4
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install latest DMD
+        uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: dmd-latest
+
+      - name: Build The Example Project
+        working-directory: ./examples/homePage
+        run: dub build
+
+      - name: Run The Examples (SQLite)
+        working-directory: ./examples/homePage
+        run: |
+          ./example "host=localhost;port=3306;user=testuser;pwd=passw0rd;db=testdb"
