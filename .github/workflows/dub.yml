@@ -37,7 +37,7 @@ jobs:
 
       # - name: Install dependencies on Ubuntu
       #   if: startsWith(matrix.os, 'ubuntu')
-      #   run: sudo apt-get update && sudo apt-get install libev-dev libpq-dev libevent-dev libsqlite3-dev -y
+      #   run: sudo apt-get update && sudo apt-get install libevent-dev -y
 
       # - name: Install dependencies on Mac OSX
       #   if: startsWith(matrix.os, 'macos')
@@ -103,7 +103,7 @@ jobs:
 
       # - name: Install dependencies on Ubuntu
       #   if: startsWith(matrix.os, 'ubuntu')
-      #   run: sudo apt-get update && sudo apt-get install libev-dev libpq-dev libevent-dev libsqlite3-dev -y
+      #   run: sudo apt-get update && sudo apt-get install libevent-dev -y
 
       - name: Upgrade dub dependencies
         uses: WebFreak001/dub-upgrade@v0.1
@@ -148,11 +148,15 @@ jobs:
         with:
           compiler: dmd-latest
 
+      - name: Install dependencies on Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get update && sudo apt-get install libevent-dev -y
+
       - name: Build The Example Project
         working-directory: ./examples/homePage
         run: dub build
 
-      - name: Run The Examples (SQLite)
+      - name: Run Example (MySQL 5.7)
         working-directory: ./examples/homePage
         run: |
           ./example "host=localhost;port=3306;user=testuser;pwd=passw0rd;db=testdb"
