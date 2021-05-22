@@ -3,7 +3,6 @@ MySQL native
 
 [![DUB Package](https://img.shields.io/dub/v/mysql-native.svg)](https://code.dlang.org/packages/mysql-native)
 [![GitHub CI](https://github.com/mysql-d/mysql-native/actions/workflows/dub.yml/badge.svg)](https://github.com/mysql-d/mysql-native/actions/workflows/dub.yml)
-[![Build Status](https://travis-ci.org/mysql-d/mysql-native.svg?branch=master)](https://travis-ci.org/mysql-d/mysql-native)
 
 A [Boost-licensed](http://www.boost.org/LICENSE_1_0.txt) native [D](http://dlang.org)
 client driver for MySQL and MariaDB.
@@ -21,8 +20,7 @@ type based on whether Vibe.d is used in your project. (If you use
 Otherwise, you can use `-version=Have_vibe_d_core` to force Vibe.d sockets
 instead of Phobos ones.)
 
-See [.travis.yml](https://github.com/mysql-d/mysql-native/blob/master/.travis.yml)
-for a list of officially supported D compiler versions.
+Should work on D compilers from 2.068 through to the latest release but the CI only tests against version 2.080.1 and above. For a full list see the builds on Github Actions.
 
 In this document:
 * [API](#api)
