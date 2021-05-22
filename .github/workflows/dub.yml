@@ -35,30 +35,11 @@ jobs:
         with:
           compiler: ${{ matrix.compiler }}
 
-      # - name: Install dependencies on Ubuntu
-      #   if: startsWith(matrix.os, 'ubuntu')
-      #   run: sudo apt-get update && sudo apt-get install libevent-dev -y
-
-      # - name: Install dependencies on Mac OSX
-      #   if: startsWith(matrix.os, 'macos')
-      #   run: brew bundle
-
       - name: Upgrade dub dependencies
         uses: WebFreak001/dub-upgrade@v0.1
 
       - name: Build Library
         run: dub build --build=release --config=library
-
-      ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
-      ## actually a unit test at all. It's an integration test and should be pulled out of the codebase.
-      # - name: Run unittest-vibe-ut
-      #   run: dub run -c unittest-vibe-ut -- -t
-        
-      # - name: Run Tests (phobos)
-      #   run: ./run_tests --mode=phobos
-        
-      # - name: Run Tests (vibe)
-      #   run: ./run_tests --mode=vibe
 
       # cache
       - uses: WebFreak001/dub-upgrade@v0.1
@@ -101,10 +82,6 @@ jobs:
         uses: dlang-community/setup-dlang@v1
         with:
           compiler: ${{ matrix.compiler }}
-
-      # - name: Install dependencies on Ubuntu
-      #   if: startsWith(matrix.os, 'ubuntu')
-      #   run: sudo apt-get update && sudo apt-get install libevent-dev -y
 
       - name: Upgrade dub dependencies
         uses: WebFreak001/dub-upgrade@v0.1
@@ -175,7 +152,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install libevent-dev -y
 
       ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
-      ## actually a unit test at all. It's an integration test and should be pulled out of the codebase.
+      ## actually a unit test at all. It's an integration test and should be pulled out from the main
+      ## codebase into a separate sub module
       - name: Run unittest-vibe-ut
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
