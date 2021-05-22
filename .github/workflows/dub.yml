@@ -93,6 +93,24 @@ jobs:
           - ldc-1.20.1 # eq to dmd v2.090.1
           - ldc-1.19.0 # eq to dmd v2.089.1
     runs-on: ${{ matrix.os }}
+
+    services:
+      mysql:
+        image: mysql:5.7
+        ports: [3306]
+        # Set the connection details to match testConnectionStr.txt
+        env:
+          MYSQL_ROOT_PASSWORD: f48dfhw3Hd!Asah7i2aZ
+          MYSQL_DATABASE: mysqln_testdb
+          MYSQL_USER: mysqln_test
+          MYSQL_PASSWORD: pass123
+        # Set health checks to wait until mysql service has started
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 4
+
     steps:
       - uses: actions/checkout@v2
 
@@ -113,8 +131,12 @@ jobs:
 
       ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
       ## actually a unit test at all. It's an integration test and should be pulled out of the codebase.
-      # - name: Run unittest-vibe-ut
-      #   run: dub run -c unittest-vibe-ut -- -t
+      - name: Run unittest-vibe-ut
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          echo "host=localhost;port=$MYSQL_PORT;user=mysqln_test;pwd=pass123;db=mysqln_testdb" > testConnectionStr.txt
+          dub run -c unittest-vibe-ut -- -t
 
       # cache
       - uses: WebFreak001/dub-upgrade@v0.1
