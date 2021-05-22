@@ -158,5 +158,7 @@ jobs:
 
       - name: Run Example (MySQL 5.7)
         working-directory: ./examples/homePage
+        env:
+          PORT: ${{ job.services.mysql.ports[3306] }}
         run: |
-          ./example "host=localhost;port=3306;user=testuser;pwd=passw0rd;db=testdb"
+          ./example "host=localhost;port=$PORT;user=testuser;pwd=passw0rd;db=testdb"
