@@ -11,6 +11,8 @@ void main(string[] args)
 	Connection conn = new Connection(connectionStr);
 	scope(exit) conn.close();
 
+	conn.exec("DROP TABLE IF EXISTS `tablename`"); // So this code can run after "unittest-vibe-ut" during CI
+
 	// Create the schema (Would rather have `id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT but for now just get tests working)
 	conn.exec("CREATE TABLE IF NOT EXISTS `tablename` (
 				`id` INTEGER, 
