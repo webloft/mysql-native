@@ -11,9 +11,9 @@ void main(string[] args)
 	Connection conn = new Connection(connectionStr);
 	scope(exit) conn.close();
 
-	// Create the schema
+	// Create the schema (Would rather have `id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT but for now just get tests working)
 	conn.exec("CREATE TABLE IF NOT EXISTS `tablename` (
-				`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, 
+				`id` INTEGER, 
 				`name` VARCHAR(250)
 				)");
 
@@ -57,6 +57,7 @@ void main(string[] args)
 	conn.exec(
 		"INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)",
 		null, "Cam"); // Can also take Nullable!T
+
 	range = conn.query("SELECT * FROM `tablename` WHERE `name`='Cam'");
 	assert( range.front[0].type == typeid(typeof(null)) );
 }
