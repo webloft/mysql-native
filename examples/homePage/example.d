@@ -11,9 +11,14 @@ void main(string[] args)
 	Connection conn = new Connection(connectionStr);
 	scope(exit) conn.close();
 
-	// Insert
-	ulong rowsAffected = conn.exec(
-		"INSERT INTO `tablename` (`id`, `name`) VALUES (1, 'Ann'), (2, 'Bob')");
+	// Create the schema
+	conn.exec("CREATE TABLE IF NOT EXISTS `tablename` (
+				`id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, 
+				`name` VARCHAR(250)
+				)");
+
+	// Insert Some Test Data
+	ulong rowsAffected = conn.exec("INSERT INTO `tablename` (`id`, `name`) VALUES (1, 'Ann'), (2, 'Bob')");
 
 	// Query
 	ResultRange range = conn.query("SELECT * FROM `tablename`");
