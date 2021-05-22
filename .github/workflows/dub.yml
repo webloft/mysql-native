@@ -12,7 +12,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  build:
     name: ${{ matrix.compiler }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -66,7 +66,7 @@ jobs:
         with: { store: true }
 
   # Older compiler versions
-  test-older:
+  build-older:
     name: ${{ matrix.compiler }} on ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -94,23 +94,6 @@ jobs:
           - ldc-1.19.0 # eq to dmd v2.089.1
     runs-on: ${{ matrix.os }}
 
-    services:
-      mysql:
-        image: mysql:5.7
-        ports: [3306]
-        # Set the connection details to match testConnectionStr.txt
-        env:
-          MYSQL_ROOT_PASSWORD: f48dfhw3Hd!Asah7i2aZ
-          MYSQL_DATABASE: mysqln_testdb
-          MYSQL_USER: mysqln_test
-          MYSQL_PASSWORD: pass123
-        # Set health checks to wait until mysql service has started
-        options: >-
-          --health-cmd "mysqladmin ping"
-          --health-interval 10s
-          --health-timeout 3s
-          --health-retries 4
-
     steps:
       - uses: actions/checkout@v2
 
@@ -129,21 +112,38 @@ jobs:
       - name: Build Library
         run: dub build --build=release --config=library
 
-      ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
-      ## actually a unit test at all. It's an integration test and should be pulled out of the codebase.
-      - name: Run unittest-vibe-ut
-        env:
-          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
-        run: |
-          echo "host=localhost;port=$MYSQL_PORT;user=mysqln_test;pwd=pass123;db=mysqln_testdb" > testConnectionStr.txt
-          dub run -c unittest-vibe-ut -- -t
-
       # cache
       - uses: WebFreak001/dub-upgrade@v0.1
         with: { store: true }
 
   integration-tests:
-    name: Integration Tests
+    name: Integration Tests ${{ matrix.compiler }}
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - dmd-latest
+          - ldc-latest
+          - dmd-2.096.1
+          - dmd-2.095.1
+          - dmd-2.094.2
+          - dmd-2.093.1
+          - dmd-2.092.1
+          - dmd-2.091.1
+          - dmd-2.090.1
+          - dmd-2.089.1
+          - dmd-2.088.1
+          - dmd-2.087.1
+          - dmd-2.086.1
+          - dmd-2.085.1
+          - dmd-2.084.1
+          - dmd-2.083.1 ## As far back as unit-threaded seems to work
+          - ldc-1.23.0 # eq to dmd v2.093.1
+          - ldc-1.22.0 # eq to dmd v2.092.1
+          - ldc-1.21.0 # eq to dmd v2.091.1
+          - ldc-1.20.1 # eq to dmd v2.090.1
+          - ldc-1.19.0 # eq to dmd v2.089.1
+
     runs-on: ubuntu-20.04
 
     services:
@@ -174,6 +174,15 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         run: sudo apt-get update && sudo apt-get install libevent-dev -y
 
+      ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
+      ## actually a unit test at all. It's an integration test and should be pulled out of the codebase.
+      - name: Run unittest-vibe-ut
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          echo "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb" > testConnectionStr.txt
+          dub run -c unittest-vibe-ut -- -t
+
       - name: Build The Example Project
         working-directory: ./examples/homePage
         run: dub build
@@ -181,6 +190,6 @@ jobs:
       - name: Run Example (MySQL 5.7)
         working-directory: ./examples/homePage
         env:
-          PORT: ${{ job.services.mysql.ports[3306] }}
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
         run: |
-          ./example "host=localhost;port=$PORT;user=testuser;pwd=passw0rd;db=testdb"
+          ./example "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb"
