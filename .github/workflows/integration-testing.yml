@@ -1,0 +1,214 @@
+name: CI
+
+# MySQL Native should work with the following database versions:
+#  mysql:8
+#  mysql:5.7
+#  mariadb:10
+
+on:
+  schedule:
+    - cron: '30 7 1 * *'
+  push:
+  pull_request:
+
+jobs:
+  mysql8-tests:
+    name: MySQL 8 Tests ${{ matrix.compiler }}
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - dmd-latest
+          - ldc-latest
+          - dmd-2.096.1
+          - dmd-2.095.1
+          - dmd-2.094.2
+          - dmd-2.084.1
+          - dmd-2.083.1 ## As far back as unit-threaded seems to work
+          - ldc-1.23.0 # eq to dmd v2.093.1
+          - ldc-1.19.0 # eq to dmd v2.089.1
+
+    runs-on: ubuntu-20.04
+
+    services:
+      mysql:
+        image: mysql:8
+        ports: [3306]
+        env:
+          MYSQL_ROOT_PASSWORD: f48dfhw3Hd!Asah7i2aZ
+          MYSQL_DATABASE: testdb
+          MYSQL_USER: testuser
+          MYSQL_PASSWORD: passw0rd
+        # Set health checks to wait until mysql service has started
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 4
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install ${{ matrix.compiler }}
+        uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+
+      - name: Install dependencies on Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get update && sudo apt-get install libevent-dev -y
+
+      ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
+      ## actually a unit test at all. It's an integration test and should be pulled out from the main
+      ## codebase into a separate sub module
+      - name: Run unittest-vibe-ut
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          echo "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb" > testConnectionStr.txt
+          dub run -c unittest-vibe-ut -- -t
+
+      - name: Build The Example Project
+        working-directory: ./examples/homePage
+        run: dub build
+
+      - name: Run Example (MySQL 8)
+        working-directory: ./examples/homePage
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          ./example "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb"
+
+  mysql57-tests:
+    name: MySQL 5.7 Tests ${{ matrix.compiler }}
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - dmd-latest
+          - ldc-latest
+          - dmd-2.096.1
+          - dmd-2.095.1
+          - dmd-2.094.2
+          - dmd-2.084.1
+          - dmd-2.083.1 ## As far back as unit-threaded seems to work
+          - ldc-1.23.0 # eq to dmd v2.093.1
+          - ldc-1.19.0 # eq to dmd v2.089.1
+
+    runs-on: ubuntu-20.04
+
+    services:
+      mysql:
+        image: mysql:5.7
+        ports: [3306]
+        env:
+          MYSQL_ROOT_PASSWORD: f48dfhw3Hd!Asah7i2aZ
+          MYSQL_DATABASE: testdb
+          MYSQL_USER: testuser
+          MYSQL_PASSWORD: passw0rd
+        # Set health checks to wait until mysql service has started
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 4
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install ${{ matrix.compiler }}
+        uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+
+      - name: Install dependencies on Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get update && sudo apt-get install libevent-dev -y
+
+      ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
+      ## actually a unit test at all. It's an integration test and should be pulled out from the main
+      ## codebase into a separate sub module
+      - name: Run unittest-vibe-ut
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          echo "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb" > testConnectionStr.txt
+          dub run -c unittest-vibe-ut -- -t
+
+      - name: Build The Example Project
+        working-directory: ./examples/homePage
+        run: dub build
+
+      - name: Run Example (MySQL 5.7)
+        working-directory: ./examples/homePage
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          ./example "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb"
+
+  mariadb10-tests:
+    name: MariaDB 10 Tests ${{ matrix.compiler }}
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - dmd-latest
+          - ldc-latest
+          - dmd-2.096.1
+          - dmd-2.095.1
+          - dmd-2.094.2
+          - dmd-2.084.1
+          - dmd-2.083.1 ## As far back as unit-threaded seems to work
+          - ldc-1.23.0 # eq to dmd v2.093.1
+          - ldc-1.19.0 # eq to dmd v2.089.1
+
+    runs-on: ubuntu-20.04
+
+    services:
+      mysql:
+        image: mariadb:10
+        ports: [3306]
+        env:
+          MYSQL_ROOT_PASSWORD: f48dfhw3Hd!Asah7i2aZ
+          MYSQL_DATABASE: testdb
+          MYSQL_USER: testuser
+          MYSQL_PASSWORD: passw0rd
+        # Set health checks to wait until mysql service has started
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 4
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install ${{ matrix.compiler }}
+        uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+
+      - name: Install dependencies on Ubuntu
+        if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get update && sudo apt-get install libevent-dev -y
+
+      ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
+      ## actually a unit test at all. It's an integration test and should be pulled out from the main
+      ## codebase into a separate sub module
+      - name: Run unittest-vibe-ut
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          echo "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb" > testConnectionStr.txt
+          dub run -c unittest-vibe-ut -- -t
+
+      - name: Build The Example Project
+        working-directory: ./examples/homePage
+        run: dub build
+
+      - name: Run Example (mariadb 10)
+        working-directory: ./examples/homePage
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          ./example "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb"
