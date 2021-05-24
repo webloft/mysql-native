@@ -42,12 +42,18 @@ version(DoCoreTests)
 	private @property string testConnectionStrFile()
 	{
 		import std.file, std.path;
-		
-		static string cached;
-		if(!cached)
-			cached = buildPath(thisExePath.dirName.dirName, "testConnectionStr.txt");
 
-		return cached;
+                return "testConnectionStr.txt";
+		
+		/*static string cached;
+		if(!cached)
+                {
+                    import std.stdio;
+			cached = buildPath(thisExePath.dirName.dirName, "testConnectionStr.txt");
+                    writeln("the file is ", cached);
+                }
+
+		return cached;*/
 	}
 	
 	@property string testConnectionStr()
@@ -84,6 +90,8 @@ version(DoCoreTests)
 
 	Connection createCn(string cnStr = testConnectionStr)
 	{
+            import std.stdio;
+            writeln("testing with connection string ", testConnectionStr);
 		return new Connection(cnStr);
 	}
 
