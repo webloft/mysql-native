@@ -11,9 +11,16 @@ void main(string[] args)
 	Connection conn = new Connection(connectionStr);
 	scope(exit) conn.close();
 
-	// Insert
-	ulong rowsAffected = conn.exec(
-		"INSERT INTO `tablename` (`id`, `name`) VALUES (1, 'Ann'), (2, 'Bob')");
+	conn.exec("DROP TABLE IF EXISTS `tablename`"); // So this code can run after "unittest-vibe-ut" during CI
+
+	// Create the schema (Would rather have `id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT but for now just get tests working)
+	conn.exec("CREATE TABLE IF NOT EXISTS `tablename` (
+				`id` INTEGER, 
+				`name` VARCHAR(250)
+				)");
+
+	// Insert Some Test Data
+	ulong rowsAffected = conn.exec("INSERT INTO `tablename` (`id`, `name`) VALUES (1, 'Ann'), (2, 'Bob')");
 
 	// Query
 	ResultRange range = conn.query("SELECT * FROM `tablename`");
@@ -52,6 +59,7 @@ void main(string[] args)
 	conn.exec(
 		"INSERT INTO `tablename` (`id`, `name`) VALUES (?,?)",
 		null, "Cam"); // Can also take Nullable!T
+
 	range = conn.query("SELECT * FROM `tablename` WHERE `name`='Cam'");
 	assert( range.front[0].type == typeid(typeof(null)) );
 }

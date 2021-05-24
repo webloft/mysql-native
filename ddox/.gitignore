@@ -1,4 +1,7 @@
-.dub
+# Ignore dub output (selections should not be committed)
+.dub/
+dub.selections.json
+
 /ddox
 /__*
 node_modules
