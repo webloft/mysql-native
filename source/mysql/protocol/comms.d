@@ -21,12 +21,11 @@ Next tasks for this sub-package's cleanup:
 module mysql.protocol.comms;
 
 import std.algorithm;
+import std.array;
 import std.conv;
 import std.digest.sha;
 import std.exception;
 import std.range;
-import std.regex;
-import std.typecons;
 import std.variant;
 
 import mysql.connection;
@@ -47,7 +46,7 @@ package struct ProtocolPrepared
 	import std.datetime;
 	import std.variant;
 	import mysql.types;
-	
+
 	static ubyte[] makeBitmap(in Variant[] inParams)
 	{
 		size_t bml = (inParams.length+7)/8;
@@ -453,7 +452,7 @@ package struct ProtocolPrepared
 		Variant[] inParams, ParameterSpecialization[] psa)
 	{
 		conn.autoPurge();
-		
+
 		ubyte[] packet;
 		conn.resetPacket();
 
@@ -773,7 +772,7 @@ body
 	}
 
 	conn.autoPurge();
- 
+
 	conn.resetPacket();
 
 	ubyte[] header;
@@ -969,7 +968,7 @@ package(mysql) SvrCapFlags setClientFlags(SvrCapFlags serverCaps, SvrCapFlags ca
 	// didn't supply it
 	cCaps |= SvrCapFlags.PROTOCOL41;
 	cCaps |= SvrCapFlags.SECURE_CONNECTION;
-	
+
 	return cCaps;
 }
 
@@ -1000,7 +999,7 @@ package(mysql) PreparedServerInfo performRegister(Connection conn, const(char[])
 	scope(failure) conn.kill();
 
 	PreparedServerInfo info;
-	
+
 	conn.sendCmd(CommandType.STMT_PREPARE, sql);
 	conn._fieldCount = 0;
 
@@ -1117,14 +1116,27 @@ package(mysql) void enableMultiStatements(Connection conn, bool on)
 
 private ubyte getDefaultCollation(string serverVersion)
 {
-	static re = ctRegex!`^(\d{1,2})\.(\d{1,2})\.(\d{1,3})(.*)`;
-	auto captured = serverVersion.matchFirst(re);
-	auto major = captured[1].to!ushort;
-	auto minor = captured[2].to!ushort;
-	auto patch = captured[3].to!ushort;
-	auto mysqlServerVersion = tuple(major, minor, patch);
+	// MySQL >= 5.5.3 supports utf8mb4
+	const v = serverVersion
+		.splitter('.')
+		.map!(a => a.parse!ushort)
+		.array;
 
-	if (mysqlServerVersion >= tuple(5,5,3)) // MySQL >= 5.5.3 supports utf8mb4
-		return 45; // Set utf8mb4_general_ci as default
-	return 33; // Set utf8_general_ci as default
+	if (v[0] < 5)
+		return 33; // Set utf8_general_ci as default
+	if (v[1] < 5)
+		return 33; // Set utf8_general_ci as default
+	if (v[2] < 3)
+		return 33; // Set utf8_general_ci as default
+
+	return 45; // Set utf8mb4_general_ci as default
+}
+
+unittest
+{
+	assert(getDefaultCollation("5.5.3") == 45);
+	assert(getDefaultCollation("5.5.2") == 33);
+
+	// MariaDB: https://mariadb.com/kb/en/connection/#initial-handshake-packet
+	assert(getDefaultCollation("5.5.5-10.0.7-MariaDB") == 45);
 }
