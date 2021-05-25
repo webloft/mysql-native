@@ -81,31 +81,6 @@ public:
 		return _names[index];
 	}
 
-	@("getName")
-	debug(MYSQLN_TESTS)
-	unittest
-	{
-		import mysql.test.common;
-		import mysql.commands;
-		mixin(scopedCn);
-		cn.exec("DROP TABLE IF EXISTS `row_getName`");
-		cn.exec("CREATE TABLE `row_getName` (someValue INTEGER, another INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-		cn.exec("INSERT INTO `row_getName` VALUES (1, 2), (3, 4)");
-
-		enum sql = "SELECT another, someValue FROM `row_getName`";
-
-		auto rows = cn.query(sql).array;
-		assert(rows.length == 2);
-		assert(rows[0][0] == 2);
-		assert(rows[0][1] == 1);
-		assert(rows[0].getName(0) == "another");
-		assert(rows[0].getName(1) == "someValue");
-		assert(rows[1][0] == 4);
-		assert(rows[1][1] == 3);
-		assert(rows[1].getName(0) == "another");
-		assert(rows[1].getName(1) == "someValue");
-	}
-
 	/++
 	Check if a column in the result row was NULL
 	

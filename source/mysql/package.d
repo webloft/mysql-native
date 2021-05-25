@@ -76,7 +76,7 @@ public import mysql.protocol.constants : SvrCapFlags;
 public import mysql.result;
 public import mysql.types;
 
-debug(MYSQLN_TESTS)      version = DoCoreTests;
+/+debug(MYSQLN_TESTS)      version = DoCoreTests;
 debug(MYSQLN_CORE_TESTS) version = DoCoreTests;
 
 version(DoCoreTests)
@@ -96,4 +96,4 @@ version(DoCoreTests)
 	{
 		void main() {}
 	}
-}
+}+/

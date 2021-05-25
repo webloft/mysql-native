@@ -1,4 +1,4 @@
-﻿/++
+/++
 Package mysql.test contains integration and regression tests, not unittests.
 Unittests (including regression unittests) are located together with the
 units they test.
@@ -43,8 +43,10 @@ version(DoCoreTests)
 	{
 		import std.file, std.path;
 
-                return "testConnectionStr.txt";
-		
+		return "testConnectionStr.txt";
+		// This seems highly dependent on where the test is run from. At this
+		// point, I just am using the current directory to avoid going on a
+		// hunt for the file, and possibly running into permission issues.
 		/*static string cached;
 		if(!cached)
                 {
@@ -55,7 +57,7 @@ version(DoCoreTests)
 
 		return cached;*/
 	}
-	
+
 	@property string testConnectionStr()
 	{
 		import std.file, std.string;
@@ -70,7 +72,7 @@ version(DoCoreTests)
 					testConnectionStrFile,
 					"host=localhost;port=3306;user=mysqln_test;pwd=pass123;db=mysqln_testdb"
 				);
-				
+
 				import std.stdio;
 				writeln(
 					"Connection string file for tests wasn't found, so a default "~
@@ -78,20 +80,20 @@ version(DoCoreTests)
 					"run the mysql-native tests again:"
 				);
 				writeln(testConnectionStrFile);
-				assert(false, "Halting so the user can check connection string settings.");
+				writeln("Halting so the user can check connection string settings.");
+				import core.stdc.stdlib : exit;
+				exit(1);
 			}
-			
+
 			cached = cast(string) std.file.read(testConnectionStrFile);
 			cached = cached.strip();
 		}
-		
+
 		return cached;
 	}
 
 	Connection createCn(string cnStr = testConnectionStr)
 	{
-            import std.stdio;
-            writeln("testing with connection string ", testConnectionStr);
 		return new Connection(cnStr);
 	}
 
@@ -101,7 +103,7 @@ version(DoCoreTests)
 	{
 		auto result = cn.queryValue(query);
 		assert(!result.isNull);
-		
+
 		// Timestamp is a bit special as it's converted to a DateTime when
 		// returning from MySQL to avoid having to use a mysql specific type.
 		static if(is(T == DateTime) && is(U == Timestamp))

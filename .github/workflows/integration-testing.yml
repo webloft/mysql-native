@@ -120,12 +120,12 @@ jobs:
       ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
       ## actually a unit test at all. It's an integration test and should be pulled out from the main
       ## codebase into a separate sub module
-      - name: Run unittest-vibe-ut
+      - name: Run unittest-vibe
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
         run: |
           echo "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb" > testConnectionStr.txt
-          dub run -c unittest-vibe-ut -- -t
+          dub run ":integration-tests"
 
       - name: Build The Example Project
         working-directory: ./examples/homePage
@@ -190,7 +190,7 @@ jobs:
           MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
         run: |
           echo "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb" > testConnectionStr.txt
-          dub run -c unittest-vibe-ut -- -t
+          dub run ":integration-tests"
 
       - name: Build The Example Project
         working-directory: ./examples/homePage

@@ -13,8 +13,6 @@ import mysql.protocol.comms;
 import mysql.protocol.constants;
 import mysql.protocol.packets;
 import mysql.result;
-debug(MYSQLN_TESTS)
-	import mysql.test.common;
 
 /++
 A struct to represent specializations of prepared statement parameters.
@@ -37,101 +35,6 @@ struct ParameterSpecialization
 }
 ///ditto
 alias PSN = ParameterSpecialization;
-
-@("paramSpecial")
-debug(MYSQLN_TESTS)
-unittest
-{
-	import std.array;
-	import std.range;
-	import mysql.connection;
-	import mysql.test.common;
-	mixin(scopedCn);
-
-	// Setup
-	cn.exec("DROP TABLE IF EXISTS `paramSpecial`");
-	cn.exec("CREATE TABLE `paramSpecial` (
-		`data` LONGBLOB
-	) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-
-	immutable totalSize = 1000; // Deliberately not a multiple of chunkSize below
-	auto alph = cast(const(ubyte)[]) "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-	auto data = alph.cycle.take(totalSize).array;
-
-	int chunkSize;
-	const(ubyte)[] dataToSend;
-	bool finished;
-	uint sender(ubyte[] chunk)
-	{
-		assert(!finished);
-		assert(chunk.length == chunkSize);
-
-		if(dataToSend.length < chunkSize)
-		{
-			auto actualSize = cast(uint) dataToSend.length;
-			chunk[0..actualSize] = dataToSend[];
-			finished = true;
-			dataToSend.length = 0;
-			return actualSize;
-		}
-		else
-		{
-			chunk[] = dataToSend[0..chunkSize];
-			dataToSend = dataToSend[chunkSize..$];
-			return chunkSize;
-		}
-	}
-
-	immutable selectSQL = "SELECT `data` FROM `paramSpecial`";
-
-	// Sanity check
-	cn.exec("INSERT INTO `paramSpecial` VALUES (\""~(cast(string)data)~"\")");
-	auto value = cn.queryValue(selectSQL);
-	assert(!value.isNull);
-	assert(value.get == data);
-
-	{
-		// Clear table
-		cn.exec("DELETE FROM `paramSpecial`");
-		value = cn.queryValue(selectSQL); // Ensure deleted
-		assert(value.isNull);
-
-		// Test: totalSize as a multiple of chunkSize
-		chunkSize = 100;
-		assert(cast(int)(totalSize / chunkSize) * chunkSize == totalSize);
-		auto paramSpecial = ParameterSpecialization(0, SQLType.INFER_FROM_D_TYPE, chunkSize, &sender);
-
-		finished = false;
-		dataToSend = data;
-		auto prepared = cn.prepare("INSERT INTO `paramSpecial` VALUES (?)");
-		prepared.setArg(0, cast(ubyte[])[], paramSpecial);
-		assert(cn.exec(prepared) == 1);
-		value = cn.queryValue(selectSQL);
-		assert(!value.isNull);
-		assert(value.get == data);
-	}
-
-	{
-		// Clear table
-		cn.exec("DELETE FROM `paramSpecial`");
-		value = cn.queryValue(selectSQL); // Ensure deleted
-		assert(value.isNull);
-
-		// Test: totalSize as a non-multiple of chunkSize
-		chunkSize = 64;
-		assert(cast(int)(totalSize / chunkSize) * chunkSize != totalSize);
-		auto paramSpecial = ParameterSpecialization(0, SQLType.INFER_FROM_D_TYPE, chunkSize, &sender);
-
-		finished = false;
-		dataToSend = data;
-		auto prepared = cn.prepare("INSERT INTO `paramSpecial` VALUES (?)");
-		prepared.setArg(0, cast(ubyte[])[], paramSpecial);
-		assert(cn.exec(prepared) == 1);
-		value = cn.queryValue(selectSQL);
-		assert(!value.isNull);
-		assert(value.get == data);
-	}
-}
 
 /++
 Encapsulation of a prepared statement.
@@ -239,52 +142,6 @@ public:
 			setArg(index, val.get(), psn);
 	}
 
-	@("setArg-typeMods")
-	debug(MYSQLN_TESTS)
-	unittest
-	{
-		import mysql.test.common;
-		mixin(scopedCn);
-
-		// Setup
-		cn.exec("DROP TABLE IF EXISTS `setArg-typeMods`");
-		cn.exec("CREATE TABLE `setArg-typeMods` (
-			`i` INTEGER
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-
-		auto insertSQL = "INSERT INTO `setArg-typeMods` VALUES (?)";
-
-		// Sanity check
-		{
-			int i = 111;
-			assert(cn.exec(insertSQL, i) == 1);
-			auto value = cn.queryValue("SELECT `i` FROM `setArg-typeMods`");
-			assert(!value.isNull);
-			assert(value.get == i);
-		}
-
-		// Test const(int)
-		{
-			const(int) i = 112;
-			assert(cn.exec(insertSQL, i) == 1);
-		}
-
-		// Test immutable(int)
-		{
-			immutable(int) i = 113;
-			assert(cn.exec(insertSQL, i) == 1);
-		}
-
-		// Note: Variant doesn't seem to support
-		// `shared(T)` or `shared(const(T)`. Only `shared(immutable(T))`.
-
-		// Test shared immutable(int)
-		{
-			shared immutable(int) i = 113;
-			assert(cn.exec(insertSQL, i) == 1);
-		}
-	}
-
 	/++
 	Bind a tuple of D variables to the parameters of a prepared statement.
 	
@@ -380,67 +237,6 @@ public:
 		return _sql;
 	}
 
-	@("setNullArg")
-	debug(MYSQLN_TESTS)
-	unittest
-	{
-		import mysql.connection;
-		import mysql.test.common;
-		mixin(scopedCn);
-
-		cn.exec("DROP TABLE IF EXISTS `setNullArg`");
-		cn.exec("CREATE TABLE `setNullArg` (
-			`val` INTEGER
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-
-		immutable insertSQL = "INSERT INTO `setNullArg` VALUES (?)";
-		immutable selectSQL = "SELECT * FROM `setNullArg`";
-		auto preparedInsert = cn.prepare(insertSQL);
-		assert(preparedInsert.sql == insertSQL);
-		Row[] rs;
-
-		{
-			Nullable!int nullableInt;
-			nullableInt.nullify();
-			preparedInsert.setArg(0, nullableInt);
-			assert(preparedInsert.getArg(0).type == typeid(typeof(null)));
-			nullableInt = 7;
-			preparedInsert.setArg(0, nullableInt);
-			assert(preparedInsert.getArg(0) == 7);
-
-			nullableInt.nullify();
-			preparedInsert.setArgs(nullableInt);
-			assert(preparedInsert.getArg(0).type == typeid(typeof(null)));
-			nullableInt = 7;
-			preparedInsert.setArgs(nullableInt);
-			assert(preparedInsert.getArg(0) == 7);
-		}
-
-		preparedInsert.setArg(0, 5);
-		cn.exec(preparedInsert);
-		rs = cn.query(selectSQL).array;
-		assert(rs.length == 1);
-		assert(rs[0][0] == 5);
-
-		preparedInsert.setArg(0, null);
-		cn.exec(preparedInsert);
-		rs = cn.query(selectSQL).array;
-		assert(rs.length == 2);
-		assert(rs[0][0] == 5);
-		assert(rs[1].isNull(0));
-		assert(rs[1][0].type == typeid(typeof(null)));
-
-		preparedInsert.setArg(0, Variant(null));
-		cn.exec(preparedInsert);
-		rs = cn.query(selectSQL).array;
-		assert(rs.length == 3);
-		assert(rs[0][0] == 5);
-		assert(rs[1].isNull(0));
-		assert(rs[2].isNull(0));
-		assert(rs[1][0].type == typeid(typeof(null)));
-		assert(rs[2][0].type == typeid(typeof(null)));
-	}
-
 	/// Gets the number of arguments this prepared statement expects to be passed in.
 	@property ushort numArgs() pure const nothrow
 	{
@@ -451,27 +247,6 @@ public:
 	/// ID column, this method allows you to retrieve the last insert ID generated
 	/// from this prepared statement.
 	@property ulong lastInsertID() pure const nothrow { return _lastInsertID; }
-
-	@("lastInsertID")
-	debug(MYSQLN_TESTS)
-	unittest
-	{
-		import mysql.connection;
-		mixin(scopedCn);
-		cn.exec("DROP TABLE IF EXISTS `testPreparedLastInsertID`");
-		cn.exec("CREATE TABLE `testPreparedLastInsertID` (
-			`a` INTEGER NOT NULL AUTO_INCREMENT,
-			PRIMARY KEY (a)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-		
-		auto stmt = cn.prepare("INSERT INTO `testPreparedLastInsertID` VALUES()");
-		cn.exec(stmt);
-		assert(stmt.lastInsertID == 1);
-		cn.exec(stmt);
-		assert(stmt.lastInsertID == 2);
-		cn.exec(stmt);
-		assert(stmt.lastInsertID == 3);
-	}
 
 	/// Gets the prepared header's field descriptions.
 	@property FieldDescription[] preparedFieldDescriptions() pure { return _headers.fieldDescriptions; }
@@ -493,6 +268,26 @@ private enum isPreparedRegistrationsPayload(Payload) =
 			Payload p;
 			p.queuedForRelease = true;
 		});
+
+debug(MYSQLN_TESTS)
+{
+	// Test template constraint
+	struct TestPreparedRegistrationsBad1 { }
+	struct TestPreparedRegistrationsBad2 { bool foo = false; }
+	struct TestPreparedRegistrationsBad3 { int queuedForRelease = 1; }
+	struct TestPreparedRegistrationsBad4 { bool queuedForRelease = true; }
+	struct TestPreparedRegistrationsGood1 { bool queuedForRelease = false; }
+	struct TestPreparedRegistrationsGood2 { bool queuedForRelease = false; const(char)[] id; }
+	
+	static assert(!isPreparedRegistrationsPayload!int);
+	static assert(!isPreparedRegistrationsPayload!bool);
+	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad1);
+	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad2);
+	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad3);
+	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad4);
+	//static assert(isPreparedRegistrationsPayload!TestPreparedRegistrationsGood1);
+	//static assert(isPreparedRegistrationsPayload!TestPreparedRegistrationsGood2);
+}
 
 /++
 Common functionality for recordkeeping of prepared statement registration
@@ -596,125 +391,3 @@ package struct PreparedRegistrations(Payload)
 	}
 }
 
-// Test PreparedRegistrations
-debug(MYSQLN_TESTS)
-{
-	// Test template constraint
-	struct TestPreparedRegistrationsBad1 { }
-	struct TestPreparedRegistrationsBad2 { bool foo = false; }
-	struct TestPreparedRegistrationsBad3 { int queuedForRelease = 1; }
-	struct TestPreparedRegistrationsBad4 { bool queuedForRelease = true; }
-	struct TestPreparedRegistrationsGood1 { bool queuedForRelease = false; }
-	struct TestPreparedRegistrationsGood2 { bool queuedForRelease = false; const(char)[] id; }
-	
-	static assert(!isPreparedRegistrationsPayload!int);
-	static assert(!isPreparedRegistrationsPayload!bool);
-	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad1);
-	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad2);
-	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad3);
-	static assert(!isPreparedRegistrationsPayload!TestPreparedRegistrationsBad4);
-	//static assert(isPreparedRegistrationsPayload!TestPreparedRegistrationsGood1);
-	//static assert(isPreparedRegistrationsPayload!TestPreparedRegistrationsGood2);
-	PreparedRegistrations!TestPreparedRegistrationsGood1 testPreparedRegistrationsGood1;
-	PreparedRegistrations!TestPreparedRegistrationsGood2 testPreparedRegistrationsGood2;
-
-	@("PreparedRegistrations")
-	unittest
-	{
-		// Test init
-		PreparedRegistrations!TestPreparedRegistrationsGood2 pr;
-		assert(pr.directLookup.keys.length == 0);
-
-		void resetData(bool isQueued1, bool isQueued2, bool isQueued3)
-		{
-			pr.directLookup["1"] = TestPreparedRegistrationsGood2(isQueued1, "1");
-			pr.directLookup["2"] = TestPreparedRegistrationsGood2(isQueued2, "2");
-			pr.directLookup["3"] = TestPreparedRegistrationsGood2(isQueued3, "3");
-			assert(pr.directLookup.keys.length == 3);
-		}
-
-		// Test resetData (sanity check)
-		resetData(false, true, false);
-		assert(pr.directLookup["1"] == TestPreparedRegistrationsGood2(false, "1"));
-		assert(pr.directLookup["2"] == TestPreparedRegistrationsGood2(true,  "2"));
-		assert(pr.directLookup["3"] == TestPreparedRegistrationsGood2(false, "3"));
-
-		// Test opIndex
-		resetData(false, true, false);
-		pr.directLookup["1"] = TestPreparedRegistrationsGood2(false, "1");
-		pr.directLookup["2"] = TestPreparedRegistrationsGood2(true,  "2");
-		pr.directLookup["3"] = TestPreparedRegistrationsGood2(false, "3");
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(false, "3"));
-		assert(pr["4"].isNull);
-
-		// Test queueForRelease
-		resetData(false, true, false);
-		pr.queueForRelease("2");
-		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(false, "3"));
-		
-		pr.queueForRelease("3");
-		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(true,  "3"));
-
-		pr.queueForRelease("4");
-		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(true,  "3"));
-
-		// Test unqueueForRelease
-		resetData(false, true, false);
-		pr.unqueueForRelease("1");
-		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(false, "3"));
-
-		pr.unqueueForRelease("2");
-		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(false, "2"));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(false, "3"));
-
-		pr.unqueueForRelease("4");
-		assert(pr.directLookup.keys.length == 3);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(false, "2"));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(false, "3"));
-
-		// Test queueAllForRelease
-		resetData(false, true, false);
-		pr.queueAllForRelease();
-		assert(pr["1"] == TestPreparedRegistrationsGood2(true,  "1"));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
-		assert(pr["3"] == TestPreparedRegistrationsGood2(true,  "3"));
-		assert(pr["4"].isNull);
-
-		// Test clear
-		resetData(false, true, false);
-		pr.clear();
-		assert(pr.directLookup.keys.length == 0);
-		
-		// Test registerIfNeeded
-		auto doRegister(const(char[]) sql) { return TestPreparedRegistrationsGood2(false, sql); }
-		pr.registerIfNeeded("1", &doRegister);
-		assert(pr.directLookup.keys.length == 1);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
-
-		pr.registerIfNeeded("1", &doRegister);
-		assert(pr.directLookup.keys.length == 1);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
-
-		pr.registerIfNeeded("2", &doRegister);
-		assert(pr.directLookup.keys.length == 2);
-		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
-		assert(pr["2"] == TestPreparedRegistrationsGood2(false, "2"));
-	}
-}
