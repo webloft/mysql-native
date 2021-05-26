@@ -450,90 +450,90 @@ unittest
 debug(MYSQLN_TESTS)
 unittest
 {
-    import std.variant;
-    mixin(scopedCn);
-    cn.exec("DROP TABLE IF EXISTS `reconnect`");
-    cn.exec("CREATE TABLE `reconnect` (a INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-    cn.exec("INSERT INTO `reconnect` VALUES (1),(2),(3)");
+	import std.variant;
+	mixin(scopedCn);
+	cn.exec("DROP TABLE IF EXISTS `reconnect`");
+	cn.exec("CREATE TABLE `reconnect` (a INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+	cn.exec("INSERT INTO `reconnect` VALUES (1),(2),(3)");
 
-    enum sql = "SELECT a FROM `reconnect`";
+	enum sql = "SELECT a FROM `reconnect`";
 
-    // Sanity check
-    auto rows = cn.query(sql).array;
-    assert(rows[0][0] == 1);
-    assert(rows[1][0] == 2);
-    assert(rows[2][0] == 3);
+	// Sanity check
+	auto rows = cn.query(sql).array;
+	assert(rows[0][0] == 1);
+	assert(rows[1][0] == 2);
+	assert(rows[2][0] == 3);
 
-    // Ensure reconnect keeps the same connection when it's supposed to
-    auto range = cn.query(sql);
-    assert(range.front[0] == 1);
-    cn.reconnect();
-    assert(!cn.closed); // Is open?
-    assert(range.isValid); // Still valid?
-    range.popFront();
-    assert(range.front[0] == 2);
+	// Ensure reconnect keeps the same connection when it's supposed to
+	auto range = cn.query(sql);
+	assert(range.front[0] == 1);
+	cn.reconnect();
+	assert(!cn.closed); // Is open?
+	assert(range.isValid); // Still valid?
+	range.popFront();
+	assert(range.front[0] == 2);
 
-    // Ensure reconnect reconnects when it's supposed to
-    range = cn.query(sql);
-    assert(range.front[0] == 1);
-    cn._clientCapabilities = ~cn._clientCapabilities; // Pretend that we're changing the clientCapabilities
-    cn.reconnect(~cn._clientCapabilities);
-    assert(!cn.closed); // Is open?
-    assert(!range.isValid); // Was invalidated?
-    cn.query(sql).array; // Connection still works?
+	// Ensure reconnect reconnects when it's supposed to
+	range = cn.query(sql);
+	assert(range.front[0] == 1);
+	cn._clientCapabilities = ~cn._clientCapabilities; // Pretend that we're changing the clientCapabilities
+	cn.reconnect(~cn._clientCapabilities);
+	assert(!cn.closed); // Is open?
+	assert(!range.isValid); // Was invalidated?
+	cn.query(sql).array; // Connection still works?
 
-    // Try manually reconnecting
-    range = cn.query(sql);
-    assert(range.front[0] == 1);
-    cn.connect(cn._clientCapabilities);
-    assert(!cn.closed); // Is open?
-    assert(!range.isValid); // Was invalidated?
-    cn.query(sql).array; // Connection still works?
+	// Try manually reconnecting
+	range = cn.query(sql);
+	assert(range.front[0] == 1);
+	cn.connect(cn._clientCapabilities);
+	assert(!cn.closed); // Is open?
+	assert(!range.isValid); // Was invalidated?
+	cn.query(sql).array; // Connection still works?
 
-    // Try manually closing and connecting
-    range = cn.query(sql);
-    assert(range.front[0] == 1);
-    cn.close();
-    assert(cn.closed); // Is closed?
-    assert(!range.isValid); // Was invalidated?
-    cn.connect(cn._clientCapabilities);
-    assert(!cn.closed); // Is open?
-    assert(!range.isValid); // Was invalidated?
-    cn.query(sql).array; // Connection still works?
+	// Try manually closing and connecting
+	range = cn.query(sql);
+	assert(range.front[0] == 1);
+	cn.close();
+	assert(cn.closed); // Is closed?
+	assert(!range.isValid); // Was invalidated?
+	cn.connect(cn._clientCapabilities);
+	assert(!cn.closed); // Is open?
+	assert(!range.isValid); // Was invalidated?
+	cn.query(sql).array; // Connection still works?
 
-    // Auto-reconnect upon a command
-    cn.close();
-    assert(cn.closed);
-    range = cn.query(sql);
-    assert(!cn.closed);
-    assert(range.front[0] == 1);
+	// Auto-reconnect upon a command
+	cn.close();
+	assert(cn.closed);
+	range = cn.query(sql);
+	assert(!cn.closed);
+	assert(range.front[0] == 1);
 }
 
 @("releaseAll")
 debug(MYSQLN_TESTS)
 unittest
 {
-    mixin(scopedCn);
+	mixin(scopedCn);
 
-    cn.exec("DROP TABLE IF EXISTS `releaseAll`");
-    cn.exec("CREATE TABLE `releaseAll` (a INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+	cn.exec("DROP TABLE IF EXISTS `releaseAll`");
+	cn.exec("CREATE TABLE `releaseAll` (a INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 
-    auto preparedSelect = cn.prepare("SELECT * FROM `releaseAll`");
-    auto preparedInsert = cn.prepare("INSERT INTO `releaseAll` (a) VALUES (1)");
-    assert(cn.isRegistered(preparedSelect));
-    assert(cn.isRegistered(preparedInsert));
+	auto preparedSelect = cn.prepare("SELECT * FROM `releaseAll`");
+	auto preparedInsert = cn.prepare("INSERT INTO `releaseAll` (a) VALUES (1)");
+	assert(cn.isRegistered(preparedSelect));
+	assert(cn.isRegistered(preparedInsert));
 
-    cn.releaseAll();
-    assert(!cn.isRegistered(preparedSelect));
-    assert(!cn.isRegistered(preparedInsert));
-    cn.exec("INSERT INTO `releaseAll` (a) VALUES (1)");
-    assert(!cn.isRegistered(preparedSelect));
-    assert(!cn.isRegistered(preparedInsert));
+	cn.releaseAll();
+	assert(!cn.isRegistered(preparedSelect));
+	assert(!cn.isRegistered(preparedInsert));
+	cn.exec("INSERT INTO `releaseAll` (a) VALUES (1)");
+	assert(!cn.isRegistered(preparedSelect));
+	assert(!cn.isRegistered(preparedInsert));
 
-    cn.exec(preparedInsert);
-    cn.query(preparedSelect).array;
-    assert(cn.isRegistered(preparedSelect));
-    assert(cn.isRegistered(preparedInsert));
+	cn.exec(preparedInsert);
+	cn.query(preparedSelect).array;
+	assert(cn.isRegistered(preparedSelect));
+	assert(cn.isRegistered(preparedInsert));
 }
 
 // Test register, release, isRegistered, and auto-register for prepared statements
@@ -651,7 +651,7 @@ debug(MYSQLN_TESTS)
 unittest
 {
 	import mysql.escape;
-        import std.conv;
+	import std.conv;
 	mixin(scopedCn);
 
 	cn.exec("DROP TABLE IF EXISTS `issue81`");
@@ -883,8 +883,8 @@ version(Have_vibe_core)
 		auto cn = pool.lockConnection();
 		cn.exec("DROP TABLE IF EXISTS `poolRegistration`");
 		cn.exec("CREATE TABLE `poolRegistration` (
-												  `data` LONGBLOB
-												 ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+			`data` LONGBLOB
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 		immutable sql = "SELECT * from `poolRegistration`";
 		auto cn2 = pool.lockConnection();
 		pool.applyAuto(cn2);
@@ -1090,134 +1090,133 @@ unittest
 debug(MYSQLN_TESTS)
 unittest
 {
-        import mysql.test.common;
-        mixin(scopedCn);
+	import mysql.test.common;
+	mixin(scopedCn);
 
-        // Setup
-        cn.exec("DROP TABLE IF EXISTS `setArg-typeMods`");
-        cn.exec("CREATE TABLE `setArg-typeMods` (
-                `i` INTEGER
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+	// Setup
+	cn.exec("DROP TABLE IF EXISTS `setArg-typeMods`");
+	cn.exec("CREATE TABLE `setArg-typeMods` (
+		`i` INTEGER
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 
-        auto insertSQL = "INSERT INTO `setArg-typeMods` VALUES (?)";
+	auto insertSQL = "INSERT INTO `setArg-typeMods` VALUES (?)";
 
-        // Sanity check
-        {
-                int i = 111;
-                assert(cn.exec(insertSQL, i) == 1);
-                auto value = cn.queryValue("SELECT `i` FROM `setArg-typeMods`");
-                assert(!value.isNull);
-                assert(value.get == i);
-        }
+	// Sanity check
+	{
+		int i = 111;
+		assert(cn.exec(insertSQL, i) == 1);
+		auto value = cn.queryValue("SELECT `i` FROM `setArg-typeMods`");
+		assert(!value.isNull);
+		assert(value.get == i);
+	}
 
-        // Test const(int)
-        {
-                const(int) i = 112;
-                assert(cn.exec(insertSQL, i) == 1);
-        }
+	// Test const(int)
+	{
+		const(int) i = 112;
+		assert(cn.exec(insertSQL, i) == 1);
+	}
 
-        // Test immutable(int)
-        {
-                immutable(int) i = 113;
-                assert(cn.exec(insertSQL, i) == 1);
-        }
+	// Test immutable(int)
+	{
+		immutable(int) i = 113;
+		assert(cn.exec(insertSQL, i) == 1);
+	}
 
-        // Note: Variant doesn't seem to support
-        // `shared(T)` or `shared(const(T)`. Only `shared(immutable(T))`.
+	// Note: Variant doesn't seem to support
+	// `shared(T)` or `shared(const(T)`. Only `shared(immutable(T))`.
 
-        // Test shared immutable(int)
-        {
-                shared immutable(int) i = 113;
-                assert(cn.exec(insertSQL, i) == 1);
-        }
+	// Test shared immutable(int)
+	{
+		shared immutable(int) i = 113;
+		assert(cn.exec(insertSQL, i) == 1);
+	}
 }
 
 @("setNullArg")
 debug(MYSQLN_TESTS)
 unittest
 {
-        import mysql.connection;
-        import mysql.test.common;
-        mixin(scopedCn);
+	import mysql.connection;
+	import mysql.test.common;
+	mixin(scopedCn);
 
-        cn.exec("DROP TABLE IF EXISTS `setNullArg`");
-        cn.exec("CREATE TABLE `setNullArg` (
-                `val` INTEGER
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+	cn.exec("DROP TABLE IF EXISTS `setNullArg`");
+	cn.exec("CREATE TABLE `setNullArg` (
+		`val` INTEGER
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 
-        immutable insertSQL = "INSERT INTO `setNullArg` VALUES (?)";
-        immutable selectSQL = "SELECT * FROM `setNullArg`";
-        auto preparedInsert = cn.prepare(insertSQL);
-        assert(preparedInsert.sql == insertSQL);
-        Row[] rs;
+	immutable insertSQL = "INSERT INTO `setNullArg` VALUES (?)";
+	immutable selectSQL = "SELECT * FROM `setNullArg`";
+	auto preparedInsert = cn.prepare(insertSQL);
+	assert(preparedInsert.sql == insertSQL);
+	Row[] rs;
 
-        {
-                Nullable!int nullableInt;
-                nullableInt.nullify();
-                preparedInsert.setArg(0, nullableInt);
-                assert(preparedInsert.getArg(0).type == typeid(typeof(null)));
-                nullableInt = 7;
-                preparedInsert.setArg(0, nullableInt);
-                assert(preparedInsert.getArg(0) == 7);
+	{
+		Nullable!int nullableInt;
+		nullableInt.nullify();
+		preparedInsert.setArg(0, nullableInt);
+		assert(preparedInsert.getArg(0).type == typeid(typeof(null)));
+		nullableInt = 7;
+		preparedInsert.setArg(0, nullableInt);
+		assert(preparedInsert.getArg(0) == 7);
 
-                nullableInt.nullify();
-                preparedInsert.setArgs(nullableInt);
-                assert(preparedInsert.getArg(0).type == typeid(typeof(null)));
-                nullableInt = 7;
-                preparedInsert.setArgs(nullableInt);
-                assert(preparedInsert.getArg(0) == 7);
-        }
+		nullableInt.nullify();
+		preparedInsert.setArgs(nullableInt);
+		assert(preparedInsert.getArg(0).type == typeid(typeof(null)));
+		nullableInt = 7;
+		preparedInsert.setArgs(nullableInt);
+		assert(preparedInsert.getArg(0) == 7);
+	}
 
-        preparedInsert.setArg(0, 5);
-        cn.exec(preparedInsert);
-        rs = cn.query(selectSQL).array;
-        assert(rs.length == 1);
-        assert(rs[0][0] == 5);
+	preparedInsert.setArg(0, 5);
+	cn.exec(preparedInsert);
+	rs = cn.query(selectSQL).array;
+	assert(rs.length == 1);
+	assert(rs[0][0] == 5);
 
-        preparedInsert.setArg(0, null);
-        cn.exec(preparedInsert);
-        rs = cn.query(selectSQL).array;
-        assert(rs.length == 2);
-        assert(rs[0][0] == 5);
-        assert(rs[1].isNull(0));
-        assert(rs[1][0].type == typeid(typeof(null)));
+	preparedInsert.setArg(0, null);
+	cn.exec(preparedInsert);
+	rs = cn.query(selectSQL).array;
+	assert(rs.length == 2);
+	assert(rs[0][0] == 5);
+	assert(rs[1].isNull(0));
+	assert(rs[1][0].type == typeid(typeof(null)));
 
-        preparedInsert.setArg(0, Variant(null));
-        cn.exec(preparedInsert);
-        rs = cn.query(selectSQL).array;
-        assert(rs.length == 3);
-        assert(rs[0][0] == 5);
-        assert(rs[1].isNull(0));
-        assert(rs[2].isNull(0));
-        assert(rs[1][0].type == typeid(typeof(null)));
-        assert(rs[2][0].type == typeid(typeof(null)));
+	preparedInsert.setArg(0, Variant(null));
+	cn.exec(preparedInsert);
+	rs = cn.query(selectSQL).array;
+	assert(rs.length == 3);
+	assert(rs[0][0] == 5);
+	assert(rs[1].isNull(0));
+	assert(rs[2].isNull(0));
+	assert(rs[1][0].type == typeid(typeof(null)));
+	assert(rs[2][0].type == typeid(typeof(null)));
 }
 
 @("lastInsertID")
 debug(MYSQLN_TESTS)
 unittest
 {
-        import mysql.connection;
-        mixin(scopedCn);
-        cn.exec("DROP TABLE IF EXISTS `testPreparedLastInsertID`");
-        cn.exec("CREATE TABLE `testPreparedLastInsertID` (
-                `a` INTEGER NOT NULL AUTO_INCREMENT,
-                PRIMARY KEY (a)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+	import mysql.connection;
+	mixin(scopedCn);
+	cn.exec("DROP TABLE IF EXISTS `testPreparedLastInsertID`");
+	cn.exec("CREATE TABLE `testPreparedLastInsertID` (
+            `a` INTEGER NOT NULL AUTO_INCREMENT,
+            PRIMARY KEY (a)
+	) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 
-        auto stmt = cn.prepare("INSERT INTO `testPreparedLastInsertID` VALUES()");
-        cn.exec(stmt);
-        assert(stmt.lastInsertID == 1);
-        cn.exec(stmt);
-        assert(stmt.lastInsertID == 2);
-        cn.exec(stmt);
-        assert(stmt.lastInsertID == 3);
+	auto stmt = cn.prepare("INSERT INTO `testPreparedLastInsertID` VALUES()");
+	cn.exec(stmt);
+	assert(stmt.lastInsertID == 1);
+	cn.exec(stmt);
+	assert(stmt.lastInsertID == 2);
+	cn.exec(stmt);
+	assert(stmt.lastInsertID == 3);
 }
 
 // Test PreparedRegistrations
 debug(MYSQLN_TESTS)
 {
-        // used in integration tests.
 	PreparedRegistrations!TestPreparedRegistrationsGood1 testPreparedRegistrationsGood1;
 	PreparedRegistrations!TestPreparedRegistrationsGood2 testPreparedRegistrationsGood2;
 
@@ -1327,23 +1326,23 @@ debug(MYSQLN_TESTS)
 debug(MYSQLN_TESTS)
 unittest
 {
-        import mysql.test.common;
-        import mysql.commands;
-        mixin(scopedCn);
-        cn.exec("DROP TABLE IF EXISTS `row_getName`");
-        cn.exec("CREATE TABLE `row_getName` (someValue INTEGER, another INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-        cn.exec("INSERT INTO `row_getName` VALUES (1, 2), (3, 4)");
+	import mysql.test.common;
+	import mysql.commands;
+	mixin(scopedCn);
+	cn.exec("DROP TABLE IF EXISTS `row_getName`");
+	cn.exec("CREATE TABLE `row_getName` (someValue INTEGER, another INTEGER) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+	cn.exec("INSERT INTO `row_getName` VALUES (1, 2), (3, 4)");
 
-        enum sql = "SELECT another, someValue FROM `row_getName`";
+	enum sql = "SELECT another, someValue FROM `row_getName`";
 
-        auto rows = cn.query(sql).array;
-        assert(rows.length == 2);
-        assert(rows[0][0] == 2);
-        assert(rows[0][1] == 1);
-        assert(rows[0].getName(0) == "another");
-        assert(rows[0].getName(1) == "someValue");
-        assert(rows[1][0] == 4);
-        assert(rows[1][1] == 3);
-        assert(rows[1].getName(0) == "another");
-        assert(rows[1].getName(1) == "someValue");
+	auto rows = cn.query(sql).array;
+	assert(rows.length == 2);
+	assert(rows[0][0] == 2);
+	assert(rows[0][1] == 1);
+	assert(rows[0].getName(0) == "another");
+	assert(rows[0].getName(1) == "someValue");
+	assert(rows[1][0] == 4);
+	assert(rows[1][1] == 3);
+	assert(rows[1].getName(0) == "another");
+	assert(rows[1].getName(1) == "someValue");
 }

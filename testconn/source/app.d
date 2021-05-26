@@ -1,5 +1,5 @@
-﻿/++
-Usage: app [connection string]
+/++
+Usage: testconn [connection string]
 
 If connection string isn't provided, the following default connection string will be used:
 	host=localhost;port=3306;user=testuser;pwd=testpassword;db=testdb
@@ -21,11 +21,8 @@ void main(string[] args)
 		connStr = args[1];
 	else
 		writeln("No connection string provided on cmdline, using default:\n", connStr);
-	
-	try testMySql(connStr);
-	catch( Exception e ){
-		writeln("Failed: ", e.toString());
-	}
+
+	testMySql(connStr);
 }
 
 void testMySql(string connStr)
@@ -82,7 +79,7 @@ void testMySql(string connStr)
 	if(caps && SvrCapFlags.MULTI_RESULTS)
 		writeln("\tMultiple result set support");
 	writeln();
-	
+
 	MetaData md = MetaData(c);
 	auto dbList = md.databases();
 	writefln("Found %s databases", dbList.length);

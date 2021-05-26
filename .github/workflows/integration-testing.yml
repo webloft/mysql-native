@@ -129,6 +129,12 @@ jobs:
         run: |
           dub run ":integration-tests-phobos"
 
+      - name: Run test connection utility
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          dub run ":testconn" -- "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb"
+
       - name: Build The Example Project
         working-directory: ./examples/homePage
         run: dub build
@@ -193,6 +199,12 @@ jobs:
       - name: Run unittests with Phobos
         run: |
           dub run ":integration-tests-phobos"
+
+      - name: Run test connection utility
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          dub run ":testconn" -- "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb"
 
       - name: Build The Example Project
         working-directory: ./examples/homePage
