@@ -1,0 +1,8 @@
+name        "integration-tests-phobos"
+description "Phobos tests for mysql-native"
+license     "BSL-1.0"
+copyright   "Copyright (c) 2011-2021 Steve Teale, James W. Oliphant, Simen Endsjø, Sönke Ludwig, Sergey Shamov, Nick Sabalausky, and Steven Schveighoffer"
+authors     "Steve Teale" "James W. Oliphant" "Simen Endsjø" "Sönke Ludwig" "Sergey Shamov" "Nick Sabalausky" "Steven Schveighoffer"
+
+dependency "mysql-native:integration-tests" path="../"
+targetType "executable"

@@ -59,7 +59,7 @@ unittest
 		chunkSize = 100;
 		assert(cast(int)(totalSize / chunkSize) * chunkSize == totalSize);
 		auto columnSpecial = ColumnSpecialization(0, 0xfc, chunkSize, &receiver);
-		
+
 		received = null;
 		lastValueOfFinished = false;
 		value = cn.queryValue(selectSQL, [columnSpecial]);
@@ -69,7 +69,7 @@ unittest
 		//assert(lastValueOfFinished == true);
 		//assert(received == data);
 	}
-	
+
 	// Use ColumnSpecialization with sql string,
 	// and totalSize as a non-multiple of chunkSize
 	{
@@ -133,17 +133,17 @@ unittest
 	import mysql.connection;
 	import mysql.test.common;
 	mixin(scopedCn);
-	
+
 	cn.exec("DROP TABLE IF EXISTS `execOverloads`");
 	cn.exec("CREATE TABLE `execOverloads` (
 		`i` INTEGER,
 		`s` VARCHAR(50)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-	
+
 	immutable prepareSQL = "INSERT INTO `execOverloads` VALUES (?, ?)";
-	
+
 	// Do the inserts, using exec
-	
+
 	// exec: const(char[]) sql
 	assert(cn.exec("INSERT INTO `execOverloads` VALUES (1, \"aa\")") == 1);
 	assert(cn.exec(prepareSQL, 2, "bb") == 1);
@@ -157,18 +157,18 @@ unittest
 	assert(cn.exec(prepared, 5, "ee") == 1);
 	assert(prepared.getArg(0) == 5);
 	assert(prepared.getArg(1) == "ee");
-	
+
 	assert(cn.exec(prepared, [Variant(6), Variant("ff")]) == 1);
 	assert(prepared.getArg(0) == 6);
 	assert(prepared.getArg(1) == "ff");
-	
+
 	// exec: bcPrepared sql
 	auto bcPrepared = cn.prepareBackwardCompatImpl(prepareSQL);
 	bcPrepared.setArgs(7, "gg");
 	assert(cn.exec(bcPrepared) == 1);
 	assert(bcPrepared.getArg(0) == 7);
 	assert(bcPrepared.getArg(1) == "gg");
-	
+
 	// Check results
 	auto rows = cn.query("SELECT * FROM `execOverloads`").array();
 	assert(rows.length == 7);
@@ -205,7 +205,7 @@ unittest
 	import mysql.connection;
 	import mysql.test.common;
 	mixin(scopedCn);
-	
+
 	cn.exec("DROP TABLE IF EXISTS `queryOverloads`");
 	cn.exec("CREATE TABLE `queryOverloads` (
 		`i` INTEGER,
@@ -214,7 +214,7 @@ unittest
 	cn.exec("INSERT INTO `queryOverloads` VALUES (1, \"aa\"), (2, \"bb\"), (3, \"cc\")");
 
 	immutable prepareSQL = "SELECT * FROM `queryOverloads` WHERE `i`=? AND `s`=?";
-	
+
 	// Test query
 	{
 		Row[] rows;
@@ -826,165 +826,168 @@ unittest
 }
 
 // mysql.pool
-@("onNewConnection")
-debug(MYSQLN_TESTS)
-unittest
+version(Have_vibe_core)
 {
-        auto count = 0;
-        void callback(Connection conn)
-        {
-                count++;
-        }
+	@("onNewConnection")
+	debug(MYSQLN_TESTS)
+	unittest
+	{
+		auto count = 0;
+		void callback(Connection conn)
+		{
+			count++;
+		}
 
-        // Test getting/setting
-        auto poolA = new MySQLPool(testConnectionStr, &callback);
-        auto poolB = new MySQLPool(testConnectionStr);
-        auto poolNoCallback = new MySQLPool(testConnectionStr);
+		// Test getting/setting
+		auto poolA = new MySQLPool(testConnectionStr, &callback);
+		auto poolB = new MySQLPool(testConnectionStr);
+		auto poolNoCallback = new MySQLPool(testConnectionStr);
 
-        assert(poolA.onNewConnection == &callback);
-        assert(poolB.onNewConnection is null);
-        assert(poolNoCallback.onNewConnection is null);
+		assert(poolA.onNewConnection == &callback);
+		assert(poolB.onNewConnection is null);
+		assert(poolNoCallback.onNewConnection is null);
 
-        poolB.onNewConnection = &callback;
-        assert(poolB.onNewConnection == &callback);
-        assert(count == 0);
+		poolB.onNewConnection = &callback;
+		assert(poolB.onNewConnection == &callback);
+		assert(count == 0);
 
-        // Ensure callback is called
-        {
-                auto connA = poolA.lockConnection();
-                assert(!connA.closed);
-                assert(count == 1);
+		// Ensure callback is called
+		{
+			auto connA = poolA.lockConnection();
+			assert(!connA.closed);
+			assert(count == 1);
 
-                auto connB = poolB.lockConnection();
-                assert(!connB.closed);
-                assert(count == 2);
-        }
+			auto connB = poolB.lockConnection();
+			assert(!connB.closed);
+			assert(count == 2);
+		}
 
-        // Ensure works with no callback
-        {
-                auto oldCount = count;
-                auto poolC = new MySQLPool(testConnectionStr);
-                auto connC = poolC.lockConnection();
-                assert(!connC.closed);
-                assert(count == oldCount);
-        }
-}
+		// Ensure works with no callback
+		{
+			auto oldCount = count;
+			auto poolC = new MySQLPool(testConnectionStr);
+			auto connC = poolC.lockConnection();
+			assert(!connC.closed);
+			assert(count == oldCount);
+		}
+	}
 
-@("registration")
-debug(MYSQLN_TESTS)
-unittest
-{
-        import mysql.commands;
-        auto pool = new MySQLPool(testConnectionStr);
+	@("registration")
+	debug(MYSQLN_TESTS)
+	unittest
+	{
+		import mysql.commands;
+		auto pool = new MySQLPool(testConnectionStr);
 
-        // Setup
-        auto cn = pool.lockConnection();
-        cn.exec("DROP TABLE IF EXISTS `poolRegistration`");
-        cn.exec("CREATE TABLE `poolRegistration` (
-                `data` LONGBLOB
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-        immutable sql = "SELECT * from `poolRegistration`";
-        auto cn2 = pool.lockConnection();
-        pool.applyAuto(cn2);
-        assert(cn !is cn2);
+		// Setup
+		auto cn = pool.lockConnection();
+		cn.exec("DROP TABLE IF EXISTS `poolRegistration`");
+		cn.exec("CREATE TABLE `poolRegistration` (
+												  `data` LONGBLOB
+												 ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+		immutable sql = "SELECT * from `poolRegistration`";
+		auto cn2 = pool.lockConnection();
+		pool.applyAuto(cn2);
+		assert(cn !is cn2);
 
-        // Tests:
-        // Initial
-        assert(pool.isAutoCleared(sql));
-        assert(pool.isAutoRegistered(sql));
-        assert(pool.isAutoReleased(sql));
-        assert(!cn.isRegistered(sql));
-        assert(!cn2.isRegistered(sql));
+		// Tests:
+		// Initial
+		assert(pool.isAutoCleared(sql));
+		assert(pool.isAutoRegistered(sql));
+		assert(pool.isAutoReleased(sql));
+		assert(!cn.isRegistered(sql));
+		assert(!cn2.isRegistered(sql));
 
-        // Register on connection #1
-        auto prepared = cn.prepare(sql);
-        {
-                assert(pool.isAutoCleared(sql));
-                assert(pool.isAutoRegistered(sql));
-                assert(pool.isAutoReleased(sql));
-                assert(cn.isRegistered(sql));
-                assert(!cn2.isRegistered(sql));
+		// Register on connection #1
+		auto prepared = cn.prepare(sql);
+		{
+			assert(pool.isAutoCleared(sql));
+			assert(pool.isAutoRegistered(sql));
+			assert(pool.isAutoReleased(sql));
+			assert(cn.isRegistered(sql));
+			assert(!cn2.isRegistered(sql));
 
-                auto cn3 = pool.lockConnection();
-                pool.applyAuto(cn3);
-                assert(!cn3.isRegistered(sql));
-        }
+			auto cn3 = pool.lockConnection();
+			pool.applyAuto(cn3);
+			assert(!cn3.isRegistered(sql));
+		}
 
-        // autoRegister
-        pool.autoRegister(prepared);
-        {
-                assert(!pool.isAutoCleared(sql));
-                assert(pool.isAutoRegistered(sql));
-                assert(!pool.isAutoReleased(sql));
-                assert(cn.isRegistered(sql));
-                assert(!cn2.isRegistered(sql));
+		// autoRegister
+		pool.autoRegister(prepared);
+		{
+			assert(!pool.isAutoCleared(sql));
+			assert(pool.isAutoRegistered(sql));
+			assert(!pool.isAutoReleased(sql));
+			assert(cn.isRegistered(sql));
+			assert(!cn2.isRegistered(sql));
 
-                auto cn3 = pool.lockConnection();
-                pool.applyAuto(cn3);
-                assert(cn3.isRegistered(sql));
-        }
+			auto cn3 = pool.lockConnection();
+			pool.applyAuto(cn3);
+			assert(cn3.isRegistered(sql));
+		}
 
-        // autoRelease
-        pool.autoRelease(prepared);
-        {
-                assert(!pool.isAutoCleared(sql));
-                assert(!pool.isAutoRegistered(sql));
-                assert(pool.isAutoReleased(sql));
-                assert(cn.isRegistered(sql));
-                assert(!cn2.isRegistered(sql));
+		// autoRelease
+		pool.autoRelease(prepared);
+		{
+			assert(!pool.isAutoCleared(sql));
+			assert(!pool.isAutoRegistered(sql));
+			assert(pool.isAutoReleased(sql));
+			assert(cn.isRegistered(sql));
+			assert(!cn2.isRegistered(sql));
 
-                auto cn3 = pool.lockConnection();
-                pool.applyAuto(cn3);
-                assert(!cn3.isRegistered(sql));
-        }
+			auto cn3 = pool.lockConnection();
+			pool.applyAuto(cn3);
+			assert(!cn3.isRegistered(sql));
+		}
 
-        // clearAuto
-        pool.clearAuto(prepared);
-        {
-                assert(pool.isAutoCleared(sql));
-                assert(pool.isAutoRegistered(sql));
-                assert(pool.isAutoReleased(sql));
-                assert(cn.isRegistered(sql));
-                assert(!cn2.isRegistered(sql));
+		// clearAuto
+		pool.clearAuto(prepared);
+		{
+			assert(pool.isAutoCleared(sql));
+			assert(pool.isAutoRegistered(sql));
+			assert(pool.isAutoReleased(sql));
+			assert(cn.isRegistered(sql));
+			assert(!cn2.isRegistered(sql));
 
-                auto cn3 = pool.lockConnection();
-                pool.applyAuto(cn3);
-                assert(!cn3.isRegistered(sql));
-        }
-}
+			auto cn3 = pool.lockConnection();
+			pool.applyAuto(cn3);
+			assert(!cn3.isRegistered(sql));
+		}
+	}
 
-@("closedConnection") // "cct"
-debug(MYSQLN_TESTS)
-{
-        import mysql.pool;
-        MySQLPool cctPool;
-        int cctCount=0;
+	@("closedConnection") // "cct"
+	debug(MYSQLN_TESTS)
+	{
+		import mysql.pool;
+		MySQLPool cctPool;
+		int cctCount=0;
 
-        void cctStart()
-        {
-                import std.array;
-                import mysql.commands;
+		void cctStart()
+		{
+			import std.array;
+			import mysql.commands;
 
-                cctPool = new MySQLPool(testConnectionStr);
-                cctPool.onNewConnection = (Connection conn) { cctCount++; };
-                assert(cctCount == 0);
+			cctPool = new MySQLPool(testConnectionStr);
+			cctPool.onNewConnection = (Connection conn) { cctCount++; };
+			assert(cctCount == 0);
 
-                auto cn = cctPool.lockConnection();
-                assert(!cn.closed);
-                cn.close();
-                assert(cn.closed);
-                assert(cctCount == 1);
-        }
+			auto cn = cctPool.lockConnection();
+			assert(!cn.closed);
+			cn.close();
+			assert(cn.closed);
+			assert(cctCount == 1);
+		}
 
-        unittest
-        {
-                cctStart();
-                assert(cctCount == 1);
+		unittest
+		{
+			cctStart();
+			assert(cctCount == 1);
 
-                auto cn = cctPool.lockConnection();
-                assert(cctCount == 1);
-                assert(!cn.closed);
-        }
+			auto cn = cctPool.lockConnection();
+			assert(cctCount == 1);
+			assert(!cn.closed);
+		}
+	}
 }
 
 // mysql.prepared
@@ -1201,7 +1204,7 @@ unittest
                 `a` INTEGER NOT NULL AUTO_INCREMENT,
                 PRIMARY KEY (a)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-        
+
         auto stmt = cn.prepare("INSERT INTO `testPreparedLastInsertID` VALUES()");
         cn.exec(stmt);
         assert(stmt.lastInsertID == 1);
@@ -1256,7 +1259,7 @@ debug(MYSQLN_TESTS)
 		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
 		assert(pr["2"] == TestPreparedRegistrationsGood2(true,  "2"));
 		assert(pr["3"] == TestPreparedRegistrationsGood2(false, "3"));
-		
+
 		pr.queueForRelease("3");
 		assert(pr.directLookup.keys.length == 3);
 		assert(pr["1"] == TestPreparedRegistrationsGood2(false, "1"));
@@ -1301,7 +1304,7 @@ debug(MYSQLN_TESTS)
 		resetData(false, true, false);
 		pr.clear();
 		assert(pr.directLookup.keys.length == 0);
-		
+
 		// Test registerIfNeeded
 		auto doRegister(const(char[]) sql) { return TestPreparedRegistrationsGood2(false, sql); }
 		pr.registerIfNeeded("1", &doRegister);
