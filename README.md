@@ -139,8 +139,7 @@ Developers - How to run the test suite
 --------------------------------------
 
 Unittests that do not require an actual server are located in the library
-codebase. At the moment, there is no mechanism for running just these tests
-(this will likely change in the future).
+codebase. You can run just these tests using `dub test`.
 
 Unittests that require a working server are all located in the
 [integration-tests](integration-tests) subpackage. Due to a [dub
@@ -155,6 +154,7 @@ issuing the commands:
 dub run :integration-tests-phobos
 dub run :integration-tests-vibe
 ```
+This will also run the library tests as well as the integration tests.
 
 The first time you run an integration test, the file `testConnectionStr.txt`
 will be created in your current directory

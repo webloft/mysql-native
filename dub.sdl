@@ -12,3 +12,10 @@ subPackage "./integration-tests"
 subPackage "./integration-tests-vibe"
 subPackage "./integration-tests-phobos"
 subPackage "./testconn"
+
+configuration "library" {
+}
+configuration "unittest" {
+        buildOptions "unittests" "debugInfo" "debugMode"
+		debugVersions "MYSQLN_TESTS"
+}

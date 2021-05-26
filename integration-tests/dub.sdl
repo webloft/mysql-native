@@ -5,6 +5,7 @@ copyright   "Copyright (c) 2011-2021 Steve Teale, James W. Oliphant, Simen Endsj
 authors     "Steve Teale" "James W. Oliphant" "Simen Endsjø" "Sönke Ludwig" "Sergey Shamov" "Nick Sabalausky" "Steven Schveighoffer"
 
 dependency "mysql-native" path="../"
+subConfiguration "mysql-native" "unittest"
 dependency "unit-threaded" version="~>1.0.15"
 debugVersions "MYSQLN_TESTS"
 versions "unitUnthreaded"
