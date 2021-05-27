@@ -12,6 +12,7 @@ on:
     branches:
       - master
   pull_request:
+  workflow_dispatch:
 
 jobs:
   # mysql8-tests:
