@@ -15,7 +15,8 @@ subPackage "./testconn"
 
 configuration "library" {
 }
+
 configuration "unittest" {
-    buildOptions "unittests" "debugInfo" "debugMode"
-    debugVersions "MYSQLN_TESTS"
+	debugVersions "MYSQLN_TESTS"
+	targetType "sourceLibrary"
 }
