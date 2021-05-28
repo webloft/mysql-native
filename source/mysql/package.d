@@ -75,25 +75,3 @@ public import mysql.prepared;
 public import mysql.protocol.constants : SvrCapFlags;
 public import mysql.result;
 public import mysql.types;
-
-debug(MYSQLN_TESTS)      version = DoCoreTests;
-debug(MYSQLN_CORE_TESTS) version = DoCoreTests;
-
-version(DoCoreTests)
-{
-	public import mysql.protocol.comms;
-	public import mysql.protocol.constants;
-	public import mysql.protocol.extra_types;
-	public import mysql.protocol.packet_helpers;
-	public import mysql.protocol.packets;
-	public import mysql.protocol.sockets;
-
-	public import mysql.test.common;
-	public import mysql.test.integration;
-	public import mysql.test.regression;
-
-	version(MYSQLN_TESTS_NO_MAIN) {} else
-	{
-		void main() {}
-	}
-}

@@ -1,0 +1,12 @@
+version: '3.7'
+services:
+  mysql:
+    # Don't use latest (MySQL Server 8.0) as we cannot currently support it
+    image: mysql:5.7
+    restart: always
+    ports: ['3306:3306']
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=mysqln_testdb
+      - MYSQL_USER=mysqln_test
+      - MYSQL_PASSWORD=pass123

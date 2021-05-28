@@ -17,10 +17,6 @@ import std.typecons;
 import mysql.connection;
 import mysql.prepared;
 import mysql.protocol.constants;
-debug(MYSQLN_TESTS)
-{
-	import mysql.test.common;
-}
 
 version(Have_vibe_core)
 {
@@ -195,7 +191,7 @@ version(IncludeMySQLPool)
 
 		/// Applies any `autoRegister`/`autoRelease` settings to a connection,
 		/// if necessary.
-		private void applyAuto(T)(T conn)
+		package void applyAuto(T)(T conn)
 		{
 			foreach(sql, info; preparedRegistrations.directLookup)
 			{
@@ -230,50 +226,6 @@ version(IncludeMySQLPool)
 		@property void delegate(Connection) onNewConnection()
 		{
 			return m_onNewConnection;
-		}
-
-		@("onNewConnection")
-		debug(MYSQLN_TESTS)
-		unittest
-		{
- 			auto count = 0;
-			void callback(Connection conn)
-			{
-				count++;
-			}
-
-			// Test getting/setting
-			auto poolA = new MySQLPool(testConnectionStr, &callback);
-			auto poolB = new MySQLPool(testConnectionStr);
-			auto poolNoCallback = new MySQLPool(testConnectionStr);
-
-			assert(poolA.onNewConnection == &callback);
-			assert(poolB.onNewConnection is null);
-			assert(poolNoCallback.onNewConnection is null);
-
-			poolB.onNewConnection = &callback;
-			assert(poolB.onNewConnection == &callback);
-			assert(count == 0);
-
-			// Ensure callback is called
-			{
-				auto connA = poolA.lockConnection();
-				assert(!connA.closed);
-				assert(count == 1);
-
-				auto connB = poolB.lockConnection();
-				assert(!connB.closed);
-				assert(count == 2);
-			}
-
-			// Ensure works with no callback
-			{
-				auto oldCount = count;
-				auto poolC = new MySQLPool(testConnectionStr);
-				auto connC = poolC.lockConnection();
-				assert(!connC.closed);
-				assert(count == oldCount);
-			}
 		}
 
 		/++
@@ -468,127 +420,6 @@ version(IncludeMySQLPool)
 					} catch(Exception) {}
 				});
 			}
-		}
-	}
-
-	@("registration")
-	debug(MYSQLN_TESTS)
-	unittest
-	{
-		import mysql.commands;
-		auto pool = new MySQLPool(testConnectionStr);
-
-		// Setup
-		Connection cn = pool.lockConnection();
-		cn.exec("DROP TABLE IF EXISTS `poolRegistration`");
-		cn.exec("CREATE TABLE `poolRegistration` (
-			`data` LONGBLOB
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
-		immutable sql = "SELECT * from `poolRegistration`";
-		//auto cn2 = pool.lockConnection(); // Seems to return the same connection as `cn`
-		auto cn2 = pool.createConnection();
-		pool.applyAuto(cn2);
-		assert(cn !is cn2);
-
-		// Tests:
-		// Initial
-		assert(pool.isAutoCleared(sql));
-		assert(pool.isAutoRegistered(sql));
-		assert(pool.isAutoReleased(sql));
-		assert(!cn.isRegistered(sql));
-		assert(!cn2.isRegistered(sql));
-
-		// Register on connection #1
-		auto prepared = cn.prepare(sql);
-		{
-			assert(pool.isAutoCleared(sql));
-			assert(pool.isAutoRegistered(sql));
-			assert(pool.isAutoReleased(sql));
-			assert(cn.isRegistered(sql));
-			assert(!cn2.isRegistered(sql));
-
-			//auto cn3 = pool.lockConnection(); // Seems to return the same connection as `cn`
-			auto cn3 = pool.createConnection();
-			pool.applyAuto(cn3);
-			assert(!cn3.isRegistered(sql));
-		}
-
-		// autoRegister
-		pool.autoRegister(prepared);
-		{
-			assert(!pool.isAutoCleared(sql));
-			assert(pool.isAutoRegistered(sql));
-			assert(!pool.isAutoReleased(sql));
-			assert(cn.isRegistered(sql));
-			assert(!cn2.isRegistered(sql));
-
-			//auto cn3 = pool.lockConnection(); // Seems to return the *same* connection as `cn`
-			auto cn3 = pool.createConnection();
-			pool.applyAuto(cn3);
-			assert(cn3.isRegistered(sql));
-		}
-
-		// autoRelease
-		pool.autoRelease(prepared);
-		{
-			assert(!pool.isAutoCleared(sql));
-			assert(!pool.isAutoRegistered(sql));
-			assert(pool.isAutoReleased(sql));
-			assert(cn.isRegistered(sql));
-			assert(!cn2.isRegistered(sql));
-
-			//auto cn3 = pool.lockConnection(); // Seems to return the same connection as `cn`
-			auto cn3 = pool.createConnection();
-			pool.applyAuto(cn3);
-			assert(!cn3.isRegistered(sql));
-		}
-
-		// clearAuto
-		pool.clearAuto(prepared);
-		{
-			assert(pool.isAutoCleared(sql));
-			assert(pool.isAutoRegistered(sql));
-			assert(pool.isAutoReleased(sql));
-			assert(cn.isRegistered(sql));
-			assert(!cn2.isRegistered(sql));
-
-			//auto cn3 = pool.lockConnection(); // Seems to return the same connection as `cn`
-			auto cn3 = pool.createConnection();
-			pool.applyAuto(cn3);
-			assert(!cn3.isRegistered(sql));
-		}
-	}
-
-	@("closedConnection") // "cct"
-	debug(MYSQLN_TESTS)
-	{
-		MySQLPool cctPool;
-		int cctCount=0;
-
-		void cctStart()
-		{
-			import std.array;
-			import mysql.commands;
-
-			cctPool = new MySQLPool(testConnectionStr);
-			cctPool.onNewConnection = (Connection conn) { cctCount++; };
-			assert(cctCount == 0);
-
-			auto cn = cctPool.lockConnection();
-			assert(!cn.closed);
-			cn.close();
-			assert(cn.closed);
-			assert(cctCount == 1);
-		}
-
-		unittest
-		{
-			cctStart();
-			assert(cctCount == 1);
-
-			auto cn = cctPool.lockConnection();
-			assert(cctCount == 1);
-			assert(!cn.closed);
 		}
 	}
 }

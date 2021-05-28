@@ -9,7 +9,10 @@ on:
   schedule:
     - cron: '30 7 1 * *'
   push:
+    branches:
+      - master
   pull_request:
+  workflow_dispatch:
 
 jobs:
   # mysql8-tests:
@@ -41,37 +44,37 @@ jobs:
   #         --health-retries 4
 
   #   steps:
-  #     - uses: actions/checkout@v2
+  #    - uses: actions/checkout@v2
 
-  #     - name: Install ${{ matrix.compiler }}
-  #       uses: dlang-community/setup-dlang@v1
-  #       with:
-  #         compiler: ${{ matrix.compiler }}
+  #    - name: Install ${{ matrix.compiler }}
+  #      uses: dlang-community/setup-dlang@v1
+  #      with:
+  #        compiler: ${{ matrix.compiler }}
 
-  #     - name: Install dependencies on Ubuntu
-  #       if: startsWith(matrix.os, 'ubuntu')
-  #       run: sudo apt-get update && sudo apt-get install libevent-dev -y
+  #    - name: Set up test connection string
+  #      env:
+  #        MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+  #      run: |
+  #        echo "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb" > testConnectionStr.txt
 
-  #     ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
-  #     ## actually a unit test at all. It's an integration test and should be pulled out from the main
-  #     ## codebase into a separate sub module
-  #     - name: Run unittest-vibe-ut
-  #       env:
-  #         MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
-  #       run: |
-  #         echo "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb" > testConnectionStr.txt
-  #         dub run -c unittest-vibe-ut -- -t
+  #    - name: Run unittests with Vibe.d
+  #      run: |
+  #        dub run ":integration-tests-vibe"
 
-  #     - name: Build The Example Project
-  #       working-directory: ./examples/homePage
-  #       run: dub build
+  #    - name: Run unittests with Phobos
+  #      run: |
+  #        dub run ":integration-tests-phobos"
 
-  #     - name: Run Example (MySQL 8)
-  #       working-directory: ./examples/homePage
-  #       env:
-  #         MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
-  #       run: |
-  #         ./example "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb"
+  #    - name: Build The Example Project
+  #      working-directory: ./examples/homePage
+  #      run: dub build
+
+  #    - name: Run Example (MySQL 8)
+  #      working-directory: ./examples/homePage
+  #      env:
+  #        MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+  #      run: |
+  #        ./example "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb"
 
   mysql57-tests:
     name: MySQL 5.7 Tests ${{ matrix.compiler }}
@@ -113,19 +116,25 @@ jobs:
         with:
           compiler: ${{ matrix.compiler }}
 
-      - name: Install dependencies on Ubuntu
-        if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get update && sudo apt-get install libevent-dev -y
-
-      ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
-      ## actually a unit test at all. It's an integration test and should be pulled out from the main
-      ## codebase into a separate sub module
-      - name: Run unittest-vibe-ut
+      - name: Set up test connection string
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
         run: |
           echo "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb" > testConnectionStr.txt
-          dub run -c unittest-vibe-ut -- -t
+
+      - name: Run unittests with Vibe.d
+        run: |
+          dub run ":integration-tests-vibe"
+
+      - name: Run unittests with Phobos
+        run: |
+          dub run ":integration-tests-phobos"
+
+      - name: Run test connection utility
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          dub run ":testconn" -- "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb"
 
       - name: Build The Example Project
         working-directory: ./examples/homePage
@@ -178,19 +187,25 @@ jobs:
         with:
           compiler: ${{ matrix.compiler }}
 
-      - name: Install dependencies on Ubuntu
-        if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get update && sudo apt-get install libevent-dev -y
-
-      ## Turns out the unittest-vibe-ut tried to connect to an actualy MySQL on 172.18.0.1 so it's not
-      ## actually a unit test at all. It's an integration test and should be pulled out from the main
-      ## codebase into a separate sub module
-      - name: Run unittest-vibe-ut
+      - name: Set up test connection string
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
         run: |
           echo "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb" > testConnectionStr.txt
-          dub run -c unittest-vibe-ut -- -t
+
+      - name: Run unittests with Vibe.d
+        run: |
+          dub run ":integration-tests-vibe"
+
+      - name: Run unittests with Phobos
+        run: |
+          dub run ":integration-tests-phobos"
+
+      - name: Run test connection utility
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          dub run ":testconn" -- "host=localhost;port=$MYSQL_PORT;user=testuser;pwd=passw0rd;db=testdb"
 
       - name: Build The Example Project
         working-directory: ./examples/homePage

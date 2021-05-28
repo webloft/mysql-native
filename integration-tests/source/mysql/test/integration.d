@@ -1,4 +1,4 @@
-﻿module mysql.test.integration;
+module mysql.test.integration;
 
 import std.algorithm;
 import std.conv;
@@ -115,7 +115,7 @@ debug(MYSQLN_TESTS)
 unittest
 {
 	import mysql.prepared;
-	
+
 	struct X
 	{
 		int a, b, c;
@@ -457,9 +457,9 @@ unittest
 			count++;
 	}
 	assert(count == 2);
-	
+
 	initBaseTestTables(cn);
-	
+
 	string[] tList = md.tables();
 	count = 0;
 	foreach (string t; tList)
@@ -477,7 +477,7 @@ unittest
 	See "COLUMN_DEFAULT" at:
 		https://mariadb.com/kb/en/library/information-schema-columns-table/
 	+/
-	
+
 	ColumnInfo[] ca = md.columns("basetest");
 	assert( ca[0].schema == schemaName && ca[0].table == "basetest" && ca[0].name == "boolcol" && ca[0].index == 0 &&
 			ca[0].nullable && ca[0].type == "bit" && ca[0].charsMax == -1 && ca[0].octetsMax == -1 &&
@@ -638,7 +638,7 @@ unittest
 	/+
 	// Commented out because leaving args unspecified is currently unsupported,
 	// and I'm not convinced it should be allowed.
-	
+
 	// Insert null - params defaults to null
 	{
 		cn.truncate("manytypes");
@@ -998,7 +998,7 @@ unittest
 	immutable selectNoRowsSQL    = "SELECT * FROM `coupleTypes` WHERE s='no such match'";
 	auto prepared = cn.prepare(selectSQL);
 	auto preparedSelectNoRows = cn.prepare(selectNoRowsSQL);
-	
+
 	{
 		// Test query
 		ResultRange rseq = cn.query(selectSQL);
@@ -1186,7 +1186,7 @@ unittest
 			`name` VARCHAR(50)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8");
 	}
-	
+
 	// Setup current working directory
 	auto saveDir = getcwd();
 	scope(exit)

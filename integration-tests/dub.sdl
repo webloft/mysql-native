@@ -1,0 +1,15 @@
+name        "integration-tests"
+description "Test harness for integration tests"
+license     "BSL-1.0"
+copyright   "Copyright (c) 2011-2021 Steve Teale, James W. Oliphant, Simen Endsjø, Sönke Ludwig, Sergey Shamov, Nick Sabalausky, and Steven Schveighoffer"
+authors     "Steve Teale" "James W. Oliphant" "Simen Endsjø" "Sönke Ludwig" "Sergey Shamov" "Nick Sabalausky" "Steven Schveighoffer"
+
+dependency "mysql-native" path="../"
+subConfiguration "mysql-native" "unittest"
+dependency "unit-threaded" version="~>1.0.15"
+debugVersions "MYSQLN_TESTS"
+versions "unitUnthreaded"
+targetType "library"
+
+// this is needed to make the unittests compile, even though there's a warning
+buildOptions "unittests" "debugMode" "debugInfo"

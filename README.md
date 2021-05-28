@@ -5,6 +5,10 @@ MySQL native
 [![GitHub - Builds](https://github.com/mysql-d/mysql-native/actions/workflows/dub.yml/badge.svg)](https://github.com/mysql-d/mysql-native/actions/workflows/dub.yml)
 [![GitHub - Integration Tests](https://github.com/mysql-d/mysql-native/actions/workflows/integration-testing.yml/badge.svg)](https://github.com/mysql-d/mysql-native/actions/workflows/integration-testing.yml)
 
+*NOTE: we are in the process of migrating to github actions. Documentation will
+eventually be generated using github actions, and stored on github. This README
+is in flux at the moment, and may contain outdated information*
+
 A [Boost-licensed](http://www.boost.org/LICENSE_1_0.txt) native [D](http://dlang.org)
 client driver for MySQL and MariaDB.
 
@@ -89,7 +93,7 @@ void main(string[] args)
 		"SELECT * FROM `tablename` WHERE `name`=? OR `name`=?",
 		"Bob", "Bobby");
 	bobs.close(); // Skip them
-	
+
 	Row[] rs = conn.query( // Same SQL as above, but only prepared once and is reused!
 		"SELECT * FROM `tablename` WHERE `name`=? OR `name`=?",
 		"Bob", "Ann").array; // Get ALL the rows at once
@@ -119,26 +123,41 @@ Additional notes
 
 This requires MySQL server v4.1.1 or later, or a MariaDB server. Older
 versions of MySQL server are obsolete, use known-insecure authentication,
-and are not supported by this package.
+and are not supported by this package. Currently the github actions tests use
+MySQL 5.7 and MariaDB 10. MySQL 8 is supported with `mysql_native_password`
+authentication, but is not currently tested. Expect this to change in the future.
 
 Normally, MySQL clients connect to a server on the same machine via a Unix
 socket on *nix systems, and through a named pipe on Windows. Neither of these
 conventions is currently supported. TCP is used for all connections.
 
-For historical reference, see the [old homepage](http://britseyeview.com/software/mysqln/)
-for the original release of this project. Note, however, that version has
-become out-of-date.
+Unfortunately, the original home page of Steve Teale's mysqln is no longer
+available. You can see an archive on the [Internet Archive wayback
+machine](https://web.archive.org/web/20120323165808/http://britseyeview.com/software/mysqln)
 
 Developers - How to run the test suite
 --------------------------------------
 
-This package contains various unittests and integration tests. To run them,
-run `run-tests`.
+Unittests that do not require an actual server are located in the library
+codebase. You can run just these tests using `dub test`.
 
-The first time you run `run-tests`, it will automatically create a
-file `testConnectionStr.txt` in project's base diretory and then exit.
-This file is deliberately not contained in the source repository
-because it's specific to your system.
+Unittests that require a working server are all located in the
+[integration-tests](integration-tests) subpackage. Due to a [dub
+issue](https://github.com/dlang/dub/issues/2136), the integration tests are run
+using the [integration-tests-phobos](integration-tests-phobos) and
+[integration-tests-vibe](integration-tests-vibe) subpackages. At some point, if this dub issue
+is fixed, they will simply become configurations in the main integration-tests
+repository. You can run these directly from the main repository folder by
+issuing the commands:
+
+```sh
+dub run :integration-tests-phobos
+dub run :integration-tests-vibe
+```
+This will also run the library tests as well as the integration tests.
+
+The first time you run an integration test, the file `testConnectionStr.txt`
+will be created in your current directory
 
 Open the `testConnectionStr.txt` file and verify the connection settings
 inside, modifying them as needed, and if necessary, creating a test user and
@@ -148,6 +167,9 @@ The tests will completely clobber anything inside the db schema provided,
 but they will ONLY modify that one db schema. No other schema will be
 modified in any way.
 
-After you've configured the connection string, run `run-tests` again
-and their tests will be compiled and run, first using Phobos sockets,
-then using Vibe sockets.
+After you've configured the connection string, run the integration tests again.
+
+The integration tests use
+[unit-threaded](https://code.dlang.org/packages/unit-threaded) which allows for
+running individual named tests. Use this for running specific tests instead of
+the whole suite.
