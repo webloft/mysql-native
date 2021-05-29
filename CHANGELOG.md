@@ -1,3 +1,27 @@
+v3.0.2 - 2021-05-28
+=====================
+
+Migrate all CI to github actions. This release has a large amount of shuffling
+around of tests and uses the new github actions CI instead of travis-ci (which
+has become unusable for this project).
+
+Also, the dub file has been greatly simplified. All the testing has been moved
+from the main dub file into subpackages, to keep the library itself clean of
+spurious dependencies. This also fixes the issues with Dub from DMD 2.095+
+
+- **Tests:** [#227](https://github.com/mysql-d/mysql-native/issues/227):
+    move CI from travis to github actions. (@singingbush)
+- **Fixed:** [#224](https://github.com/mysql-d/mysql-native/issues/224):
+	Basic mysql-native dub app does not compile with dmd 2.095.0.
+- **Change:** [#220](https://github.com/mysql-d/mysql-native/pull/220):
+	By default mysql-native will use the utf8mb4 instead of utf8 as the default
+    collation for servers that support it. (@kubo39)
+
+v3.0.1 - 2021-04-28
+=====================
+
+Hot fix for issue regarding autoPurge not always running properly in a vibe-d environment, causing out-of-order server packets.
+
 v3.0.0 - 2019-12-08
 =====================
 
