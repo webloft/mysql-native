@@ -271,23 +271,23 @@ unittest
 
 	// Test queryRow
 	{
-		Nullable!Row row;
+		// Note, queryRow returns Nullable, but we always expect to get a row,
+		// so we will let the `get` check in Nullable assert that it's not
+		// null.
+		Row row;
 
 		// String sql
-		row = cn.queryRow("SELECT * FROM `queryOverloads` WHERE `i`=1 AND `s`=\"aa\"");
-		assert(!row.isNull);
+		row = cn.queryRow("SELECT * FROM `queryOverloads` WHERE `i`=1 AND `s`=\"aa\"").get;
 		assert(row.length == 2);
 		assert(row[0] == 1);
 		assert(row[1] == "aa");
 
-		row = cn.queryRow(prepareSQL, 2, "bb");
-		assert(!row.isNull);
+		row = cn.queryRow(prepareSQL, 2, "bb").get;
 		assert(row.length == 2);
 		assert(row[0] == 2);
 		assert(row[1] == "bb");
 
-		row = cn.queryRow(prepareSQL, [Variant(3), Variant("cc")]);
-		assert(!row.isNull);
+		row = cn.queryRow(prepareSQL, [Variant(3), Variant("cc")]).get;
 		assert(row.length == 2);
 		assert(row[0] == 3);
 		assert(row[1] == "cc");
@@ -295,20 +295,17 @@ unittest
 		// Prepared sql
 		auto prepared = cn.prepare(prepareSQL);
 		prepared.setArgs(1, "aa");
-		row = cn.queryRow(prepared);
-		assert(!row.isNull);
+		row = cn.queryRow(prepared).get;
 		assert(row.length == 2);
 		assert(row[0] == 1);
 		assert(row[1] == "aa");
 
-		row = cn.queryRow(prepared, 2, "bb");
-		assert(!row.isNull);
+		row = cn.queryRow(prepared, 2, "bb").get;
 		assert(row.length == 2);
 		assert(row[0] == 2);
 		assert(row[1] == "bb");
 
-		row = cn.queryRow(prepared, [Variant(3), Variant("cc")]);
-		assert(!row.isNull);
+		row = cn.queryRow(prepared, [Variant(3), Variant("cc")]).get;
 		assert(row.length == 2);
 		assert(row[0] == 3);
 		assert(row[1] == "cc");
@@ -316,8 +313,7 @@ unittest
 		// BCPrepared sql
 		auto bcPrepared = cn.prepareBackwardCompatImpl(prepareSQL);
 		bcPrepared.setArgs(1, "aa");
-		row = cn.queryRow(bcPrepared);
-		assert(!row.isNull);
+		row = cn.queryRow(bcPrepared).get;
 		assert(row.length == 2);
 		assert(row[0] == 1);
 		assert(row[1] == "aa");
@@ -350,49 +346,42 @@ unittest
 
 	// Test queryValue
 	{
-		Nullable!Variant value;
+		Variant value;
 
 		// String sql
-		value = cn.queryValue("SELECT * FROM `queryOverloads` WHERE `i`=1 AND `s`=\"aa\"");
-		assert(!value.isNull);
-		assert(value.get.type != typeid(typeof(null)));
-		assert(value.get == 1);
+		value = cn.queryValue("SELECT * FROM `queryOverloads` WHERE `i`=1 AND `s`=\"aa\"").get;
+		assert(value.type != typeid(typeof(null)));
+		assert(value == 1);
 
-		value = cn.queryValue(prepareSQL, 2, "bb");
-		assert(!value.isNull);
-		assert(value.get.type != typeid(typeof(null)));
-		assert(value.get == 2);
+		value = cn.queryValue(prepareSQL, 2, "bb").get;
+		assert(value.type != typeid(typeof(null)));
+		assert(value == 2);
 
-		value = cn.queryValue(prepareSQL, [Variant(3), Variant("cc")]);
-		assert(!value.isNull);
-		assert(value.get.type != typeid(typeof(null)));
-		assert(value.get == 3);
+		value = cn.queryValue(prepareSQL, [Variant(3), Variant("cc")]).get;
+		assert(value.type != typeid(typeof(null)));
+		assert(value == 3);
 
 		// Prepared sql
 		auto prepared = cn.prepare(prepareSQL);
 		prepared.setArgs(1, "aa");
-		value = cn.queryValue(prepared);
-		assert(!value.isNull);
-		assert(value.get.type != typeid(typeof(null)));
-		assert(value.get == 1);
+		value = cn.queryValue(prepared).get;
+		assert(value.type != typeid(typeof(null)));
+		assert(value == 1);
 
-		value = cn.queryValue(prepared, 2, "bb");
-		assert(!value.isNull);
-		assert(value.get.type != typeid(typeof(null)));
-		assert(value.get == 2);
+		value = cn.queryValue(prepared, 2, "bb").get;
+		assert(value.type != typeid(typeof(null)));
+		assert(value == 2);
 
-		value = cn.queryValue(prepared, [Variant(3), Variant("cc")]);
-		assert(!value.isNull);
-		assert(value.get.type != typeid(typeof(null)));
-		assert(value.get == 3);
+		value = cn.queryValue(prepared, [Variant(3), Variant("cc")]).get;
+		assert(value.type != typeid(typeof(null)));
+		assert(value == 3);
 
 		// BCPrepared sql
 		auto bcPrepared = cn.prepareBackwardCompatImpl(prepareSQL);
 		bcPrepared.setArgs(1, "aa");
-		value = cn.queryValue(bcPrepared);
-		assert(!value.isNull);
-		assert(value.get.type != typeid(typeof(null)));
-		assert(value.get == 1);
+		value = cn.queryValue(bcPrepared).get;
+		assert(value.type != typeid(typeof(null)));
+		assert(value == 1);
 	}
 }
 
