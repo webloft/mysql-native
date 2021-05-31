@@ -891,7 +891,7 @@ unittest
 		//assert(!cn.queryScalar(selectOneSql).hasValue);
 		x = cn.queryValue(selectOneSql);
 		assert(!x.isNull);
-		assert(x.type == typeid(typeof(null)));
+		assert(x.get.type == typeid(typeof(null)));
 
 		// Values
 		void assertBasicTestsValue(T, U)(U val)
@@ -970,8 +970,7 @@ unittest
 			" WHERE CHARACTER_SET_NAME=?");
 	auto val = "utf8";
 	stmt.setArg(0, val);
-	auto row = cn.queryRow(stmt);
-	//assert(row.length == 4);
+	auto row = cn.queryRow(stmt).get;
 	assert(row.length == 4);
 	assert(row[0] == "utf8");
 	assert(row[1] == "utf8_general_ci");
