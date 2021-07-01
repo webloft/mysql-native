@@ -630,7 +630,7 @@ unittest
 		auto val2 = 2;
 		stmt = cn.prepare("SELECT * FROM manytypes WHERE i = ? AND f = ?");
 		stmt.setArgs(val1, val2);
-		row = cn.queryRow(stmt);
+		row = cn.queryRow(stmt).get;
 	}
 	assert(row[0] == 1);
 	assert(row[1] == 2);
@@ -1058,8 +1058,8 @@ unittest
 		// Test queryRow
 		nullableRow = cn.queryRow(selectSQL);
 		assert(!nullableRow.isNull);
-		assert(nullableRow[0] == 11);
-		assert(nullableRow[1] == "aaa");
+		assert(nullableRow.get[0] == 11);
+		assert(nullableRow.get[1] == "aaa");
 		// Were all results correctly purged? Can I still issue another command?
 		cn.query(selectSQL).array;
 
@@ -1069,8 +1069,8 @@ unittest
 		// Test prepared queryRow
 		nullableRow = cn.queryRow(prepared);
 		assert(!nullableRow.isNull);
-		assert(nullableRow[0] == 11);
-		assert(nullableRow[1] == "aaa");
+		assert(nullableRow.get[0] == 11);
+		assert(nullableRow.get[1] == "aaa");
 		// Were all results correctly purged? Can I still issue another command?
 		cn.query(selectSQL).array;
 
