@@ -39,16 +39,17 @@ jobs:
         with:
           compiler: ${{ matrix.compiler }}
 
-      - name: Upgrade dub dependencies
-        uses: WebFreak001/dub-upgrade@v0.1
+      # Note: this is not needed, because vanilla mysql-natve has no dependencies
+      #- name: Upgrade dub dependencies
+      #  uses: WebFreak001/dub-upgrade@v0.1
 
       - name: Build Library
         run: dub build --build=release --config=library
 
       # cache
-      - uses: WebFreak001/dub-upgrade@v0.1
-        if: startsWith(matrix.os, 'windows')
-        with: { store: true }
+      #- uses: WebFreak001/dub-upgrade@v0.1
+      #  if: startsWith(matrix.os, 'windows')
+      #  with: { store: true }
 
   # Older compiler versions
   build-older:
@@ -87,12 +88,13 @@ jobs:
         with:
           compiler: ${{ matrix.compiler }}
 
-      - name: Upgrade dub dependencies
-        uses: WebFreak001/dub-upgrade@v0.1
+      # Note: this is not needed, because vanilla mysql-natve has no dependencies
+      #- name: Upgrade dub dependencies
+      #  uses: WebFreak001/dub-upgrade@v0.1
 
       - name: Build Library
         run: dub build --build=release --config=library
 
       # cache
-      - uses: WebFreak001/dub-upgrade@v0.1
-        with: { store: true }
+      #- uses: WebFreak001/dub-upgrade@v0.1
+      #  with: { store: true }
