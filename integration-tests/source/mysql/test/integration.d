@@ -968,14 +968,14 @@ unittest
 	auto stmt = cn.prepare(
 			"SELECT * FROM information_schema.character_sets"~
 			" WHERE CHARACTER_SET_NAME=?");
-	auto val = "utf8";
+	auto val = "utf8mb4";
 	stmt.setArg(0, val);
 	auto row = cn.queryRow(stmt).get;
 	assert(row.length == 4);
-	assert(row[0] == "utf8");
-	assert(row[1] == "utf8_general_ci");
+	assert(row[0] == "utf8mb4");
+	assert(row[1] == "utf8mb4_general_ci");
 	assert(row[2] == "UTF-8 Unicode");
-	assert(row[3] == 3);
+	assert(row[3] == 4);
 }
 
 @("coupleTypes")
