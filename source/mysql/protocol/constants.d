@@ -144,7 +144,7 @@ enum ResultPacketMarker : ubyte
 
 /++
 Field Flags
-See_Also: $(LINK https://dev.mysql.com/doc/internals/en/com-query-response.html#column-definition)
+See_Also: $(LINK https://dev.mysql.com/doc/dev/mysql-server/8.0.26/group__group__cs__column__definition__flags.html)
 +/
 enum FieldFlags : ushort
 {
