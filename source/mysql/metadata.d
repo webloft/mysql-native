@@ -24,24 +24,24 @@ struct ColumnInfo
 	size_t index;
 	/++
 	Is the COLUMN_DEFAULT column (in the information schema's COLUMNS table) NULL?
-	
+
 	What this means:
-	
+
 	On MariaDB 10.2.7 and up:
 	- Does the column have a default value?
-	
+
 	On MySQL and MariaDB 10.2.6 and below:
 	- This can be true if the column doesn't have a default value OR
 	if NULL is the column's default value.
-	
+
 	See_also:
 	See COLUMN_DEFAULT description at
-	$(LINK https://mariadb.com/kb/en/library/information-schema-columns-table/)
+	$(LINK https://mariadb.com/kb/en/information-schema-columns-table/)
 	+/
 	bool defaultNull;
 	/++
 	The default value as a string if not NULL.
-	
+
 	Depending on the database (see comments for `defaultNull` and the
 	related "see also" link there), this may be either `null` or `"NULL"`
 	if the column's default value is NULL.
@@ -100,7 +100,7 @@ information that is available to the connected user. This may well be quite limi
 struct MetaData
 {
 	import mysql.connection;
-	
+
 private:
 	Connection _con;
 
@@ -174,10 +174,10 @@ public:
 
 	/++
 	List the available databases
-	
+
 	Note that if you have connected using the credentials of a user with
 	limited permissions you may not get many results.
-	
+
 	Returns:
 		An array of strings
 	+/
@@ -193,7 +193,7 @@ public:
 
 	/++
 	List the tables in the current database
-	
+
 	Returns:
 		An array of strings
 	+/
@@ -209,7 +209,7 @@ public:
 
 	/++
 	Get column metadata for a table in the current database
-	
+
 	Params:
 		table = The table name
 	Returns:
