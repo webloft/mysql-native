@@ -602,7 +602,7 @@ out(result)
 {
 	assert(result.length == numFields);
 }
-body
+do
 {
 	bool[] nulls;
 	nulls.length = numFields;
@@ -642,7 +642,7 @@ in
 {
 	assert(rh.fieldCount <= uint.max);
 }
-body
+do
 {
 	scope(failure) conn.kill();
 
@@ -716,7 +716,7 @@ in
 {
 	assert(packet.length > 4); // at least 1 byte more than header
 }
-body
+do
 {
 	_socket.write(packet);
 }
@@ -726,7 +726,7 @@ in
 {
 	assert(header.length == 4 || header.length == 5/*command type included*/);
 }
-body
+do
 {
 	_socket.write(header);
 	if(data.length)
@@ -756,7 +756,7 @@ out
 	// at this point we should have sent a command
 	assert(conn.pktNumber == 1);
 }
-body
+do
 {
 	scope(failure) conn.kill();
 
@@ -797,7 +797,7 @@ in
 {
 	assert(token.length == 20);
 }
-body
+do
 {
 	ubyte[] packet;
 	packet.reserve(4/*header*/ + 4 + 4 + 1 + 23 + conn._user.length+1 + token.length+1 + conn._db.length+1);
@@ -981,7 +981,7 @@ out
 {
 	assert(conn._open == Connection.OpenState.authenticated);
 }
-body
+do
 {
 	auto token = makeToken(conn._pwd, greeting);
 	auto authPacket = conn.buildAuthPacket(token);

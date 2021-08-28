@@ -424,7 +424,7 @@ package:
 	{
 		assert(_open == OpenState.authenticated);
 	}
-	body
+	do
 	{
 		initConnection();
 		auto greeting = this.parseGreeting();
@@ -600,7 +600,7 @@ public:
 			case MySQLSocketType.vibed:  assert(openSocketVibeD  !is null); break;
 		}
 	}
-	body
+	do
 	{
 		enforce!MYX(capFlags & SvrCapFlags.PROTOCOL41, "This client only supports protocol v4.1");
 		enforce!MYX(capFlags & SvrCapFlags.SECURE_CONNECTION, "This client only supports protocol v4.1 connection");
@@ -724,7 +724,7 @@ public:
 	{
 		assert(_open == OpenState.authenticated);
 	}
-	body
+	do
 	{
 		this.sendCmd(CommandType.QUIT, []);
 		// No response is sent for a quit packet

@@ -287,7 +287,7 @@ public:
 	/// Explicitly clean up the MySQL resources and cancel pending results
 	void close()
 	out{ assert(!isValid); }
-	body
+	do
 	{
 		if(isValid)
 			_con.purgeResult();
