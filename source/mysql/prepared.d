@@ -373,7 +373,7 @@ package struct PreparedRegistrations(Payload)
 		// let's make sure that doesn't change.
 		assert(!info.queuedForRelease);
 	}
-	body
+	do
 	{
 		if(auto pInfo = sql in directLookup)
 		{

@@ -354,7 +354,7 @@ in
 {
 	assert(packet.length >= N);
 }
-body
+do
 {
 	return cast(string)packet.consume(N);
 }
@@ -365,7 +365,7 @@ in
 {
 	assert(packet.length >= N);
 }
-body
+do
 {
 	auto result = packet[0..N];
 	packet = packet[N..$];
@@ -404,7 +404,7 @@ in
 {
 	static assert(N == T.sizeof);
 }
-body
+do
 {
 	enforce!MYXProtocol(packet.length, "Supplied byte array is zero length");
 	uint length = packet.front;
@@ -427,7 +427,7 @@ in
 {
 	static assert(N == T.sizeof);
 }
-body
+do
 {
 	return toDate(packet.consume(5));
 }
@@ -438,7 +438,7 @@ in
 	assert(packet.length);
 	assert(N == T.sizeof);
 }
-body
+do
 {
 	auto numBytes = packet.consume!ubyte();
 	if(numBytes == 0)
@@ -468,7 +468,7 @@ in
 {
 	static assert(T.sizeof >= N, T.stringof~" not large enough to store "~to!string(N)~" bytes");
 }
-body
+do
 {
 	return packet.length >= N;
 }
@@ -481,7 +481,7 @@ in
 	static assert(T.sizeof >= N, T.stringof~" not large enough to store "~to!string(N)~" bytes");
 	assert(packet.hasEnoughBytes!(T,N), "packet not long enough to contain all bytes needed for "~T.stringof);
 }
-body
+do
 {
 	T value = 0;
 	static if(N == 8) // 64 bit
@@ -518,7 +518,7 @@ in
 	static assert(T.sizeof >= N, T.stringof~" not large enough to store "~to!string(N)~" bytes");
 	assert(packet.hasEnoughBytes!(T,N), "packet not long enough to contain all bytes needed for "~T.stringof);
 }
-body
+do
 {
 	// The uncommented line triggers a template deduction error,
 	// so we need to store a temporary first
@@ -548,7 +548,7 @@ in
 	static assert((is(T == float) && N == float.sizeof)
 			|| is(T == double) && N == double.sizeof);
 }
-body
+do
 {
 	T result = 0;
 	(cast(ubyte*)&result)[0..T.sizeof] = packet[0..T.sizeof];
@@ -562,7 +562,7 @@ in
 	static assert((is(T == float) && N == float.sizeof)
 			|| is(T == double) && N == double.sizeof);
 }
-body
+do
 {
 	return packet.consume(T.sizeof).decode!T();
 }
@@ -785,7 +785,7 @@ in
 {
 	assert(packet.length >= 1, "packet has to include at least the LCB length byte");
 }
-body
+do
 {
 	auto lcb = packet.decodeLCBHeader();
 	if(lcb.isNull || lcb.isIncomplete)
@@ -809,7 +809,7 @@ in
 {
 	assert(packet.length >= 1, "packet has to include at least the LCB length byte");
 }
-body
+do
 {
 	LCB lcb;
 	lcb.numBytes = getNumLCBBytes(packet.front);
@@ -849,7 +849,7 @@ in
 {
 	assert(packet.length >= 1, "packet has to include at least the LCB length byte");
 }
-body
+do
 {
 	auto lcb = packet.decodeLCBHeader();
 	if(lcb.isNull || lcb.isIncomplete)
@@ -879,7 +879,7 @@ in
 {
 	assert(packet.length >= 1, "LCS packet needs to store at least the LCB header");
 }
-body
+do
 {
 	auto lcb = packet.consumeIfComplete!LCB();
 	assert(!lcb.isIncomplete);
@@ -898,7 +898,7 @@ in
 {
 	assert(n <= array.length);
 }
-body
+do
 {
 	array = array[n..$];
 	return array;
@@ -921,7 +921,7 @@ in
 	else
 		assert(array.length >= T.sizeof, "Not enough space to unpack "~T.stringof);
 }
-body
+do
 {
 	static if(T.sizeof >= 1)
 	{
@@ -957,7 +957,7 @@ out(result)
 {
 	assert(result.length >= 1);
 }
-body
+do
 {
 	ubyte[] t;
 	if (!l)
@@ -1122,7 +1122,7 @@ in
 	// packet should include header, and possibly data
 	assert(packet.length >= 4);
 }
-body
+do
 {
 	auto dataLength = packet.length - 4; // don't include header in calculated size
 	assert(dataLength <= uint.max);
@@ -1137,7 +1137,7 @@ in
 	// Length is always a 24-bit int
 	assert(dataLength <= 0xffff_ffff_ffff);
 }
-body
+do
 {
 	dataLength.packInto!(uint, true)(packet);
 	packet[3] = packetNumber;

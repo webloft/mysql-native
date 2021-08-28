@@ -124,7 +124,7 @@ public:
 	{
 		assert(!packet.length, "not all bytes read during FieldDescription construction");
 	}
-	body
+	do
 	{
 		packet.skip(4); // Skip catalog - it's always 'def'
 		_db             = packet.consume!LCS();
@@ -245,7 +245,7 @@ in
 {
 	assert(!packet.empty);
 }
-body
+do
 {
 	return packet.front == ResultPacketMarker.eof && packet.length < 9;
 }
@@ -286,7 +286,7 @@ public:
 	{
 		assert(!packet.length);
 	}
-	body
+	do
 	{
 		packet.popFront(); // eof marker
 		_warnings = packet.consume!short();
