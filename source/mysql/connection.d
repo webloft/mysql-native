@@ -346,6 +346,9 @@ package:
 
 	MySQLSocketType _socketType;
 
+	// TCP settings are not used on custom callbacks
+	TcpConnectionFlags _tcpConnFlags;
+
 	OpenSocketCallbackPhobos _openSocketPhobos;
 	OpenSocketCallbackVibeD  _openSocketVibeD;
 
@@ -406,15 +409,41 @@ package:
 		final switch(_socketType)
 		{
 			case MySQLSocketType.phobos:
-				_socket = new MySQLSocketPhobos(_openSocketPhobos(_host, _port));
+				auto s = _openSocketPhobos(_host, _port);
+				applyTcpFlags(s);
+				_socket = new MySQLSocketPhobos(s);
 				break;
 
 			case MySQLSocketType.vibed:
 				version(Have_vibe_core) {
-					_socket = new MySQLSocketVibeD(_openSocketVibeD(_host, _port));
+					auto s = _openSocketVibeD(_host, _port);
+					applyTcpFlags(s);
+					_socket = new MySQLSocketVibeD(s);
 					break;
 				} else assert(0, "Unsupported socket type. Need version Have_vibe_core.");
 		}
+	}
+
+	void applyTcpFlags(T)(T socket) 
+	{
+		static if(is(T: PlainPhobosSocket)) 
+		{
+			if(_openSocketPhobos is &defaultOpenSocketPhobos)
+			{
+				socket.setOption(SocketOptionLevel.TCP, SocketOption.TCP_NODELAY, _tcpConnFlags.noDelay);
+				socket.setOption(SocketOptionLevel.SOCKET, SocketOption.KEEPALIVE, _tcpConnFlags.keepAlive);
+			}
+		} 
+		else static if(is(T: PlainVibeDSocket)) 
+		{
+			if(_openSocketVibeD is &defaultOpenSocketVibeD)
+			{
+				socket.tcpNoDelay = _tcpConnFlags.noDelay;
+				socket.setKeepAlive = _tcpConnFlags.keepAlive;
+			}
+		}
+		else 
+			static assert(0);
 	}
 
 	SvrCapFlags _clientCapabilities;
@@ -1045,5 +1074,15 @@ public:
 	package bool isRegistered(Nullable!PreparedServerInfo info)
 	{
 		return !info.isNull && !info.get.queuedForRelease;
+	}
+
+	void tcpConnectionFlags(TcpConnectionFlags flags) 
+	{
+		_tcpConnFlags = flags;
+	}
+
+	TcpConnectionFlags tcpConnectionFlags() 
+	{
+		return _tcpConnFlags;
 	}
 }

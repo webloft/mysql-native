@@ -158,3 +158,9 @@ version(Have_vibe_core) {
 		}
 	}
 }
+
+struct TcpConnectionFlags 
+{
+	bool noDelay = true;             // disable the Nagle's algorithm
+	bool keepAlive = true;           // keep connection alive (will send additional packets, maybe useful for daemon usage)
+}
